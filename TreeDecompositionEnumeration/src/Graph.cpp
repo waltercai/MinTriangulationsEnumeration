@@ -82,7 +82,7 @@ set<Node> Graph::getNodes() const {
 vector<Node> Graph::getNodesVector() const {
 	vector<Node> nodes;
 	for (Node i=0; i<numberOfNodes; i++) {
-		nodes.insert(i);
+		nodes.insert(nodes.end(), i);
 	}
 	return nodes;
 }
@@ -294,6 +294,16 @@ set<Node> Graph::getComponent(Node v, const set<Node>& removedNodes) {
 		}
 	}
 	return component;
+}
+
+
+NodeSet Graph::getAdjacent(const NodeSet& C, const NodeSet& K) const {
+    NodeSet K2;
+    auto adjacent = getNeighbors(K);
+    std::set_intersection(adjacent.begin(), adjacent.end(),
+                        C.begin(), C.end(),
+                        std::back_inserter(K2));
+    return K2;
 }
 
 void Graph::print() const {

@@ -9,7 +9,7 @@
 
 #include "IndependentSetExtender.h"
 #include "Graph.h"
-#include <queue> 
+#include <queue>
 #include <algorithm>
 #include <list>
 

@@ -57,9 +57,14 @@ class NodeSetSet {
 	set< NodeSet > sets;
 public:
     // True if the structure contains the given node set.
-	bool isMember(const NodeSet& nodeSet);
+	bool isMember(const NodeSet& nodeSet) const;
 	// Adds the given node set to the structure.
 	void insert(const NodeSet& nodeSet);
+	NodeSetSet& operator=(const NodeSetSet& nss) = default;
+	// std::set methods
+	set<NodeSet>::iterator begin() const;
+	set<NodeSet>::iterator end() const;
+	set<NodeSet>::iterator find(const NodeSet& nodeSet) const;
 };
 
 

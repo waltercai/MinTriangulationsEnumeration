@@ -45,28 +45,42 @@ bool WeightedNodeSetQueue::isEmpty() {
 	return queue.empty();
 }
 
-bool WeightedNodeSetQueue::isMember(const vector<Node>& nodeSet, int weight) {
-	return queue.find(make_pair(weight, nodeSet)) != queue.end();
+bool WeightedNodeSetQueue::isMember(const vector<Node>& nodeVec, int weight) {
+	return queue.find(make_pair(weight, nodeVec)) != queue.end();
 }
 
-void WeightedNodeSetQueue::insert(const vector<Node>& nodeSet, int weight) {
-	queue.insert(make_pair(weight, nodeSet));
+void WeightedNodeSetQueue::insert(const vector<Node>& nodeVec, int weight) {
+	queue.insert(make_pair(weight, nodeVec));
 }
 
 vector<Node> WeightedNodeSetQueue::pop() {
-	vector<Node> nodeSet = queue.begin()->second;
+	vector<Node> nodeVec = queue.begin()->second;
 	queue.erase(queue.begin());
-	return nodeSet;
+	return nodeVec;
 }
 
 
 
-bool NodeSetSet::isMember(const vector<Node>& nodeSet) {
-	return sets.find(nodeSet) != sets.end();
+bool NodeSetSet::isMember(const vector<Node>& nodeVec) const {
+	return sets.find(nodeVec) != sets.end();
 }
 
-void NodeSetSet::insert(const vector<Node>& nodeSet) {
-	sets.insert(nodeSet);
+void NodeSetSet::insert(const vector<Node>& nodeVec) {
+	sets.insert(nodeVec);
+}
+/*
+NodeSetSet& NodeSetSet::operator=(const NodeSetSet& nss) {
+    sets = nss.sets;
+    return sets;
+}*/
+set<NodeSet>::iterator NodeSetSet::begin() const {
+    return sets.begin();
+}
+set<NodeSet>::iterator NodeSetSet::end() const {
+    return sets.end();
+}
+set<NodeSet>::iterator NodeSetSet::find(const NodeSet& nodeSet) const {
+    return sets.find(nodeSet);
 }
 
 
