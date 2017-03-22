@@ -77,6 +77,17 @@ set<Node> Graph::getNodes() const {
 }
 
 /*
+ * Returns the vector of nodes in the graph
+ */
+vector<Node> Graph::getNodesVector() const {
+	vector<Node> nodes;
+	for (Node i=0; i<numberOfNodes; i++) {
+		nodes.insert(i);
+	}
+	return nodes;
+}
+
+/*
  * Returns the number of edges in the graph
  */
 int Graph::getNumberOfEdges() const {

@@ -38,6 +38,8 @@ public:
 
 	// Returns the nodes of the graph
 	set<Node> getNodes() const;
+	// Returns the nodes of the graph in a vector
+	vector<Node> getNodesVector() const;
 	// Returns the number of edges in the graph
 	int getNumberOfEdges() const;
 	// Returns the number of nodes in the graph
