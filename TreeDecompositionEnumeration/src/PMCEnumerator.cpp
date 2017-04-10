@@ -1,16 +1,21 @@
-#include "PotentialMaximalCliquesEnumerator.h"
+#include "PMCEnumerator.h"
 #include "MinimalSeparatorsEnumerator.h"
+#include "Utils.h"
 #include <set>
 
 namespace tdenum {
 
-PotentialMaximalCliquesEnumerator::PotentialMaximalCliquesEnumerator(const Graph& g) : graph(g) {}
+PMCEnumerator::PMCEnumerator(const Graph& g) : graph(g) {}
+
+void PMCEnumerator::reset(const Graph& g) {
+    graph = g;
+}
 
 /**
  * Returns all PMCs.
  * Iteratively finds all PMCs in subgraphs of sequencially increasing size.
  */
-NodeSetSet PotentialMaximalCliquesEnumerator::get() const {
+NodeSetSet PMCEnumerator::get() const {
     vector<Node> nodes = graph.getNodesVector();
     int n = graph.getNumberOfNodes();
     if (n <= 0) {
@@ -22,13 +27,18 @@ NodeSetSet PotentialMaximalCliquesEnumerator::get() const {
     // D[i] will be the minimal separators of Gi
     vector<NodeSetSet> D(n);
     // If the nodes of G are {a_1,...,a_n} then P0 = {{a1}}
-    P[0].insert(NodeSet(nodes[0]));
+    NodeSet firstSet(1);
+    firstSet[0] = nodes[0];
+    P[0].insert(firstSet);
     // D[0] should remain empty
+
+    TRACE("Starting " << n-1 << " iterations, P[0] is:\n" << P[0].str());
 
     for (int i=1; i<n; ++i) {
         // Calculate Di, the relevant subgraphs Gi-1 and Gi, and use
         // OneMoreVertex.
         // This is the main function described in the paper.
+        TRACE("In loop, iteration " << i << " of " << n-1);
         vector<Node> subnodes = nodes;
         Node a;
         subnodes.resize(i+1);
@@ -43,11 +53,13 @@ NodeSetSet PotentialMaximalCliquesEnumerator::get() const {
         P[i] = OneMoreVertex(Gip1, Gi, a, D[i], D[i-1], P[i-1]);
     }
 
+    TRACE("Leaving...");
+
     return P[n-1];
 }
 
 
-NodeSetSet PotentialMaximalCliquesEnumerator::OneMoreVertex(
+NodeSetSet PMCEnumerator::OneMoreVertex(
                   const SubGraph& G1, const SubGraph& G2, Node a,
                   const NodeSetSet& D1, const NodeSetSet& D2,
                   const NodeSetSet& P2) const {
@@ -129,7 +141,7 @@ NodeSetSet PotentialMaximalCliquesEnumerator::OneMoreVertex(
  * x,y are both in some (same) Si, meaning there's a path from x to y contained entirely in
  * Ci apart from the endpoints x and y.
  */
-bool PotentialMaximalCliquesEnumerator::IsPMC(NodeSet K, const Graph& G) const {
+bool PMCEnumerator::IsPMC(NodeSet K, const Graph& G) const {
     vector<NodeSet> C = G.getComponents(K);
     vector<NodeSet> S(C.size());
     unsigned int i,j,k;
@@ -186,3 +198,7 @@ bool PotentialMaximalCliquesEnumerator::IsPMC(NodeSet K, const Graph& G) const {
 
 
 } /* namespace tdenum */
+
+
+
+

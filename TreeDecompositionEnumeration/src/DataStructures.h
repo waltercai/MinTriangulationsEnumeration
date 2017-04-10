@@ -12,6 +12,7 @@
 #include <vector>
 #include <set>
 #include <algorithm>
+#include <string>
 
 using namespace std;
 
@@ -58,9 +59,12 @@ class NodeSetSet {
 public:
     // True if the structure contains the given node set.
 	bool isMember(const NodeSet& nodeSet) const;
+	bool operator==(const NodeSetSet& nss) const;
+	bool operator!=(const NodeSetSet& nss) const;
 	// Adds the given node set to the structure.
 	void insert(const NodeSet& nodeSet);
-	NodeSetSet& operator=(const NodeSetSet& nss) = default;
+	// Prints out the NodeSets
+	string str() const;
 	// std::set methods
 	set<NodeSet>::iterator begin() const;
 	set<NodeSet>::iterator end() const;

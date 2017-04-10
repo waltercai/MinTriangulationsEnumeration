@@ -25,6 +25,8 @@ public:
 	Graph();
 	// Constructs a graph with nodes and without edges
 	Graph(int numberOfNodes);
+	// Resets the graph (call constructor again)
+	void reset(int numberOfNodes = 0);
 	// Connects the given two nodes by a edge
 	void addEdge(Node u, Node v);
 	// Adds edges that will make that given node set a clique

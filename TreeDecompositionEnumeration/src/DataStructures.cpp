@@ -6,6 +6,7 @@
  */
 
 #include "DataStructures.h"
+#include <sstream>
 
 namespace tdenum {
 
@@ -65,14 +66,35 @@ bool NodeSetSet::isMember(const vector<Node>& nodeVec) const {
 	return sets.find(nodeVec) != sets.end();
 }
 
+string NodeSetSet::str() const {
+    ostringstream oss;
+    for(auto it = begin(); it != end(); ++it) {
+        if (it->size() == 0) {
+            oss << "\{}\n";
+            continue;
+        }
+        // *it is now a NodeSet.
+        // There's no way to print a NodeSet unless we know it's a vector...
+        oss << "\{";
+        for(unsigned int j = 0; j < it->size(); ++j) {
+            oss << (*it)[j] << ",";
+        }
+        oss << "\b}\n";
+    }
+    return oss.str();
+}
+
 void NodeSetSet::insert(const vector<Node>& nodeVec) {
 	sets.insert(nodeVec);
 }
-/*
-NodeSetSet& NodeSetSet::operator=(const NodeSetSet& nss) {
-    sets = nss.sets;
-    return sets;
-}*/
+
+bool NodeSetSet::operator==(const NodeSetSet& nss) const {
+    return sets == nss.sets;
+}
+bool NodeSetSet::operator!=(const NodeSetSet& nss) const {
+    return !(*this == nss);
+}
+
 set<NodeSet>::iterator NodeSetSet::begin() const {
     return sets.begin();
 }

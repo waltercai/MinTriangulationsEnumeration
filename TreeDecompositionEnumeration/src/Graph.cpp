@@ -10,6 +10,13 @@ Graph::Graph() : numberOfNodes(0), numberOfEdges(0) {}
 Graph::Graph(int numberOfNodes) : numberOfNodes(numberOfNodes), numberOfEdges(0),
 		neighborSets(numberOfNodes) {}
 
+void Graph::reset(int n) {
+    numberOfNodes = n;
+    numberOfEdges = 0;
+    neighborSets.clear();
+    neighborSets.resize(n);
+}
+
 void Graph::addClique(const set<Node>& newClique) {
 	for (set<Node>::iterator i = newClique.begin(); i != newClique.end(); ++i) {
 		Node v = *i;
