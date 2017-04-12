@@ -1,9 +1,29 @@
 #include "Graph.h"
 #include "DataStructures.h"
+#include "Utils.h"
 #include <queue>
 #include <iostream>
+#include <stdlib.h>
+#include <time.h>
+#include <sstream>
 
 namespace tdenum {
+
+string str(const NodeSet& ns) {
+    ostringstream oss;
+    oss << "{";
+    for(auto it=ns.begin(); it!=ns.end(); ++it) {
+        oss << *it << " ";
+    }
+    oss << "}";
+    return oss.str();
+}
+void print(const NodeSet& ns) {
+    cout << str(ns);
+}
+
+
+
 
 Graph::Graph() : numberOfNodes(0), numberOfEdges(0) {}
 
@@ -15,6 +35,27 @@ void Graph::reset(int n) {
     numberOfEdges = 0;
     neighborSets.clear();
     neighborSets.resize(n);
+}
+
+void Graph::randomize(double p) {
+    if (numberOfEdges > 0) {
+        return;
+    }
+    NodeSet nodes = getNodesVector();
+    double d;
+    srand(time(NULL));
+    TRACE("In, p=" << p);
+    p *= RAND_MAX;
+    for (int i=0; i<numberOfNodes; ++i) {
+        for (int j=i+1; j<numberOfNodes; ++j) {
+            d = rand();
+            TRACE("Got d=" << (double)d/RAND_MAX);
+            if (d <= p) {
+                TRACE("Adding edge..");
+                addEdge(nodes[i],nodes[j]);
+            }
+        }
+    }
 }
 
 void Graph::addClique(const set<Node>& newClique) {
@@ -313,14 +354,19 @@ NodeSet Graph::getAdjacent(const NodeSet& C, const NodeSet& K) const {
     return K2;
 }
 
-void Graph::print() const {
+string Graph::str() const {
+    ostringstream oss;
 	for (Node v=0; v<getNumberOfNodes(); v++) {
-		cout << v << " has neighbors: {";
+		oss << v << " has neighbors: {";
 		for (set<Node>::iterator jt = getNeighbors(v).begin(); jt!=getNeighbors(v).end(); ++jt) {
-			cout << *jt << " ";
+			oss << *jt << " ";
 		}
-		cout << "}" << endl;
+		oss << "}" << endl;
 	}
+	return oss.str();
+}
+void Graph::print() const {
+    cout << str();
 }
 
 } /* namespace tdenum */

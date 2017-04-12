@@ -95,6 +95,10 @@ bool NodeSetSet::operator!=(const NodeSetSet& nss) const {
     return !(*this == nss);
 }
 
+unsigned int NodeSetSet::size() const {
+    return sets.size();
+}
+
 set<NodeSet>::iterator NodeSetSet::begin() const {
     return sets.begin();
 }

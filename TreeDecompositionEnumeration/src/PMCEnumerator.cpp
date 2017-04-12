@@ -22,6 +22,8 @@ NodeSetSet PMCEnumerator::get() const {
         return NodeSetSet();
     }
 
+    TRACE("In");
+
     // P[i] will be the PMCs of Gi (the subgraph with i+1 vertices of G)
     vector<NodeSetSet> P(n);
     // D[i] will be the minimal separators of Gi
@@ -44,12 +46,18 @@ NodeSetSet PMCEnumerator::get() const {
         subnodes.resize(i+1);
         a = subnodes.back();
         SubGraph Gip1 = SubGraph(graph, subnodes);
+        TRACE("Created G"<<i+1<<" using subnodes "<<str(subnodes)<<". Resulting graph is:\n" << Gip1.str());
         subnodes.resize(i);
         SubGraph Gi = SubGraph(graph, subnodes);
+        TRACE("Created G"<<i<<" using subnodes "<<str(subnodes)<<". Resulting graph is:\n" << Gi.str());
+        TRACE("And G"<<i+1<<" is now:\n" << Gip1.str());
         MinimalSeparatorsEnumerator DiEnumerator(Gip1, UNIFORM);
         while (DiEnumerator.hasNext()) {
             D[i].insert(DiEnumerator.next());
         }
+        TRACE("Calling one more vertex with G" << i+1 <<", G"<<i<<", a="<<a<<".");
+        TRACE("G"<<i<<" is:\n" << Gi.str());
+        TRACE("and G"<<i+1<<" is:\n" << Gip1.str());
         P[i] = OneMoreVertex(Gip1, Gi, a, D[i], D[i-1], P[i-1]);
     }
 
@@ -64,18 +72,25 @@ NodeSetSet PMCEnumerator::OneMoreVertex(
                   const NodeSetSet& D1, const NodeSetSet& D2,
                   const NodeSetSet& P2) const {
     NodeSetSet P1;
+    TRACE("Entering first loop..");
     for (auto pmc2it = P2.begin(); pmc2it != P2.end(); ++pmc2it) {
+        TRACE("Is PMC?");
         if (IsPMC(*pmc2it, G1)) {
+            TRACE("Yes. Inserting..");
             P1.insert(*pmc2it);
         }
         else {
+            TRACE("No. Adding {a}..");
             NodeSet pmc2a = *pmc2it;
             pmc2a.insert(pmc2a.end(), a);
+            TRACE("Is PMC now?");
             if (IsPMC(pmc2a, G1)) {
+                TRACE("Yes.");
                 P1.insert(pmc2a);
             }
         }
     }
+    TRACE("Second loop..");
     for (auto Sit = D1.begin(); Sit != D1.end(); ++Sit) {
         NodeSet S = *Sit;
         NodeSet Sa = S;
@@ -146,11 +161,14 @@ bool PMCEnumerator::IsPMC(NodeSet K, const Graph& G) const {
     vector<NodeSet> S(C.size());
     unsigned int i,j,k;
 
+    TRACE("In");
+
     // Sort K so we can compare it easily to other vectors
     std::sort(K.begin(), K.end());
 
     // Build the sets Si.
     // While doing so make sure we don't have any full components
+    TRACE("First loop..");
     for (i=0; i<C.size(); ++i) {
         S[i] = G.getAdjacent(C[i], K);
         std::sort(S[i].begin(), S[i].end());
@@ -162,18 +180,22 @@ bool PMCEnumerator::IsPMC(NodeSet K, const Graph& G) const {
 
     // For each x,y in K (that aren't equal) we need to check if
     // they're neighbors in G or both contained in some Si.
+    TRACE("Second loop..");
     for (i=0; i<K.size(); ++i) {
         Node x = K[i];
         // Find the S[i]s containing x
         vector<NodeSet> Sx;
-        for (j=0; j<S.size(); ++i) {
+        TRACE("First inner loop..");
+        for (j=0; j<S.size(); ++j) {
             // They're all sorted, so use binary search
+            TRACE("Iteration " << j+1 << "/" << S.size() << "..");
             if (std::binary_search(S[i].begin(), S[i].end(), x)) {
                 Sx.insert(Sx.end(),S[i]);
             }
         }
         // For every unchecked y in K (scanning forward) check adjacency
         // in the graph F
+        TRACE("Second inner loop..");
         for (j=i+1; j<K.size(); ++j) {
             Node y = K[j];
             if (G.areNeighbors(x, y)) {

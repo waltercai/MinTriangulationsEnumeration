@@ -23,7 +23,7 @@
 /**
  * For use in live code
  */
-#define DEBUG_PRINT_ON 0
+#define DEBUG_PRINT_ON 1
 #if DEBUG_PRINT_ON
 #define TRACE(_stream) ASSERT_PRINT(_stream)
 #else

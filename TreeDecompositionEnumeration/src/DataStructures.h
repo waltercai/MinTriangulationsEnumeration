@@ -66,6 +66,7 @@ public:
 	// Prints out the NodeSets
 	string str() const;
 	// std::set methods
+	unsigned int size() const;
 	set<NodeSet>::iterator begin() const;
 	set<NodeSet>::iterator end() const;
 	set<NodeSet>::iterator find(const NodeSet& nodeSet) const;

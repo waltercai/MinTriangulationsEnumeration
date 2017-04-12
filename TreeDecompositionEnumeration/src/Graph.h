@@ -4,6 +4,7 @@
 #include <set>
 #include <vector>
 #include <iostream>
+#include <string>
 using namespace std;
 
 namespace tdenum {
@@ -11,6 +12,10 @@ namespace tdenum {
 typedef int Node;
 typedef vector<Node> NodeSet; // sorted vector of node names
 typedef NodeSet MinimalSeparator;
+
+string str(const NodeSet&);
+void print(const NodeSet&);
+
 
 class Graph {
 	int numberOfNodes;
@@ -27,6 +32,9 @@ public:
 	Graph(int numberOfNodes);
 	// Resets the graph (call constructor again)
 	void reset(int numberOfNodes = 0);
+	// Given a graph with n vertices and no edges, creates a random graph
+	// from G(p,n)
+	void randomize(double p);
 	// Connects the given two nodes by a edge
 	void addEdge(Node u, Node v);
 	// Adds edges that will make that given node set a clique
@@ -71,6 +79,7 @@ public:
 	// to some node in C.
 	NodeSet getAdjacent(const NodeSet& C, const NodeSet& K) const;
 	// Prints the graph
+	string str() const;
 	void print() const;
 };
 
