@@ -75,12 +75,13 @@ public:
 	// Returns all the nodes reachable from the node after removing
 	// the removedNodes from the graph
 	set<Node> getComponent(Node v, const set<Node>& removedNodes);
-	// Given a node set K, returns a subset K' of the nodes that are connected
+	// Given a node set K, returns a subset K' of K that are connected
 	// to some node in C.
 	NodeSet getAdjacent(const NodeSet& C, const NodeSet& K) const;
 	// Prints the graph
 	string str() const;
 	void print() const;
+	friend ostream& operator<<(ostream&, const Graph&);
 };
 
 } /* namespace tdenum */

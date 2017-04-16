@@ -70,6 +70,7 @@ public:
 	set<NodeSet>::iterator begin() const;
 	set<NodeSet>::iterator end() const;
 	set<NodeSet>::iterator find(const NodeSet& nodeSet) const;
+	friend ostream& operator<<(ostream& os, const NodeSetSet&);
 };
 
 

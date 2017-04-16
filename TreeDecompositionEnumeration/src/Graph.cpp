@@ -9,22 +9,6 @@
 
 namespace tdenum {
 
-string str(const NodeSet& ns) {
-    ostringstream oss;
-    oss << "{";
-    for(auto it=ns.begin(); it!=ns.end(); ++it) {
-        oss << *it << " ";
-    }
-    oss << "}";
-    return oss.str();
-}
-void print(const NodeSet& ns) {
-    cout << str(ns);
-}
-
-
-
-
 Graph::Graph() : numberOfNodes(0), numberOfEdges(0) {}
 
 Graph::Graph(int numberOfNodes) : numberOfNodes(numberOfNodes), numberOfEdges(0),
@@ -44,14 +28,14 @@ void Graph::randomize(double p) {
     NodeSet nodes = getNodesVector();
     double d;
     srand(time(NULL));
-    TRACE("In, p=" << p);
+    TRACE(TRACE_LVL__NOISE, "In, p=" << p);
     p *= RAND_MAX;
     for (int i=0; i<numberOfNodes; ++i) {
         for (int j=i+1; j<numberOfNodes; ++j) {
             d = rand();
-            TRACE("Got d=" << (double)d/RAND_MAX);
+            TRACE(TRACE_LVL__NOISE, "Got d=" << (double)d/RAND_MAX);
             if (d <= p) {
-                TRACE("Adding edge..");
+                TRACE(TRACE_LVL__NOISE, "Adding edge..");
                 addEdge(nodes[i],nodes[j]);
             }
         }
@@ -347,9 +331,9 @@ set<Node> Graph::getComponent(Node v, const set<Node>& removedNodes) {
 
 NodeSet Graph::getAdjacent(const NodeSet& C, const NodeSet& K) const {
     NodeSet K2;
-    auto adjacent = getNeighbors(K);
+    auto adjacent = getNeighbors(C);
     std::set_intersection(adjacent.begin(), adjacent.end(),
-                        C.begin(), C.end(),
+                        K.begin(), K.end(),
                         std::back_inserter(K2));
     return K2;
 }
@@ -357,16 +341,25 @@ NodeSet Graph::getAdjacent(const NodeSet& C, const NodeSet& K) const {
 string Graph::str() const {
     ostringstream oss;
 	for (Node v=0; v<getNumberOfNodes(); v++) {
+        auto neighbors = getNeighbors(v);
 		oss << v << " has neighbors: {";
-		for (set<Node>::iterator jt = getNeighbors(v).begin(); jt!=getNeighbors(v).end(); ++jt) {
-			oss << *jt << " ";
+		for (set<Node>::iterator jt = neighbors.begin(); jt!=neighbors.end(); ++jt) {
+			oss << *jt << ",";
 		}
+        if (neighbors.size() > 0) {
+            oss << "\b"; // Remove trailing space
+        }
 		oss << "}" << endl;
 	}
 	return oss.str();
 }
 void Graph::print() const {
     cout << str();
+}
+
+ostream& operator<<(ostream& os, const Graph& g) {
+    os << g.str();
+    return os;
 }
 
 } /* namespace tdenum */

@@ -18,21 +18,40 @@
     X(randomgraphs) \
     /* Graphs of size 2 and 3, where the answer is easily checked */ \
     X(smallknowngraphs) \
+    /* Graphs of size 4 (there are 11 such graphs up to isomorphism) */ \
+    X(fourgraphs)
 
+#define X(func) PMCENUM_TEST_NAME__##func,
+typedef enum {
+    TEST_TABLE
+    PMCENUM_TEST_NAME__LAST
+} PMCEnumeratorTesterFunctions;
+#undef X
 
 namespace tdenum {
 
 class PMCEnumeratorTester {
-private:
+public:
 
-    #define X(_func) bool _func();
+    // Define all functions and on/off flags.
+    // On/off flags are to be set directly, e.g:
+    //     PMCEnumeratorTester p(false);
+    //
+    #define X(_func) \
+        bool _func() const; \
+        bool flag_##_func;
     TEST_TABLE
     #undef X
 
-public:
+    // Calls all test functions, unless start=false.
+    PMCEnumeratorTester(bool start);
 
-    // Calls all test functions
-    PMCEnumeratorTester();
+    // Calls all tests with flag_ values set to true.
+    void go() const;
+
+    // Sets / clears all flags
+    void setAll();
+    void clearAll();
 
 };
 

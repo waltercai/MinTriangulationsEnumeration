@@ -23,7 +23,7 @@ class PMCEnumerator {
 
     // Returns true <==> K is a potential maximal clique in G.
     // Assumes K is a subset of the vertices in G.
-    bool IsPMC(NodeSet K, const Graph& G) const;
+    bool IsPMC(NodeSet K, const SubGraph& G) const;
 
     // The iterative step of the algorithm.
     // Given graphs G1, G2, a vertex 'a' s.t. G2=G1\{a}, the minimal
@@ -33,13 +33,18 @@ class PMCEnumerator {
     NodeSetSet OneMoreVertex(const SubGraph& G1, const SubGraph& G2, Node a,
                   const NodeSetSet& D1, const NodeSetSet& D2,
                   const NodeSetSet& P2) const;
+
+    // get() iterates over all connected components of G and calls this
+    // auxiliary function which expects a connected graph.
+    NodeSetSet getConnected(const SubGraph&) const;
+
 public:
     PMCEnumerator(const Graph& g);
 
-    // Resets the instance to use a new graph (allows re-use of variable name)
+    // Resets the instance to use a new graph (allows re-use of variable name).
     void reset(const Graph& g);
 
-    // Return the set of PMCs
+    // Return the set of PMCs.
     NodeSetSet get() const;
 };
 

@@ -15,14 +15,14 @@
 
 namespace tdenum {
 
-bool PMCEnumeratorTester::sanity() {
+bool PMCEnumeratorTester::sanity() const {
     SETUP(0);
     RESET(1);
     RESET(10);
     return true;
 }
 
-bool PMCEnumeratorTester::trivialgraphs() {
+bool PMCEnumeratorTester::trivialgraphs() const {
     SETUP(0);
     ASSERT(pmce.IsPMC(NodeSet(), g));
     ASSERT_EQUAL(pmce.get(), NodeSetSet());
@@ -32,48 +32,54 @@ bool PMCEnumeratorTester::trivialgraphs() {
     ASSERT(pmce.IsPMC(nodeset, g));
     NodeSetSet nss;
     nss.insert(nodeset);
-    if (pmce.get() != nss) {
-        ASSERT_PRINT("Non-equal NodeSetSets:");
-        cout << "== 1 ==\n" << pmce.get().str() << "== 2 ==\n" << nss.str() << "\n";
-        return false;
-    }
+    ASSERT_EQUAL(pmce.get(), nss);
     return true;
 }
 
-bool PMCEnumeratorTester::randomgraphs() {
+bool PMCEnumeratorTester::randomgraphs() const {
     SETUP(0);
-    NodeSetSet nss;
-    TRACE(""); // Newline
+    TRACE(TRACE_LVL__NOISE, ""); // Newline
     for (int i=2; i<FAST_GRAPH_SIZE; ++i) {
         RESET(i);
         g.randomize(0.5);
-        TRACE("Random graph #" << i-1 << "/" << FAST_GRAPH_SIZE-2 << ":");
-        TRACE(g.str());
-        TRACE("Resulting PMCs:\n" << pmce.get().str());
+        TRACE(TRACE_LVL__NOISE, "Random graph #" << i-1 << "/" << FAST_GRAPH_SIZE-2 << ":");
+        TRACE(TRACE_LVL__NOISE, g.str());
+        TRACE(TRACE_LVL__NOISE, "Resulting PMCs:\n" << pmce.get());
     }
     return true;
 }
 
-bool PMCEnumeratorTester::smallknowngraphs() {
+bool PMCEnumeratorTester::smallknowngraphs() const {
     // For n=2, there are two possible graphs: sparse or clique.
     // Both graphs are already triangulated, so the PMCs should
     // be {a},{b} for the sparse graph and {a,b} for the clique.
     SETUP(2);
-    NodeSet a, b, ab;
+    NodeSet a, b, ab, c, ac, abc;
+    NodeSetSet G1_0_PMCs, G1_1_PMCs,
+            G2_0_PMCs, G2_1_PMCs, G2_2_PMCs, G2_3_PMCs;
     a.push_back(0);
     b.push_back(1);
     ab.push_back(0);
     ab.push_back(1);
-    NodeSetSet sparsePMCs = pmce.get();
+    c.push_back(2);
+    ac.push_back(0);
+    ac.push_back(2);
+    abc.push_back(0);
+    abc.push_back(1);
+    abc.push_back(2);
 
-//    ASSERT_EQUAL(sparsePMCs.size(), 2);
-//    ASSERT(sparsePMCs.isMember(a));
-//    ASSERT(sparsePMCs.isMember(b));
+    TRACE(TRACE_LVL__DEBUG, "2-Graphs...");
+    G1_0_PMCs = pmce.get();
+    TRACE(TRACE_LVL__DEBUG, "Got PMCs: " << G1_0_PMCs);
+    ASSERT_EQUAL(G1_0_PMCs.size(), 2);
+    ASSERT(G1_0_PMCs.isMember(a));
+    ASSERT(G1_0_PMCs.isMember(b));
     g.addEdge(0,1);
     pmce.reset(g);
-    NodeSetSet cliquePMCs = pmce.get();
-    ASSERT_EQUAL(cliquePMCs.size(), 1);
-    ASSERT(sparsePMCs.isMember(ab));
+    G1_1_PMCs = pmce.get();
+    TRACE(TRACE_LVL__DEBUG, "With Got PMCs: " << G1_1_PMCs);
+    ASSERT_EQUAL(G1_1_PMCs.size(), 1);
+    ASSERT(G1_1_PMCs.isMember(ab));
 
     // For n=3, there are four different graphs (up to isomorphism),
     // differentiated by the number of edges m.
@@ -83,62 +89,253 @@ bool PMCEnumeratorTester::smallknowngraphs() {
     // m=1: {a,b}, {c}
     // m=2: {a,b}, {a,c}
     // m=3: {a,b,c}
-    NodeSet c, ac, abc;
-    c.push_back(2);
-    ac.push_back(0);
-    ac.push_back(2);
-    abc.push_back(0);
-    abc.push_back(1);
-    abc.push_back(2);
-    NodeSetSet pmc0, pmc1, pmc2, pmc3;
+    TRACE(TRACE_LVL__DEBUG, "3-Graphs...");
     RESET(3);
-    pmc0 = pmce.get();
-    ASSERT_EQUAL(pmc0.size(), 3);
-    ASSERT(pmc0.isMember(a));
-    ASSERT(pmc0.isMember(b));
-    ASSERT(pmc0.isMember(c));
+    G2_0_PMCs = pmce.get();
+    TRACE(TRACE_LVL__DEBUG, "Got PMCs: " << G2_0_PMCs);
+    ASSERT_EQUAL(G2_0_PMCs.size(), 3);
+    ASSERT(G2_0_PMCs.isMember(a));
+    ASSERT(G2_0_PMCs.isMember(b));
+    ASSERT(G2_0_PMCs.isMember(c));
     g.addEdge(0, 1);
     pmce.reset(g);
-    pmc1 = pmce.get();
-    ASSERT_EQUAL(pmc1.size(), 2);
-    ASSERT(pmc1.isMember(ab));
-    ASSERT(pmc1.isMember(c));
+    G2_1_PMCs = pmce.get();
+    TRACE(TRACE_LVL__DEBUG, "Got PMCs: " << G2_1_PMCs);
+    ASSERT_EQUAL(G2_1_PMCs.size(), 2);
+    ASSERT(G2_1_PMCs.isMember(ab));
+    ASSERT(G2_1_PMCs.isMember(c));
+    TRACE(TRACE_LVL__DEBUG, "Adding (0,2) to G which is now:\n" << g);
     g.addEdge(0, 2);
     pmce.reset(g);
-    pmc2 = pmce.get();
-    ASSERT_EQUAL(pmc2.size(), 2);
-    ASSERT(pmc1.isMember(ab));
-    ASSERT(pmc1.isMember(ac));
+    TRACE(TRACE_LVL__DEBUG, "Added. G=\n" << g);
+    G2_2_PMCs = pmce.get();
+    TRACE(TRACE_LVL__DEBUG, "Got PMCs: " << G2_2_PMCs);
+    ASSERT_EQUAL(G2_2_PMCs.size(), 2);
+    ASSERT(G2_2_PMCs.isMember(ab));
+    ASSERT(G2_2_PMCs.isMember(ac));
     g.addEdge(1, 2);
     pmce.reset(g);
-    pmc3 = pmce.get();
-    ASSERT_EQUAL(pmc3.size(), 1);
-    ASSERT(pmc1.isMember(abc));
+    G2_3_PMCs = pmce.get();
+    TRACE(TRACE_LVL__DEBUG, "Got PMCs: " << G2_3_PMCs);
+    ASSERT_EQUAL(G2_3_PMCs.size(), 1);
+    ASSERT(G2_3_PMCs.isMember(abc));
+
+    return true;
+}
+
+bool PMCEnumeratorTester::fourgraphs() const {
+    /**
+     * There are 11 different graphs up to isomorphism. Sort them
+     * by their number of edges:
+     * ============================================================
+     * 0:   O   O
+     *
+     *      O   O
+     * ============================================================
+     * 1:   O---O
+     *
+     *      O   O
+     * ============================================================
+     * 2:   O---O   O   O
+     *              |
+     *      O---O   O---O
+     * ============================================================
+     * 3:   O---O   O   O   O---O
+     *      |       |  /    |  /
+     *      |       |_/     |_/
+     *      O---O   O---O   O   O
+     * ============================================================
+     * 4:   O---O   O---O
+     *      |   |   |  /
+     *      |   |   |_/
+     *      O---O   O---O
+     * ============================================================
+     * 5:   O---O
+     *      |  /|
+     *      |_/ |
+     *      O---O
+     * ============================================================
+     * 6:   O---O   (4-clique)
+     *      |\ /|
+     *      |_V_|
+     *      O---O
+     * ============================================================
+     *
+     */
+
+    SETUP(4);
+    NodeSetSet pmcs;
+    NodeSet a={0},b={1},c={2},d={3};
+    NodeSet ab={0,1},ac={0,2},ad={0,3},bc={1,2},bd={1,3},cd={2,3};
+    NodeSet abc={0,1,2},abd={0,1,3},acd={0,2,3},bcd={1,2,3};
+    NodeSet abcd={0,1,2,3};
+
+    // G0 Has one variation - an independent set.
+    pmcs=pmce.get();
+    ASSERT_EQUAL(pmcs.size(), 4);
+    ASSERT(pmcs.isMember(a));
+    ASSERT(pmcs.isMember(b));
+    ASSERT(pmcs.isMember(c));
+    ASSERT(pmcs.isMember(d));
+
+    // G1 has one variant as well.
+    g.addEdge(1,2);
+    pmce.reset(g);
+    pmcs=pmce.get();
+    ASSERT_EQUAL(pmcs.size(), 3);
+    ASSERT(pmcs.isMember(a));
+    ASSERT(pmcs.isMember(bc));
+    ASSERT(pmcs.isMember(d));
+    g.reset(4);
+
+    // G2 has two variants.
+    // Start with disjoint pairs of edges (resulting in two 2-PMCs)
+    g.addEdge(0,1);
+    g.addEdge(2,3);
+    pmce.reset(g);
+    pmcs=pmce.get();
+    ASSERT_EQUAL(pmcs.size(), 2);
+    ASSERT(pmcs.isMember(ab));
+    ASSERT(pmcs.isMember(cd));
+    g.reset(4);
+    // Try one node of degree 2. We should get two  2-PMCs
+    // and one 1-PMC
+    g.addEdge(1,2);
+    g.addEdge(1,3);
+    pmce.reset(g);
+    pmcs=pmce.get();
+    ASSERT_EQUAL(pmcs.size(), 3);
+    ASSERT(pmcs.isMember(a));
+    ASSERT(pmcs.isMember(bc));
+    ASSERT(pmcs.isMember(bd));
+    g.reset(4);
+
+    // G3 has the most variants, but all of them are already
+    // triangulated so PMCs are simply maximal cliques.
+    g.addEdge(0,1);
+    g.addEdge(1,2);
+    g.addEdge(2,3);
+    pmce.reset(g);
+    pmcs=pmce.get();
+    ASSERT_EQUAL(pmcs.size(), 3);
+    ASSERT(pmcs.isMember(ab));
+    ASSERT(pmcs.isMember(bc));
+    ASSERT(pmcs.isMember(cd));
+    g.reset(4);
+    g.addEdge(0,1);
+    g.addEdge(0,2);
+    g.addEdge(0,3);
+    pmce.reset(g);
+    pmcs=pmce.get();
+    ASSERT_EQUAL(pmcs.size(), 3);
+    ASSERT(pmcs.isMember(ab));
+    ASSERT(pmcs.isMember(ac));
+    ASSERT(pmcs.isMember(ad));
+    g.reset(4);
+    g.addEdge(0,1);
+    g.addEdge(1,2);
+    g.addEdge(2,0);
+    pmce.reset(g);
+    pmcs=pmce.get();
+    ASSERT_EQUAL(pmcs.size(), 2);
+    ASSERT(pmcs.isMember(abc));
+    ASSERT(pmcs.isMember(d));
+    g.reset(4);
+
+    // G4 is the only case where the graph itself isn't triangulated,
+    // and even then only the first of two instances is such.
+    // In the untriangulated case, every 3 vertices is a PMC because
+    // there are two minimal triangulations (if G is a square a-b-c-d-a,
+    // then we can add a-c or b-d to triangulate), each one yielding
+    // a pair of 3-PMCs.
+    // In the other case - one 3-PMC and one 2-PMC.
+    g.addEdge(0,1);
+    g.addEdge(1,2);
+    g.addEdge(2,3);
+    g.addEdge(3,0);
+    pmce.reset(g);
+    pmcs=pmce.get();
+    TRACE(TRACE_LVL__DEBUG, "Got pmcs:" << pmcs);
+    ASSERT_EQUAL(pmcs.size(), 4);
+    ASSERT(pmcs.isMember(abc));
+    ASSERT(pmcs.isMember(abd));
+    ASSERT(pmcs.isMember(acd));
+    ASSERT(pmcs.isMember(bcd));
+    g.reset(4);
+    g.addEdge(0,1);
+    g.addEdge(0,2);
+    g.addEdge(0,3);
+    g.addEdge(1,2);
+    pmce.reset(g);
+    pmcs=pmce.get();
+    ASSERT_EQUAL(pmcs.size(), 2);
+    ASSERT(pmcs.isMember(abc));
+    ASSERT(pmcs.isMember(ad));
+    g.reset(4);
+
+    // For G5, there are two 3-PMCs (already triangulated)
+    g.addEdge(0,1);
+    g.addEdge(0,2);
+    g.addEdge(0,3);
+    g.addEdge(1,2);
+    g.addEdge(1,3);
+    pmce.reset(g);
+    pmcs=pmce.get();
+    ASSERT_EQUAL(pmcs.size(), 2);
+    ASSERT(pmcs.isMember(abc));
+    ASSERT(pmcs.isMember(abd));
+    g.reset(4);
+
+    // G6 is a clique. Only one 4-PMC
+    g.addClique(abcd);
+    pmce.reset(g);
+    pmcs=pmce.get();
+    ASSERT_EQUAL(pmcs.size(), 1);
+    ASSERT(pmcs.isMember(abcd));
 
     return true;
 }
 
 
 
-
-
-PMCEnumeratorTester::PMCEnumeratorTester() {
-
-    START_TESTS();
-
-    #define X(_func) DO_TEST(_func);
+PMCEnumeratorTester::PMCEnumeratorTester(bool start = true) {
+    #define X(_func) flag_##_func = true;
     TEST_TABLE
     #undef X
-
+    if (start) {
+        go();
+    }
+}
+void PMCEnumeratorTester::go() const {
+    // Hacky, but it works
+    START_TESTS();
+    #define X(_func) if (flag_##_func) DO_TEST(_func);
+    TEST_TABLE
+    #undef X
     END_TESTS();
-
+}
+void PMCEnumeratorTester::setAll() {
+    // Note to self: no good code comes after 1:00am
+    #define X(_func) flag_##_func = true;
+    TEST_TABLE
+    #undef X
+}
+void PMCEnumeratorTester::clearAll() {
+    #define X(_func) flag_##_func = false;
+    TEST_TABLE
+    #undef X
 }
 
 }
+
+
 
 using namespace tdenum;
 int main() {
-    PMCEnumeratorTester();
+    PMCEnumeratorTester p(false);
+//    p.clearAll();
+//    p.flag_fourgraphs = true;
+    p.go();
     return 0;
 }
 

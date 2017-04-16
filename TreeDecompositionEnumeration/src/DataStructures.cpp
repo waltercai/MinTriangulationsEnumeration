@@ -68,9 +68,10 @@ bool NodeSetSet::isMember(const vector<Node>& nodeVec) const {
 
 string NodeSetSet::str() const {
     ostringstream oss;
+    oss << "\{ \b";
     for(auto it = begin(); it != end(); ++it) {
         if (it->size() == 0) {
-            oss << "\{}\n";
+            oss << "\{},";
             continue;
         }
         // *it is now a NodeSet.
@@ -79,9 +80,15 @@ string NodeSetSet::str() const {
         for(unsigned int j = 0; j < it->size(); ++j) {
             oss << (*it)[j] << ",";
         }
-        oss << "\b}\n";
+        oss << "\b},";
     }
+    oss << "\b}";
     return oss.str();
+}
+
+ostream& operator<<(ostream& os, const NodeSetSet& nss) {
+    os << nss.str();
+    return os;
 }
 
 void NodeSetSet::insert(const vector<Node>& nodeVec) {
