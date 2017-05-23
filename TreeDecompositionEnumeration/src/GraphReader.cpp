@@ -187,7 +187,7 @@ string GetFileExtension(const string& fileName) {
 Graph GraphReader::read(const string& fileName) {
 	ifstream input (fileName.c_str());
 	if (!input.is_open()) {
-		cout << "Unable to open file" << endl;
+		cout << "Unable to open file '" << fileName << "'" << endl;
 		return Graph();
 	}
 	string extension = GetFileExtension(fileName);
