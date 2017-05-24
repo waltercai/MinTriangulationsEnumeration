@@ -10,23 +10,17 @@ using std::endl;
 
 namespace tdenum {
 
-void DatasetStatisticsGenerator::init_outfilename(const string& name) {
-    if (name == string("")) {
-        outfilename = infilename + ".Stats.csv";
-    }
-    else {
-        outfilename = name;
-    }
-}
-
 DatasetStatisticsGenerator::DatasetStatisticsGenerator(const string& filename,
                                                        const string& outfile) :
     infilename(filename), outfilename(outfile), valid(false),
     n(0), m(0), ms(0), pmcs(0) {
     if (outfilename == string("")) {
-        outfilename = infilename + ".Stats.csv";
+        string basename = infilename.substr(infilename.rfind(string(1,SLASH))+1);
+        outfilename = DEFAULT_OUTPUT_DIR + basename + ".Stats.csv";
     }
     g = GraphReader::read(filename);
+    TRACE(TRACE_LVL__DEBUG, "Created stats generator, output name will be:" << endl
+                            << outfilename << endl);
 }
 DatasetStatisticsGenerator::DatasetStatisticsGenerator(const Graph& G,
                                                        const string& outfile) :
@@ -39,6 +33,9 @@ bool DatasetStatisticsGenerator::is_valid() const {
     return valid;
 }
 
+/**
+ * Outputs CSV format to file.
+ */
 void DatasetStatisticsGenerator::output_stats(bool verbose) {
 
     ofstream outfile;
@@ -50,9 +47,12 @@ void DatasetStatisticsGenerator::output_stats(bool verbose) {
 
     // Output to file
     outfile.open(outfilename, ios::out | ios::trunc);
+    if (!outfile.good()) {
+        TRACE(TRACE_LVL__ERROR, "Couldn't open file '" << outfilename << "'");
+        return;
+    }
     outfile << "Nodes,Edges,Minimal Separators,Potential Maximal Cliques\n";
     outfile << n << "," << m << "," << ms << "," << pmcs;
-    outfile.close();
 }
 
 void DatasetStatisticsGenerator::compute_nodes() {
@@ -101,19 +101,16 @@ using namespace tdenum;
  * Run the generator and output files given the datasets NOT in
  * the "difficult" folder (so it won't take forever).
  */
-#define DATASET_DIR_BASE "../Datasets/"
-#define DATASET_DIR_DEADEASY DATASET_DIR_BASE "DeadEasy/"
-#define DATASET_DIR_EASY DATASET_DIR_BASE "Easy/Random/"
 int main() {
-    DirectoryIterator deadeasy_files(DATASET_DIR_DEADEASY);
-    DirectoryIterator easy_files(DATASET_DIR_EASY);
+    DirectoryIterator deadeasy_files(DATASET_DIR_BASE+DATASET_DIR_DEADEASY);
+    DirectoryIterator easy_files(DATASET_DIR_BASE+DATASET_DIR_EASY);
     string dataset_filename;
     while(deadeasy_files.next_file(&dataset_filename)) {
-        DatasetStatisticsGenerator dsg(dataset_filename);
+        DatasetStatisticsGenerator dsg(dataset_filename, RESULT_DIR_BASE+dataset_filename+".stats.csv");
         dsg.output_stats(true);
     }
     while(easy_files.next_file(&dataset_filename)) {
-        DatasetStatisticsGenerator dsg(dataset_filename);
+        DatasetStatisticsGenerator dsg(dataset_filename, RESULT_DIR_BASE+dataset_filename+".stats.csv");
         dsg.output_stats(true);
     }
     return 0;

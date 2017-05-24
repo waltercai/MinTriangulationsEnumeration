@@ -4,6 +4,7 @@
 #include "TestUtils.h"
 #include "Graph.h"
 #include "PMCEnumerator.h"
+#include "DirectoryIterator.h"
 
 // Graphs with more nodes may cause slow tests
 #define FAST_GRAPH_SIZE 10
@@ -19,7 +20,10 @@
     /* Graphs of size 2 and 3, where the answer is easily checked */ \
     X(smallknowngraphs) \
     /* Graphs of size 4 (there are 11 such graphs up to isomorphism) */ \
-    X(fourgraphs)
+    X(fourgraphs) \
+    /* Uses existing datasets and Nofar's code to cross-check the PMC \
+       algorithm with Nofar's version */ \
+    X(crosscheck)
 
 #define X(func) PMCENUM_TEST_NAME__##func,
 typedef enum {

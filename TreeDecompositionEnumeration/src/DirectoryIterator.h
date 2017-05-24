@@ -7,6 +7,15 @@
 using std::stack;
 using std::string;
 
+/**
+ * Some useful directory names
+ */
+#define DATASET_DIR_BASE string("Datasets"+string(1,SLASH))
+#define RESULT_DIR_BASE string("Results"+string(1,SLASH))
+#define DATASET_DIR_DEADEASY string("DeadEasy"+string(1,SLASH))
+#define DATASET_DIR_EASY string("Easy"+string(1,SLASH)+ "Random"+string(1,SLASH))
+
+
 namespace tdenum {
 
 /**

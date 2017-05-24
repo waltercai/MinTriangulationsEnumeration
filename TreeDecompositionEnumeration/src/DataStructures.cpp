@@ -91,8 +91,11 @@ ostream& operator<<(ostream& os, const NodeSetSet& nss) {
     return os;
 }
 
-void NodeSetSet::insert(const vector<Node>& nodeVec) {
+void NodeSetSet::insert(const NodeSet& nodeVec) {
 	sets.insert(nodeVec);
+}
+void NodeSetSet::remove(const NodeSet& nodeVec) {
+    sets.erase(nodeVec);
 }
 
 bool NodeSetSet::operator==(const NodeSetSet& nss) const {

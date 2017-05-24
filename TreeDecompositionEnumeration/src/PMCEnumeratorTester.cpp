@@ -1,5 +1,8 @@
 #include "PMCEnumeratorTester.h"
 #include "DataStructures.h"
+#include "GraphReader.h"
+#include "ChordalGraph.h"
+#include "MinimalTriangulationsEnumerator.h"
 
 /**
  * Generic test initialization.
@@ -296,6 +299,44 @@ bool PMCEnumeratorTester::fourgraphs() const {
     return true;
 }
 
+bool crosscheck_aux(const string& dataset_filename) {
+    // Iterate over all maximal cliques in all triangulations.
+    // Make sure each one is in the NodeSetSet returned by the
+    // PMCEnumerator, and vice-versa.
+    NodeSetSet found;
+    Graph g = GraphReader::read(dataset_filename);
+    PMCEnumerator pmce(g);
+    NodeSetSet pmcs = pmce.get();
+    MinimalTriangulationsEnumerator enumerator(g, NONE, UNIFORM, SEPARATORS);
+    while (enumerator.hasNext()) {
+        ChordalGraph triangulation = enumerator.next();
+        set<NodeSet> cliques = triangulation.getMaximalCliques();
+        for (auto it=cliques.begin(); it != cliques.end(); ++it) {
+            if (pmcs.isMember(*it)) {
+                pmcs.remove(*it);
+                found.insert(*it);
+            }
+            else ASSERT(found.isMember(*it));
+        }
+    }
+    return true;
+}
+bool PMCEnumeratorTester::crosscheck() const {
+    DirectoryIterator deadeasy_files(DATASET_DIR_BASE+DATASET_DIR_DEADEASY);
+    DirectoryIterator easy_files(DATASET_DIR_BASE+DATASET_DIR_EASY);
+    string dataset_filename;
+    while(deadeasy_files.next_file(&dataset_filename)) {
+        if (!crosscheck_aux(dataset_filename)) {
+            return false;
+        }
+    }
+    while(easy_files.next_file(&dataset_filename)) {
+        if (!crosscheck_aux(dataset_filename)) {
+            return false;
+        }
+    }
+    return true;
+}
 
 
 PMCEnumeratorTester::PMCEnumeratorTester(bool start = true) {

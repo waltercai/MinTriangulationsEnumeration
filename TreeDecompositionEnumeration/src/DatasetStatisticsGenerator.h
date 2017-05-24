@@ -19,7 +19,13 @@ namespace tdenum {
  *
  * In the future (if required), add functionality to actually list
  * the separators and PMCs themselves.
+ *
+ * If the output filename isn't given explicitly, make sure the directory
+ * defined by DEFAULT_OUTPUT_DIR exists and can be reached relatively from
+ * the point of code execution.
  */
+
+#define DEFAULT_OUTPUT_DIR "../Results/"
 
 class DatasetStatisticsGenerator {
 private:
@@ -33,9 +39,6 @@ private:
     int m;
     int ms;
     int pmcs;
-    // Used in the constructor.
-    // If the input is an empty string, the default output filename is given.
-    void init_outfilename(const string&);
     // Prints data to screen
     void print_stats() const;
     // The methods used to update each field value.

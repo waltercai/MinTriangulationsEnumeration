@@ -21,7 +21,7 @@ void PMCEnumerator::reset(const Graph& g) {
 NodeSetSet PMCEnumerator::get() const {
     auto C = graph.getComponents(NodeSet());
     NodeSetSet allPMCs;
-    TRACE(TRACE_LVL__DEBUG, "In, doing " << C.size() << " iterations on the graph:\n" << graph.str());
+    TRACE(TRACE_LVL__NOISE, "In, doing " << C.size() << " iterations on the graph:\n" << graph.str());
     for (unsigned int i=0; i<C.size(); ++i) {
         TRACE(TRACE_LVL__NOISE, "Creating subgraph with component C["<<i<<"]="<<C[i]<<"...");
         SubGraph sg = SubGraph(graph, C[i]);
@@ -107,7 +107,7 @@ NodeSetSet PMCEnumerator::OneMoreVertex(
                   const NodeSetSet& D1, const NodeSetSet& D2,
                   const NodeSetSet& P2) const {
     NodeSetSet P1;
-    TRACE(TRACE_LVL__DEBUG, "Entering first loop. Input is:\n"
+    TRACE(TRACE_LVL__NOISE, "Entering first loop. Input is:\n"
           << "a=" << a << "\nG1:\n" << G1 << "G2:\n" << G2
           << "D1:\n" << D1 << "\nD2:\n" << D2
           << "\nP2:\n" << P2);
@@ -126,7 +126,7 @@ NodeSetSet PMCEnumerator::OneMoreVertex(
             }
         }
     }
-    TRACE(TRACE_LVL__DEBUG, "Second loop...");
+    TRACE(TRACE_LVL__NOISE, "Second loop...");
     for (auto Sit = D1.begin(); Sit != D1.end(); ++Sit) {
         NodeSet S = *Sit;
         NodeSet Sa = S;
@@ -134,7 +134,7 @@ NodeSetSet PMCEnumerator::OneMoreVertex(
         if (!std::binary_search(Sa.begin(), Sa.end(), a)) {
             Sa.insert(Sa.end(), a);
         }
-        TRACE(TRACE_LVL__DEBUG, "Checking if " << Sa << " is a PMC..");
+        TRACE(TRACE_LVL__NOISE, "Checking if " << Sa << " is a PMC..");
         if (IsPMC(Sa, G1)) {
             P1.insert(Sa);
         }
@@ -202,7 +202,7 @@ bool PMCEnumerator::IsPMC(NodeSet K, const SubGraph& G) const {
     vector<NodeSet> S(C.size());
     unsigned int i,j,k;
 
-    TRACE(TRACE_LVL__DEBUG, "In, K=" << K << " and G is:\n" << G << "Components are: " << C);
+    TRACE(TRACE_LVL__NOISE, "In, K=" << K << " and G is:\n" << G << "Components are: " << C);
 
     // Sort K so we can compare it easily to other vectors
     std::sort(K.begin(), K.end());

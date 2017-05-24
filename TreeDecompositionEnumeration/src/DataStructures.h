@@ -61,8 +61,9 @@ public:
 	bool isMember(const NodeSet& nodeSet) const;
 	bool operator==(const NodeSetSet& nss) const;
 	bool operator!=(const NodeSetSet& nss) const;
-	// Adds the given node set to the structure.
+	// Adds / removes the given node set to / from the structure.
 	void insert(const NodeSet& nodeSet);
+	void remove(const NodeSet& nodeSet);
 	// Prints out the NodeSets
 	string str() const;
 	// std::set methods
