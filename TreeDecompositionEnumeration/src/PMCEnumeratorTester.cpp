@@ -303,6 +303,7 @@ bool crosscheck_aux(const string& dataset_filename) {
     // Iterate over all maximal cliques in all triangulations.
     // Make sure each one is in the NodeSetSet returned by the
     // PMCEnumerator, and vice-versa.
+    cout << " - Cross-checking graph '" << dataset_filename << "'... ";
     NodeSetSet found;
     Graph g = GraphReader::read(dataset_filename);
     PMCEnumerator pmce(g);
@@ -316,26 +317,34 @@ bool crosscheck_aux(const string& dataset_filename) {
                 pmcs.remove(*it);
                 found.insert(*it);
             }
-            else ASSERT(found.isMember(*it));
+            else if (!found.isMember(*it)) {
+                cout << "FAILED" << endl;
+                ASSERT_PRINT("A PMC in the graph '" << dataset_filename << "' is missing!" << endl
+                             << "Clique found is:" << endl
+                             << *it << endl
+                             << "The PMCs found by the PMC enumerator are:" << endl
+                             << pmcs);
+                return false;
+            }
         }
     }
+    cout << "PASSED" << endl;
     return true;
 }
 bool PMCEnumeratorTester::crosscheck() const {
+    // Print each failure on a separate line
+    cout << endl;
+    bool all_passed = true;
     DirectoryIterator deadeasy_files(DATASET_DIR_BASE+DATASET_DIR_DEADEASY);
     DirectoryIterator easy_files(DATASET_DIR_BASE+DATASET_DIR_EASY);
     string dataset_filename;
     while(deadeasy_files.next_file(&dataset_filename)) {
-        if (!crosscheck_aux(dataset_filename)) {
-            return false;
-        }
+        all_passed &= crosscheck_aux(dataset_filename);
     }
     while(easy_files.next_file(&dataset_filename)) {
-        if (!crosscheck_aux(dataset_filename)) {
-            return false;
-        }
+        all_passed &= crosscheck_aux(dataset_filename);
     }
-    return true;
+    return all_passed;
 }
 
 

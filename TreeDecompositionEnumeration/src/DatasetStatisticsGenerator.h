@@ -35,6 +35,8 @@ private:
     // Nodes, edges, minimal separators and PMCs (total).
     // Add a flag to check if the values are up-to-date
     bool valid;
+    // If true, output is appended to file
+    bool append;
     int n;
     int m;
     int ms;
@@ -51,10 +53,13 @@ public:
     // for the generated statistics.
     // One can construct this class from an existing graph or from in input file
     // using GraphReader.
+    // If append is set to true, the output is appended to the given output file.
     DatasetStatisticsGenerator(const Graph&,
-                               const string& output);
+                               const string& output,
+                               bool append = true);
     DatasetStatisticsGenerator(const string& filename,
-                               const string& output="");
+                               const string& output="",
+                               bool append = true);
     // Generates and outputs statistics.
     // If verbose is set to true, the results will also be printed to the console.
     void get(bool verbose=true);

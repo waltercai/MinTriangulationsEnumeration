@@ -11,8 +11,9 @@ using std::endl;
 namespace tdenum {
 
 DatasetStatisticsGenerator::DatasetStatisticsGenerator(const string& filename,
-                                                       const string& outfile) :
-    infilename(filename), outfilename(outfile), valid(false),
+                                                       const string& outfile,
+                                                       bool a) :
+    infilename(filename), outfilename(outfile), valid(false), append(a),
     n(0), m(0), ms(0), pmcs(0) {
     if (outfilename == string("")) {
         string basename = infilename.substr(infilename.rfind(string(1,SLASH))+1);
@@ -23,8 +24,9 @@ DatasetStatisticsGenerator::DatasetStatisticsGenerator(const string& filename,
                             << outfilename << endl);
 }
 DatasetStatisticsGenerator::DatasetStatisticsGenerator(const Graph& G,
-                                                       const string& outfile) :
-    g(G), outfilename(outfile), valid(false),
+                                                       const string& outfile,
+                                                       bool a) :
+    g(G), outfilename(outfile), valid(false), append(a),
     n(0), m(0), ms(0), pmcs(0) {
     outfilename = outfile;
 }
@@ -46,13 +48,15 @@ void DatasetStatisticsGenerator::output_stats(bool verbose) {
     }
 
     // Output to file
-    outfile.open(outfilename, ios::out | ios::trunc);
+    outfile.open(outfilename, ios::out | (append ? ios::app : ios::trunc));
     if (!outfile.good()) {
         TRACE(TRACE_LVL__ERROR, "Couldn't open file '" << outfilename << "'");
         return;
     }
-    outfile << "Nodes,Edges,Minimal Separators,Potential Maximal Cliques\n";
-    outfile << n << "," << m << "," << ms << "," << pmcs;
+    if (!append) {
+        outfile << "Filename,Nodes,Edges,Minimal Separators,Potential Maximal Cliques\n";
+    }
+    outfile << infilename << "," << n << "," << m << "," << ms << "," << pmcs << "\n";
 }
 
 void DatasetStatisticsGenerator::compute_nodes() {
@@ -105,12 +109,18 @@ int main() {
     DirectoryIterator deadeasy_files(DATASET_DIR_BASE+DATASET_DIR_DEADEASY);
     DirectoryIterator easy_files(DATASET_DIR_BASE+DATASET_DIR_EASY);
     string dataset_filename;
+    string output_filename = RESULT_DIR_BASE+"results.csv";
+    // Clear the old results file
+    ofstream out;
+    out.open(output_filename, ios::out | ios::trunc);
+    out << "Filename,Nodes,Edges,Separators,PMCs\n";
+    out.close();
     while(deadeasy_files.next_file(&dataset_filename)) {
-        DatasetStatisticsGenerator dsg(dataset_filename, RESULT_DIR_BASE+dataset_filename+".stats.csv");
+        DatasetStatisticsGenerator dsg(dataset_filename, output_filename, true);
         dsg.output_stats(true);
     }
     while(easy_files.next_file(&dataset_filename)) {
-        DatasetStatisticsGenerator dsg(dataset_filename, RESULT_DIR_BASE+dataset_filename+".stats.csv");
+        DatasetStatisticsGenerator dsg(dataset_filename, output_filename, true);
         dsg.output_stats(true);
     }
     return 0;
