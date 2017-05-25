@@ -4,8 +4,16 @@
 #include <string.h>
 #include <iostream>
 #include <vector>
+#include <set>
+#include <fstream>
+#include <sstream>
 using std::ostream;
 using std::vector;
+using std::set;
+using std::string;
+using std::ofstream;
+using std::ostringstream;
+using std::ios;
 
 namespace tdenum {
 
@@ -19,26 +27,57 @@ namespace tdenum {
 #endif
 
 /**
- * Printing
+ * Printing and logging.
+ *
+ * To fork-output all ASSERT_PRINTS to file, call Logger::start(filename).
+ *
  */
 #define __FILENAME__ (strrchr(__FILE__, SLASH) ? strrchr(__FILE__, SLASH) + 1 : __FILE__)
 
-#define ASSERT_PRINT(_stream) \
-    cout << __FILENAME__ << ":" << __FUNCTION__ << ":" << __LINE__ << ": " << _stream << "\n"
+#define ASSERT_PRINT(_stream) do { \
+        ostringstream _oss; \
+        _oss << __FILENAME__ << ":" << __FUNCTION__ << ":" << __LINE__ << ": " << _stream << "\n"; \
+        cout << _oss.str(); \
+        Logger::out(_oss); \
+    } while(0)
 
-// Output vectors, in general
-template<typename T>
-ostream& operator<<(ostream& os, const vector<T>& v) {
-    os << "{";
-    for (auto i=v.begin(); i!=v.end(); ++i) {
-        os << *i << ",";
-    }
-    if (v.size() > 0) {
-        os << "\b"; // removing trailing space
-    }
-    os << "}";
-    return os;
+class Logger {
+private:
+    static string filename;
+    static ofstream file;
+    static bool state;
+public:
+    static void stop();
+    // Add an option to append to file, or truncate it.
+    static void start(const string& f, bool append = true);
+    static void out(const ostringstream& os);
+};
+
+#define SET_LOGGING(_filename) do { \
+        if (_LOG_FLAG) { \
+            _LOG_FILE.close(); \
+        } \
+        _LOG_FLAG = true; \
+        _LOG_FILE_NAME = _filename; \
+
+
+// Output vectors / sets, in general
+#define AUTOPRINT_CONTAINER(_container_type) \
+template<typename V> \
+ostream& operator<<(ostream& os, const _container_type<V>& v) { \
+    os << "{"; \
+    for (auto i=v.begin(); i!=v.end(); ++i) { \
+        os << *i << ","; \
+    } \
+    if (v.size() > 0) { \
+        os << "\b"; /*removing trailing space*/ \
+    } \
+    os << "}"; \
+    return os; \
 }
+AUTOPRINT_CONTAINER(set)
+AUTOPRINT_CONTAINER(vector)
+
 
 /**
  * For use in live code

@@ -35,6 +35,10 @@ public:
 	// Given a graph with n vertices and no edges, creates a random graph
 	// from G(p,n)
 	void randomize(double p);
+	// Removes all but the first k nodes from the graph/
+	void removeAllButFirstK(int k);
+	// Randomly renames all nodes (this only affects the neighbor sets)
+	void randomNodeRename();
 	// Connects the given two nodes by a edge
 	void addEdge(Node u, Node v);
 	// Adds edges that will make that given node set a clique
@@ -54,6 +58,8 @@ public:
 	int getNumberOfEdges() const;
 	// Returns the number of nodes in the graph
 	int getNumberOfNodes() const;
+	// Returns the degree of the node. Returns -1 on invalid node
+	int d(Node i) const;
 	// Returns the neighbors of the given node
 	const set<Node>& getNeighbors(Node v) const;
 	// Returns a vector the size of the number of nodes in the graph, stating

@@ -99,32 +99,6 @@ void DatasetStatisticsGenerator::get(bool verbose) {
 
 }
 
-using namespace tdenum;
-
-/**
- * Run the generator and output files given the datasets NOT in
- * the "difficult" folder (so it won't take forever).
- */
-int main() {
-    DirectoryIterator deadeasy_files(DATASET_DIR_BASE+DATASET_DIR_DEADEASY);
-    DirectoryIterator easy_files(DATASET_DIR_BASE+DATASET_DIR_EASY);
-    string dataset_filename;
-    string output_filename = RESULT_DIR_BASE+"results.csv";
-    // Clear the old results file
-    ofstream out;
-    out.open(output_filename, ios::out | ios::trunc);
-    out << "Filename,Nodes,Edges,Separators,PMCs\n";
-    out.close();
-    while(deadeasy_files.next_file(&dataset_filename)) {
-        DatasetStatisticsGenerator dsg(dataset_filename, output_filename, true);
-        dsg.output_stats(true);
-    }
-    while(easy_files.next_file(&dataset_filename)) {
-        DatasetStatisticsGenerator dsg(dataset_filename, output_filename, true);
-        dsg.output_stats(true);
-    }
-    return 0;
-}
 
 
 

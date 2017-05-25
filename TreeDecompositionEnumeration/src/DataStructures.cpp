@@ -67,6 +67,9 @@ bool NodeSetSet::isMember(const vector<Node>& nodeVec) const {
 }
 
 string NodeSetSet::str() const {
+    if (empty()) {
+        return string("{}");
+    }
     ostringstream oss;
     oss << "\{ \b";
     for(auto it = begin(); it != end(); ++it) {
@@ -107,6 +110,9 @@ bool NodeSetSet::operator!=(const NodeSetSet& nss) const {
 
 unsigned int NodeSetSet::size() const {
     return sets.size();
+}
+bool NodeSetSet::empty() const {
+    return sets.empty();
 }
 
 set<NodeSet>::iterator NodeSetSet::begin() const {

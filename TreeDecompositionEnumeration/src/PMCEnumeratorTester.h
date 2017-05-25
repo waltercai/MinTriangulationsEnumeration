@@ -21,6 +21,16 @@
     X(smallknowngraphs) \
     /* Graphs of size 4 (there are 11 such graphs up to isomorphism) */ \
     X(fourgraphs) \
+    /* Test cliques with an added node connected to one other node */ \
+    X(cliqueswithtails) \
+    /* Try independent sets. */ \
+    X(independentsets) \
+    /* Graph with nodes a,b,c and edges (ac),(bc), IN THAT ORDER, so G\{c} \
+       becomes an independent set */ \
+    X(twoedgesindependentsubgraphs) \
+    /* This fails for some reason... special graph, see implementation \
+       for details */ \
+    X(triangleonstilts) \
     /* Uses existing datasets and Nofar's code to cross-check the PMC \
        algorithm with Nofar's version */ \
     X(crosscheck)

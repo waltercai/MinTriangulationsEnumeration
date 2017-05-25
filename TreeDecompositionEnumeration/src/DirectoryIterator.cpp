@@ -3,6 +3,7 @@
 #include "DirectoryIterator.h"
 #include <iostream>
 #include <string>
+#include <sys/stat.h>
 using std::endl;
 using std::string;
 
@@ -58,7 +59,7 @@ bool DirectoryIterator::next_file(string* filename_ptr) {
     }
 
     string filename = drnt->d_name;
-    string fullname = name_stack.top() + string(1,SLASH) + string(drnt->d_name);
+    string fullname = name_stack.top() + string(drnt->d_name);
 
     // If the directory given is "." or "..", ignore it.
     if (filename == "." || filename == "..") {
@@ -66,7 +67,12 @@ bool DirectoryIterator::next_file(string* filename_ptr) {
     }
 
     // If this is a directory, push it onto the stack and recurse:
-    if (drnt->d_type == DT_DIR && dir_ptr_stack.size() < max_depth) {
+    struct stat s;
+    stat(fullname.c_str(), &s);
+    if ((s.st_mode & S_IFDIR) && dir_ptr_stack.size() < max_depth) {
+        // Add trailing slash
+        fullname += string(1,SLASH);
+        // Open the directory
         DIR* subdir = opendir(fullname.c_str());
         // If we failed to open the directory, try the next entry...
         if (subdir == NULL) {
@@ -82,14 +88,15 @@ bool DirectoryIterator::next_file(string* filename_ptr) {
     }
 
     // If this is a file, hurrah! Return it
-    else if (drnt->d_type == DT_REG) {
+    else if (s.st_mode & S_IFREG) {
         *filename_ptr = fullname;   // Give the full name, relative to the working path
         return true;
     }
 
     // Uh oh.. we shouldn't be here
     if (verbose) {
-        TRACE(TRACE_LVL__ERROR, "Unknown error" << endl);
+        TRACE(TRACE_LVL__ERROR, "Unknown error when opening "
+              "'" << filename << "'" << endl);
     }
     *filename_ptr = "";
     return false;

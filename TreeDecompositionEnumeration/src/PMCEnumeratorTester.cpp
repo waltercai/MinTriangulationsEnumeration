@@ -3,6 +3,7 @@
 #include "GraphReader.h"
 #include "ChordalGraph.h"
 #include "MinimalTriangulationsEnumerator.h"
+#include "Utils.h"
 
 /**
  * Generic test initialization.
@@ -299,6 +300,108 @@ bool PMCEnumeratorTester::fourgraphs() const {
     return true;
 }
 
+bool PMCEnumeratorTester::cliqueswithtails() const {
+    // Make graphs of type v---K where K is a clique
+    // and v is connected to a single node in K.
+    // The graph is already triangulated, and there should be two
+    // cliques: K and {v,u} where u is v's neighbor in K.
+    int max_clique_size = 10;
+    NodeSetSet pmcs;
+    NodeSet always_pmc({0,1});
+    SETUP(1);
+    for (int i=3; i<max_clique_size; ++i) {
+        RESET(i+1);
+        NodeSet K;
+        // v=0
+        for (int j=1; j<=i; ++j) {
+            K.push_back(j);
+        }
+        set<NodeSet> for_saturation;
+        for_saturation.insert(K);
+        g.saturateNodeSets(for_saturation);
+        g.addEdge(0,1);
+        pmce.reset(g);
+        pmcs = pmce.get();
+        ASSERT(pmcs.isMember(always_pmc));
+        ASSERT(pmcs.isMember(K));
+        ASSERT_EQUAL(pmcs.size(),2);
+    }
+    return true;
+}
+
+bool PMCEnumeratorTester::independentsets() const {
+    /**
+     * Independent sets are triangulated, and each node is a PMC.
+     */
+    SETUP(1);
+    NodeSetSet pmcs;
+    for (int i=1; i<5; ++i) {
+        RESET(i);
+        pmcs = pmce.get();
+        for (int j=0; j<i; ++j) {
+            ASSERT(pmcs.isMember(NodeSet({j})));
+        }
+        ASSERT_EQUAL(pmcs.size(), (unsigned int)i);
+    }
+    return true;
+}
+
+bool PMCEnumeratorTester::twoedgesindependentsubgraphs() const {
+    /**
+     * Looks like:
+     *
+     * 0---2---1
+     *
+     * The order is important, so G1 and G2 both contain nodes with
+     * no edges, and only G3=G will have non-trivial cliques.
+     */
+    SETUP(3);
+    NodeSet ac({0,2}),bc({1,2});
+    g.addEdge(0,2);
+    g.addEdge(1,2);
+    pmce.reset(g);
+    NodeSetSet pmcs = pmce.get();
+    ASSERT(pmcs.isMember(ac));
+    ASSERT(pmcs.isMember(bc));
+    ASSERT_EQUAL(pmcs.size(), 2);
+    return true;
+}
+
+bool PMCEnumeratorTester::triangleonstilts() const {
+    /**
+     * This graph looks like:
+     *
+     *   0-----3
+     *         |\
+     *         | \
+     *         |  2
+     *         | /
+     *         |/
+     *   1-----4
+     *
+     * The PMCs should be {{0,3},{4,2,3},{1,4}}.
+     */
+    SETUP(5);
+    NodeSet ad({0,3}), cde({2,3,4}), ae({1,4});
+    g.addEdge(0,3);
+    g.addEdge(3,2);
+    g.addEdge(4,3);
+    g.addEdge(2,4);
+    g.addEdge(1,4);
+    pmce.reset(g);
+    NodeSetSet pmcs = pmce.get();
+    ASSERT(pmcs.isMember(ad));
+    ASSERT(pmcs.isMember(cde));
+    ASSERT(pmcs.isMember(ae));
+    ASSERT_EQUAL(pmcs.size(), 3);
+
+    g.randomNodeRename();
+    pmce.reset(g);
+    pmcs = pmce.get();
+    ASSERT_EQUAL(pmcs.size(), 3);
+    return true;
+}
+
 bool crosscheck_aux(const string& dataset_filename) {
     // Iterate over all maximal cliques in all triangulations.
     // Make sure each one is in the NodeSetSet returned by the
@@ -313,20 +416,16 @@ bool crosscheck_aux(const string& dataset_filename) {
         ChordalGraph triangulation = enumerator.next();
         set<NodeSet> cliques = triangulation.getMaximalCliques();
         for (auto it=cliques.begin(); it != cliques.end(); ++it) {
-            if (pmcs.isMember(*it)) {
-                pmcs.remove(*it);
-                found.insert(*it);
-            }
-            else if (!found.isMember(*it)) {
-                cout << "FAILED" << endl;
-                ASSERT_PRINT("A PMC in the graph '" << dataset_filename << "' is missing!" << endl
-                             << "Clique found is:" << endl
-                             << *it << endl
-                             << "The PMCs found by the PMC enumerator are:" << endl
-                             << pmcs);
-                return false;
-            }
+            found.insert(*it);
         }
+    }
+    if (found != pmcs) {
+        cout << "FAILED" << endl;
+        ASSERT_PRINT("The PMCs calculated are incorrect:" << endl
+                     << "Found:" << endl
+                     << found << endl
+                     << "Returned by the PMC enumerator:" << endl
+                     << pmcs);
     }
     cout << "PASSED" << endl;
     return true;
@@ -381,13 +480,5 @@ void PMCEnumeratorTester::clearAll() {
 
 
 using namespace tdenum;
-int main() {
-    PMCEnumeratorTester p(false);
-//    p.clearAll();
-//    p.flag_fourgraphs = true;
-    p.go();
-    return 0;
-}
-
 
 

@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <sstream>
+#include <algorithm>
 
 namespace tdenum {
 
@@ -40,6 +41,40 @@ void Graph::randomize(double p) {
             }
         }
     }
+}
+
+void Graph::removeAllButFirstK(int k) {
+    // Remove respective edges from neighbor sets.
+    // While doing so, recalculate the number of edges using the formula:
+    // sum_v(d(v))=2E
+    int E = 0;
+    for (int u=0; u<k; ++u) {
+        for (int v=k; v<numberOfNodes; ++v) {
+            neighborSets[u].erase(v);
+        }
+        E += neighborSets[u].size();
+    }
+    // Update the number of nodes and edges
+    if (E%2) {
+        TRACE(TRACE_LVL__ERROR, "WTF");
+    }
+    numberOfNodes = k;
+    numberOfEdges = E/2;
+}
+
+void Graph::randomNodeRename() {
+    // Shuffle node names:
+    vector<Node> f = getNodesVector();
+    std::random_shuffle(f.begin(), f.end());
+    // Use f as a mapping between nodes to build the new
+    // neighbor sets.
+    vector< set<Node> > newNeighbors(numberOfNodes);
+    for (Node u=0; u<numberOfNodes; ++u) {
+        for (auto v=neighborSets[u].begin(); v!=neighborSets[u].end(); ++v) {
+            newNeighbors[f[u]].insert(f[*v]);
+        }
+    }
+    neighborSets = newNeighbors;
 }
 
 void Graph::addClique(const set<Node>& newClique) {
@@ -133,6 +168,13 @@ int Graph::getNumberOfNodes() const {
 	return numberOfNodes;
 }
 
+int Graph::d(Node v) const {
+    if (!isValidNode(v)) {
+        cout << "Error: requesting degree of invalid node" << endl;
+        return -1;
+    }
+    return neighborSets[v].size();
+}
 /*
  * Returns the set of neighbors of the given node
  */

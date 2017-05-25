@@ -19,17 +19,24 @@ void PMCEnumerator::reset(const Graph& g) {
  * to add a chord, there'll be no cycle contained in two components).
  */
 NodeSetSet PMCEnumerator::get() const {
-    auto C = graph.getComponents(NodeSet());
+    // Used to have code to handle connected components.
+    // However, the subroutine required specific handling of
+    // adding nodes disconnected from the previous subgraph
+    // (see OneMoreVertex), which also handles the case of
+    // different connected components in the original graph...
+    // So the code is dead, Jim.
+    return getConnected(graph);
+/*    auto C = graph.getComponents(NodeSet());
     NodeSetSet allPMCs;
     TRACE(TRACE_LVL__NOISE, "In, doing " << C.size() << " iterations on the graph:\n" << graph.str());
     for (unsigned int i=0; i<C.size(); ++i) {
         TRACE(TRACE_LVL__NOISE, "Creating subgraph with component C["<<i<<"]="<<C[i]<<"...");
         SubGraph sg = SubGraph(graph, C[i]);
-        TRACE(TRACE_LVL__NOISE, "Done, got a subgraph:\n" << sg << "Fetching node map...");
+        TRACE(TRACE_LVL__NOISE, "Got a subgraph:\n" << sg << "Fetching node map...");
         vector<int> nodeMapToMain = sg.getNodeMapToMainGraph();
-        TRACE(TRACE_LVL__NOISE, "Done, got nodemap=" << nodeMapToMain << ". Entering subroutine...");
+        TRACE(TRACE_LVL__NOISE, "Got nodemap=" << nodeMapToMain << ". Entering subroutine...");
         NodeSetSet currentPMCs = getConnected(sg);
-        TRACE(TRACE_LVL__NOISE, "Done.");
+        TRACE(TRACE_LVL__NOISE, "Done. Got the following PMCs in the subgraph:" << endl << currentPMCs);
         for (auto it=currentPMCs.begin(); it!=currentPMCs.end(); ++it) {
             // The returned sets are in terms of the subgraph - use getNodeMapToMainGraph()
             // to get their real names in the main graph
@@ -40,8 +47,8 @@ NodeSetSet PMCEnumerator::get() const {
             allPMCs.insert(realNames);
         }
     }
-    TRACE(TRACE_LVL__NOISE, "Done! Got " << allPMCs.size() << " PMCs");
-    return allPMCs;
+    TRACE(TRACE_LVL__NOISE, "Done! Got " << allPMCs.size() << " PMCs:\n" << allPMCs);
+    return allPMCs;*/
 }
 
 /**
@@ -50,15 +57,12 @@ NodeSetSet PMCEnumerator::get() const {
  * Assumes g is a connected graph.
  */
 NodeSetSet PMCEnumerator::getConnected(const SubGraph& g) const {
-    TRACE(TRACE_LVL__DEBUG, "In with G=\n" << g << "Getting nodes vector...");
+    TRACE(TRACE_LVL__NOISE, "In with G=\n" << g << "Getting nodes vector...");
     vector<Node> nodes = g.getNodesVector();
     int n = g.getNumberOfNodes();
-    TRACE(TRACE_LVL__NOISE, "Done (got " << n << " nodes)");
     if (n <= 0) {
         return NodeSetSet();
     }
-
-    TRACE(TRACE_LVL__NOISE, "In with graph " << g << ", nodes=" << nodes);
 
     // P[i] will be the PMCs of Gi (the subgraph with i+1 vertices of G)
     vector<NodeSetSet> P(n);
@@ -70,33 +74,26 @@ NodeSetSet PMCEnumerator::getConnected(const SubGraph& g) const {
     P[0].insert(firstSet);
     // D[0] should remain empty
 
-    TRACE(TRACE_LVL__NOISE, "Starting " << n-1 << " iterations, P[0] is:\n" << P[0]);
-
     for (int i=1; i<n; ++i) {
         // Calculate Di, the relevant subgraphs Gi-1 and Gi, and use
         // OneMoreVertex.
         // This is the main function described in the paper.
         vector<Node> subnodes = nodes;
         Node a;
-        TRACE(TRACE_LVL__NOISE, "Resizing subnodes=" << subnodes << " to size " << i+1 << "...");
         subnodes.resize(i+1);
         a = subnodes.back();
-        TRACE(TRACE_LVL__NOISE, "Done. Got subnodes="<<subnodes<<" and a="<<a);
         SubGraph Gip1 = SubGraph(g, subnodes);
         subnodes.resize(i);
-        TRACE(TRACE_LVL__NOISE, "G"<<i+1<<" is:\n" << Gip1 << "and subnodes is now " << subnodes);
         SubGraph Gi = SubGraph(g, subnodes);
         MinimalSeparatorsEnumerator DiEnumerator(Gip1, UNIFORM);
-        TRACE(TRACE_LVL__NOISE, "Got minimal separators of G"<<i+1<<" and G"<<i<<" is:\n" << Gi);
         while (DiEnumerator.hasNext()) {
             D[i].insert(DiEnumerator.next());
         }
-        TRACE(TRACE_LVL__NOISE, "Calling OneMoreVertex...");
         P[i] = OneMoreVertex(Gip1, Gi, a, D[i], D[i-1], P[i-1]);
-        TRACE(TRACE_LVL__NOISE, "Done, got P["<<i<<"]=" << P[i]);
+        TRACE(TRACE_LVL__DEBUG, "OneMoreVertex in iteration " << i
+              << " with the graph G(i+1):" << endl << Gip1
+              << "got PMCs:" << endl << P[i]);
     }
-
-    TRACE(TRACE_LVL__NOISE, "Leaving with P["<<n-1<<"]="<<P[n-1]);
 
     return P[n-1];
 }
@@ -107,18 +104,22 @@ NodeSetSet PMCEnumerator::OneMoreVertex(
                   const NodeSetSet& D1, const NodeSetSet& D2,
                   const NodeSetSet& P2) const {
     NodeSetSet P1;
-    TRACE(TRACE_LVL__NOISE, "Entering first loop. Input is:\n"
-          << "a=" << a << "\nG1:\n" << G1 << "G2:\n" << G2
-          << "D1:\n" << D1 << "\nD2:\n" << D2
-          << "\nP2:\n" << P2);
+
+    // If a supports d(a)=0, then the regular algorithm won't add
+    // {a} as a PMC, even though it should.
+    // However, in this case: P1=P2 U {{a}} (a statement proven separately),
+    // so we can simply catch this case and return the correct value of P1
+    if (G1.d(a) == 0) {
+        P1=P2;
+        P1.insert(NodeSet({a}));
+        return P1;
+    }
+
     for (auto pmc2it = P2.begin(); pmc2it != P2.end(); ++pmc2it) {
-        TRACE(TRACE_LVL__NOISE, "Checking if *pmc2it="<<*pmc2it<<" is a PMC in G1...");
         if (IsPMC(*pmc2it, G1)) {
-            TRACE(TRACE_LVL__NOISE, "Yup. Inserting...");
             P1.insert(*pmc2it);
         }
         else {
-            TRACE(TRACE_LVL__NOISE, "*pmc2it="<<*pmc2it<<", is NOT a PMC in G1");
             NodeSet pmc2a = *pmc2it;
             pmc2a.insert(pmc2a.end(), a);
             if (IsPMC(pmc2a, G1)) {
@@ -126,7 +127,6 @@ NodeSetSet PMCEnumerator::OneMoreVertex(
             }
         }
     }
-    TRACE(TRACE_LVL__NOISE, "Second loop...");
     for (auto Sit = D1.begin(); Sit != D1.end(); ++Sit) {
         NodeSet S = *Sit;
         NodeSet Sa = S;
@@ -134,7 +134,6 @@ NodeSetSet PMCEnumerator::OneMoreVertex(
         if (!std::binary_search(Sa.begin(), Sa.end(), a)) {
             Sa.insert(Sa.end(), a);
         }
-        TRACE(TRACE_LVL__NOISE, "Checking if " << Sa << " is a PMC..");
         if (IsPMC(Sa, G1)) {
             P1.insert(Sa);
         }
@@ -202,7 +201,6 @@ bool PMCEnumerator::IsPMC(NodeSet K, const SubGraph& G) const {
     vector<NodeSet> S(C.size());
     unsigned int i,j,k;
 
-    TRACE(TRACE_LVL__NOISE, "In, K=" << K << " and G is:\n" << G << "Components are: " << C);
 
     // Sort K so we can compare it easily to other vectors
     std::sort(K.begin(), K.end());
@@ -211,14 +209,11 @@ bool PMCEnumerator::IsPMC(NodeSet K, const SubGraph& G) const {
     // While doing so make sure we don't have any full components
     for (i=0; i<C.size(); ++i) {
         S[i] = G.getAdjacent(C[i], K);
-        TRACE(TRACE_LVL__NOISE, "Is C["<<i<<"]="<<C[i]<<" a full component (is K equal to S["<<i<<"]="<<S[i]<<")?");
         std::sort(S[i].begin(), S[i].end());
         if (S[i] == K) {
             // Uh oh.. C[i] is a full component
-            TRACE(TRACE_LVL__NOISE, "YES");
             return false;
         }
-        TRACE(TRACE_LVL__NOISE, "NO");
     }
 
     // For each x,y in K (that aren't equal) we need to check if
