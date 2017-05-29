@@ -446,6 +446,47 @@ bool PMCEnumeratorTester::crosscheck() const {
     return all_passed;
 }
 
+bool PMCEnumeratorTester::noamsgraphs() const {
+    /**
+     * Two graphs:
+     * 0--1--4--2--3
+     * 0--4--1--3--2
+     */
+    // First graph's PMCs:
+    NodeSet ab({0,1}), be({1,4}), ce({2,4}), cd({2,3});
+    // Second graph's PMCs (two of which are also the first graph's PMCs):
+    NodeSet ae({0,4}), bd({1,3});
+    NodeSetSet pmcs;
+
+    SETUP(5);
+    g.addEdge(0,1);
+    g.addEdge(4,1);
+    g.addEdge(4,2);
+    g.addEdge(3,2);
+    pmce.reset(g);
+    pmcs = pmce.get();
+    ASSERT(pmcs.isMember(ab));
+    ASSERT(pmcs.isMember(be));
+    ASSERT(pmcs.isMember(ce));
+    ASSERT(pmcs.isMember(cd));
+    ASSERT_EQUAL(pmcs.size(), 4);
+
+    RESET(5);
+    g.addEdge(0,4);
+    g.addEdge(1,4);
+    g.addEdge(1,3);
+    g.addEdge(2,3);
+    pmce.reset(g);
+    pmcs = pmce.get();
+    ASSERT(pmcs.isMember(ae));
+    ASSERT(pmcs.isMember(be));
+    ASSERT(pmcs.isMember(bd));
+    ASSERT(pmcs.isMember(cd));
+    ASSERT_EQUAL(pmcs.size(), 4);
+
+    return true;
+}
+
 
 PMCEnumeratorTester::PMCEnumeratorTester(bool start = true) {
     #define X(_func) flag_##_func = true;

@@ -36,19 +36,18 @@ int main() {
         dsg.output_stats(true);
     }
     return 0;
-}
-*/
+}*/
+
 
 /**
  * Test the PMC enumerator
  */
+
 int main() {
     Logger::start("log.txt", false);
     PMCEnumeratorTester p(false);
-//    p.clearAll();
-//    p.flag_crosscheck = true;
-//    p.flag_triangleonstilts = true;
-//    p.flag_independentsets = true;
+    p.clearAll();
+    p.flag_noamsgraphs = true;
     p.go();
     return 0;
 }

@@ -33,7 +33,9 @@
     X(triangleonstilts) \
     /* Uses existing datasets and Nofar's code to cross-check the PMC \
        algorithm with Nofar's version */ \
-    X(crosscheck)
+    X(crosscheck) \
+    /* Two specific graphs Noam wanted to test. */ \
+    X(noamsgraphs)
 
 #define X(func) PMCENUM_TEST_NAME__##func,
 typedef enum {
