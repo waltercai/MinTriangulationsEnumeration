@@ -6,47 +6,51 @@
 #include <string>
 #include "GraphReader.h"
 #include "MinimalTriangulationsEnumerator.h"
+#include "MinTriangulationsEnumeration.h"
 #include "ResultsHandler.h"
 using namespace std;
-using namespace tdenum;
 
-class InputFile {
-	string name;
-	string wholename;
-	string innerContainingFolder;
-	string outerContainingFolder;
-public:
-	InputFile(string path) : wholename(path) {
-		string::size_type lastSlash = path.find_last_of("\\/");
-		if(lastSlash == string::npos) {
-			name = path;
-			innerContainingFolder = "None";
-			outerContainingFolder = "None";
-		} else {
-			string nameWithExtension = path.substr(lastSlash+1);
-			name = nameWithExtension.substr(0, nameWithExtension.find_last_of("."));
-			path = path.substr(0, lastSlash);
-			lastSlash = path.find_last_of("\\/");
-			if(lastSlash == string::npos) {
-				innerContainingFolder = "None";
-				outerContainingFolder = "None";
-			} else {
-				innerContainingFolder = path.substr(lastSlash+1);
-				path = path.substr(0, lastSlash);
-				lastSlash = path.find_last_of("\\/");
-				if(lastSlash == string::npos) {
-					outerContainingFolder = "None";
-				} else {
-					outerContainingFolder = path.substr(lastSlash+1);
-				}
-			}
-		}
-	}
-	string getName(){ return name; }
-	string getPath(){ return wholename; }
-	string getField(){ return outerContainingFolder; }
-	string getType(){ return innerContainingFolder; }
-};
+namespace tdenum {
+
+InputFile::InputFile(string path) : wholename(path) {
+    string::size_type lastSlash = path.find_last_of("\\/");
+    if(lastSlash == string::npos) {
+        name = path;
+        innerContainingFolder = "None";
+        outerContainingFolder = "None";
+    } else {
+        string nameWithExtension = path.substr(lastSlash+1);
+        name = nameWithExtension.substr(0, nameWithExtension.find_last_of("."));
+        path = path.substr(0, lastSlash);
+        lastSlash = path.find_last_of("\\/");
+        if(lastSlash == string::npos) {
+            innerContainingFolder = "None";
+            outerContainingFolder = "None";
+        } else {
+            innerContainingFolder = path.substr(lastSlash+1);
+            path = path.substr(0, lastSlash);
+            lastSlash = path.find_last_of("\\/");
+            if(lastSlash == string::npos) {
+                outerContainingFolder = "None";
+            } else {
+                outerContainingFolder = path.substr(lastSlash+1);
+            }
+        }
+    }
+}
+string InputFile::getName() const {
+    return name;
+}
+string InputFile::getPath() const {
+    return wholename;
+}
+string InputFile::getField() const {
+    return outerContainingFolder;
+}
+string InputFile::getType() const {
+    return innerContainingFolder;
+}
+
 
 void printSummaryHeader(ofstream& summaryOutput) {
 	summaryOutput << "Field,Type,Graph,Nodes,Edges,Finished,Time,Algorithm,Separators generated,";
@@ -63,6 +67,8 @@ void printSummary(ofstream& summaryOutput, InputFile& input, Graph& graph, bool 
 	results.printTableSummary(summaryOutput);
 }
 
+}
+
 
 /**
  * First parameter is the graph file path. Second is timeout in seconds.
@@ -71,6 +77,8 @@ void printSummary(ofstream& summaryOutput, InputFile& input, Graph& graph, bool 
  * Fourth is the order of extending minimal separators. Options are: size
  * (ascending), fill or none.
  */
+/** MIGRATED TO MAIN.CPP
+ *
 int main(int argc, char* argv[]) {
 	// Parse input graph file
 	if (argc < 2) {
@@ -219,3 +227,6 @@ int main(int argc, char* argv[]) {
 
 	return 0;
 }
+*/
+
+
