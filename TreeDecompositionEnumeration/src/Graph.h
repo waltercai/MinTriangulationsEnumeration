@@ -33,7 +33,8 @@ public:
 	// Resets the graph (call constructor again)
 	void reset(int numberOfNodes = 0);
 	// Given a graph with n vertices and no edges, creates a random graph
-	// from G(p,n)
+	// from G(p,n).
+	// Assumes the user has called srand()
 	void randomize(double p);
 	// Removes all but the first k nodes from the graph/
 	void removeAllButFirstK(int k);

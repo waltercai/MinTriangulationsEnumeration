@@ -17,6 +17,7 @@
 #include <string>
 #include <sstream>
 #include <time.h>
+#include <random>
 using std::ostringstream;
 namespace tdenum {
 
@@ -196,19 +197,14 @@ private:
         DirectoryIterator easy_files(DATASET_DIR_BASE+DATASET_DIR_EASY);
         string dataset_filename;
         string output_filename = RESULT_DIR_BASE+"results.csv";
-        // Clear the old results file
-        ofstream out;
-        out.open(output_filename, ios::out | ios::trunc);
-        out << "Filename,Nodes,Edges,Separators,PMCs\n";
-        out.close();
+        DatasetStatisticsGenerator dsg(output_filename);
         while(deadeasy_files.next_file(&dataset_filename)) {
-            DatasetStatisticsGenerator dsg(dataset_filename, output_filename, true);
-            dsg.output_stats();
+            dsg.add_graph(dataset_filename);
         }
         while(easy_files.next_file(&dataset_filename)) {
-            DatasetStatisticsGenerator dsg(dataset_filename, output_filename, true);
-            dsg.output_stats();
+            dsg.add_graph(dataset_filename);
         }
+        dsg.compute();
         return 0;
     }
 
@@ -231,27 +227,26 @@ private:
      * and count the number of minimal separators and PMCs in each.
      */
     int random_stats() const {
-        time_t t;
-        DatasetStatisticsGenerator dgs(Graph(), "RandomResults.csv", false);
-        dgs.output_header();
-        int n[2] = {20,30};
+        // No need to output nodes, the graph name is enough
+        srand(time(NULL));
+        DatasetStatisticsGenerator dgs("RandomResults.csv",
+                        DSG_COMP_ALL ^ DSG_COMP_TRNG); // Everything except triangulations
+        int n[4] = {20,30,40,50};
         double p[3] = {0.3,0.5,0.7};
         int instances = 10;
-        for (int i=0; i<2; ++i) {
+        for (int i=0; i<4; ++i) {
             for (int j=0; j<3; ++j) {
                 for (int k=0; k<instances; ++k) {
-                    t = time(NULL);
                     ostringstream s;
-                    s << "G(" << n[i] << ":" << p[j] << "); instance " << k+1 << "/" << instances;
-                    cout << "Running with G in " << s.str() << "... ";
+                    s << "G(" << n[i] << ":" << p[j] << "); " << k+1 << "/" << instances;
                     Graph g(n[i]);
                     g.randomize(p[j]);
-                    dgs.reset_graph(g);
-                    dgs.output_stats(s.str());
-                    cout << "done, took " << long(time(NULL) - t) << " seconds\n";
+                    dgs.add_graph(g, s.str());
                 }
             }
         }
+        dgs.compute(true);
+        dgs.print();
         return 0;
     }
 

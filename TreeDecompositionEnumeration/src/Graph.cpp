@@ -28,7 +28,6 @@ void Graph::randomize(double p) {
     }
     NodeSet nodes = getNodesVector();
     double d;
-    srand(time(NULL));
     TRACE(TRACE_LVL__NOISE, "In, p=" << p);
     p *= RAND_MAX;
     for (int i=0; i<numberOfNodes; ++i) {
