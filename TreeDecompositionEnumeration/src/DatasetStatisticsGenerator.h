@@ -36,7 +36,7 @@ private:
     // Add a flag to check if the values are up-to-date
     bool valid;
     // If true, output is appended to file
-    bool append;
+    bool oldfile;
     int n;
     int m;
     int ms;
@@ -48,26 +48,37 @@ private:
     void compute_edges();
     void compute_ms();
     void compute_pmcs();
+    static const string header_str;
 public:
     // The input is the filename of a dataset, and an optional output filename
     // for the generated statistics.
     // One can construct this class from an existing graph or from in input file
     // using GraphReader.
-    // If append is set to true, the output is appended to the given output file.
+    // If of is set to true, the output is appended to the given output file.
+    // Otherwise, a header is printed out.
     DatasetStatisticsGenerator(const Graph&,
                                const string& output,
-                               bool append = true);
+                               bool of = true);
     DatasetStatisticsGenerator(const string& filename,
                                const string& output="",
-                               bool append = true);
+                               bool of = true);
     // Generates and outputs statistics.
     // If verbose is set to true, the results will also be printed to the console.
-    void get(bool verbose=true);
-    // Outputs the data to file. Calls get() if need be. As with get, a verbose flag
-    // is provided.
-    void output_stats(bool verbose=true);
+    void get(bool verbose=false);
+    // Outputs the data to file. Calls get() if need be.
+    // Sometimes the input isn't from a file, so the filename_text is
+    // what will be printed instead under the "Filename" column.
+    void output_stats(const string& filename_text = "");
+    // Outputs the header line to the file
+    void output_header() const;
     // Returns true iff the computation required has already been done.
     bool is_valid() const;
+    // Empties the file (useful to reset at the start of code).
+    // CALLS output_header()!
+    void reset_file(const string& filename="");
+    // Starts to gather statistics for a new input graph
+    void reset_graph(const Graph& g);
+    void reset_graph(const string& infile);
 };
 
 }

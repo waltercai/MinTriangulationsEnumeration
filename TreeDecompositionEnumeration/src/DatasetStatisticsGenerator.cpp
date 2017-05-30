@@ -10,10 +10,14 @@ using std::endl;
 
 namespace tdenum {
 
+
+const string DatasetStatisticsGenerator::header_str="Filename,Nodes,Edges,Minimal Separators,PMCs\n";
+
+
 DatasetStatisticsGenerator::DatasetStatisticsGenerator(const string& filename,
                                                        const string& outfile,
-                                                       bool a) :
-    infilename(filename), outfilename(outfile), valid(false), append(a),
+                                                       bool of) :
+    infilename(filename), outfilename(outfile), valid(false), oldfile(of),
     n(0), m(0), ms(0), pmcs(0) {
     if (outfilename == string("")) {
         string basename = infilename.substr(infilename.rfind(string(1,SLASH))+1);
@@ -22,13 +26,19 @@ DatasetStatisticsGenerator::DatasetStatisticsGenerator(const string& filename,
     g = GraphReader::read(filename);
     TRACE(TRACE_LVL__DEBUG, "Created stats generator, output name will be:" << endl
                             << outfilename << endl);
+    if (!of) {
+        reset_file();
+    }
 }
 DatasetStatisticsGenerator::DatasetStatisticsGenerator(const Graph& G,
                                                        const string& outfile,
-                                                       bool a) :
-    g(G), outfilename(outfile), valid(false), append(a),
+                                                       bool of) :
+    g(G), outfilename(outfile), valid(false), oldfile(of),
     n(0), m(0), ms(0), pmcs(0) {
     outfilename = outfile;
+    if (!of) {
+        reset_file();
+    }
 }
 
 bool DatasetStatisticsGenerator::is_valid() const {
@@ -38,25 +48,49 @@ bool DatasetStatisticsGenerator::is_valid() const {
 /**
  * Outputs CSV format to file.
  */
-void DatasetStatisticsGenerator::output_stats(bool verbose) {
+void DatasetStatisticsGenerator::output_stats(const string& filename_text) {
 
     ofstream outfile;
 
     // Make sure values are updated
     if (!is_valid()) {
-        get(verbose);
+        get();
     }
 
     // Output to file
-    outfile.open(outfilename, ios::out | (append ? ios::app : ios::trunc));
+    outfile.open(outfilename, ios::out | ios::app);
     if (!outfile.good()) {
         TRACE(TRACE_LVL__ERROR, "Couldn't open file '" << outfilename << "'");
         return;
     }
-    if (!append) {
-        outfile << "Filename,Nodes,Edges,Minimal Separators,Potential Maximal Cliques\n";
+    outfile << (filename_text == "" ? infilename : filename_text) << ","
+            << n << ","
+            << m << ","
+            << ms << ","
+            << pmcs << "\n";
+}
+
+void DatasetStatisticsGenerator::output_header() const {
+    ofstream outfile;
+    outfile.open(outfilename, ios::out | ios::trunc);
+    outfile << DatasetStatisticsGenerator::header_str;
+    return;
+}
+
+void DatasetStatisticsGenerator::reset_file(const string& filename) {
+    if (filename != "") {
+        outfilename = filename;
     }
-    outfile << infilename << "," << n << "," << m << "," << ms << "," << pmcs << "\n";
+    output_header();
+}
+
+void DatasetStatisticsGenerator::reset_graph(const Graph& G) {
+    g = G;
+    valid = false;
+}
+void DatasetStatisticsGenerator::reset_graph(const string& infile) {
+    g = GraphReader::read(infile);
+    valid = false;
 }
 
 void DatasetStatisticsGenerator::compute_nodes() {

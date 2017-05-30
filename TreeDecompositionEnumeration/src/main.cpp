@@ -15,6 +15,9 @@
 #include <ctime>
 #include <cstdlib>
 #include <string>
+#include <sstream>
+#include <time.h>
+using std::ostringstream;
 namespace tdenum {
 
 typedef enum {
@@ -183,9 +186,12 @@ private:
 	}
 
     /**
-     * Test the PMC enumerator
+     * Test the PMC enumerator.
+     *
+     * This relies on an older version of DatasetStatisticsGenerator... see
+     * random_stats for a better implementation.
      */
-    int pmc_test() const {
+    int stat_gen() const {
         DirectoryIterator deadeasy_files(DATASET_DIR_BASE+DATASET_DIR_DEADEASY);
         DirectoryIterator easy_files(DATASET_DIR_BASE+DATASET_DIR_EASY);
         string dataset_filename;
@@ -197,11 +203,11 @@ private:
         out.close();
         while(deadeasy_files.next_file(&dataset_filename)) {
             DatasetStatisticsGenerator dsg(dataset_filename, output_filename, true);
-            dsg.output_stats(true);
+            dsg.output_stats();
         }
         while(easy_files.next_file(&dataset_filename)) {
             DatasetStatisticsGenerator dsg(dataset_filename, output_filename, true);
-            dsg.output_stats(true);
+            dsg.output_stats();
         }
         return 0;
     }
@@ -210,7 +216,7 @@ private:
      * Run the DatasetStatisticsGenerator and output files given the datasets NOT in
      * the "difficult" folder (so it won't take forever).
      */
-    int stat_gen() const {
+    int pmc_test() const {
         Logger::start("log.txt", false);
         PMCEnumeratorTester p(false);
         p.clearAll();
@@ -225,7 +231,27 @@ private:
      * and count the number of minimal separators and PMCs in each.
      */
     int random_stats() const {
-
+        time_t t;
+        DatasetStatisticsGenerator dgs(Graph(), "RandomResults.csv", false);
+        dgs.output_header();
+        int n[2] = {20,30};
+        double p[3] = {0.3,0.5,0.7};
+        int instances = 10;
+        for (int i=0; i<2; ++i) {
+            for (int j=0; j<3; ++j) {
+                for (int k=0; k<instances; ++k) {
+                    t = time(NULL);
+                    ostringstream s;
+                    s << "G(" << n[i] << ":" << p[j] << "); instance " << k+1 << "/" << instances;
+                    cout << "Running with G in " << s.str() << "... ";
+                    Graph g(n[i]);
+                    g.randomize(p[j]);
+                    dgs.reset_graph(g);
+                    dgs.output_stats(s.str());
+                    cout << "done, took " << long(time(NULL) - t) << " seconds\n";
+                }
+            }
+        }
         return 0;
     }
 
