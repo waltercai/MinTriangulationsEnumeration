@@ -14,7 +14,7 @@ using std::string;
 #define RESULT_DIR_BASE string("Results"+string(1,SLASH))
 #define DATASET_DIR_DEADEASY string("DeadEasy"+string(1,SLASH))
 #define DATASET_DIR_EASY string("Easy"+string(1,SLASH)+ "Random"+string(1,SLASH))
-
+#define DATASET_DIR_DIFFICULT string("Difficult"+string(1,SLASH))
 
 namespace tdenum {
 

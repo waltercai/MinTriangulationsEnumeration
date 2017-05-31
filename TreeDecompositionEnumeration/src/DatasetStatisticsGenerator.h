@@ -20,6 +20,10 @@ namespace tdenum {
  * - Number of PMCs
  * - Number of minimal triangulations
  *
+ * To use, construct the class with the name of the output file, add
+ * graphs and then call compute() (or compute(true) to see progress).
+ * To print results to the console, call print().
+ *
  * In the future (if required), add functionality to actually list
  * the separators and PMCs themselves.
  *

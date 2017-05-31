@@ -8,6 +8,7 @@
 #include <fstream>
 #include <sstream>
 #include <iomanip>
+#include <math.h>
 using std::ofstream;
 using std::endl;
 using std::ostringstream;
@@ -129,18 +130,19 @@ void DatasetStatisticsGenerator::compute(bool verbose) {
         if (valid[i]) continue;
 
         if (verbose) {
-            cout << "Computing graph " << i+1 << "/" << g.size() << " (" << text[i] << ")... ";
+            char s[1000];
+            time_t t = time(NULL);
+            struct tm * p = localtime(&t);
+            strftime(s, 1000, "%c", p);
+            cout << s << ": Computing graph " << i+1 << "/" << g.size() << " (" << text[i] << ")..." << endl;
         }
-        time_t t = time(NULL);
 
         // Basics
         if (fields & DSG_COMP_N) {
             n[i] = g[i].getNumberOfNodes();
-            if (verbose) cout << ".";
         }
         if (fields & DSG_COMP_M) {
             m[i] = g[i].getNumberOfEdges();
-            if (verbose) cout << ".";
         }
 
         // Separators
@@ -149,9 +151,10 @@ void DatasetStatisticsGenerator::compute(bool verbose) {
             MinimalSeparatorsEnumerator mse(g[i], UNIFORM);
             while(mse.hasNext()) {
                 ++ms[i];
+                if (verbose)
+                    cout << "\r " << n[i] << " | " << m[i] << " | " << ms[i] << " | ? | ?";
                 mse.next();
             }
-            if (verbose) cout << ".";
         }
 
         // PMCs
@@ -159,7 +162,8 @@ void DatasetStatisticsGenerator::compute(bool verbose) {
             PMCEnumerator pmce(g[i]);
             NodeSetSet nss = pmce.get();
             pmcs[i] = nss.size();
-            if (verbose) cout << ".";
+            if (verbose)
+                cout << "\r " << n[i] << " | " << m[i] << " | " << ms[i] << " | " << pmcs[i] << " | ?";
         }
 
         // Triangulations
@@ -168,14 +172,16 @@ void DatasetStatisticsGenerator::compute(bool verbose) {
             MinimalTriangulationsEnumerator enumerator(g[i], NONE, UNIFORM, SEPARATORS);
             while (enumerator.hasNext()) {
                 ++triangs[i];
+                if (verbose)
+                    cout << "\r " << n[i] << " | " << m[i] << " | " << ms[i] << " | " << pmcs[i] << " | " << triangs[i];
                 enumerator.next();
             }
-            if (verbose) cout << ".";
         }
 
         // That's it for this one!
         valid[i] = true;
-        if (verbose) cout << " done (in " << time(NULL) - t << " seconds)." << endl;
+        if (verbose)
+            cout << endl;
     }
 
     // Output

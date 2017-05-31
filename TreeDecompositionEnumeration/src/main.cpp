@@ -22,14 +22,25 @@ using std::ostringstream;
 namespace tdenum {
 
 typedef enum {
+    MAIN_TMP,
     MAIN_MIN_TRIANG_ENUM,
     MAIN_PMC_TEST,
     MAIN_STATISTIC_GEN,
-    MAIN_RANDOM_STATS
+    MAIN_RANDOM_STATS,
+    MAIN_DIFFICULT_STATS
 } MainType;
 
 class Main {
 private:
+
+    /**
+     * Just a sandbox main
+     */
+    int tmp() const {
+
+        return 0;
+    }
+
     /**
      * First parameter is the graph file path. Second is timeout in seconds.
      * Third is the order of extending triangulations. Options are: width, fill,
@@ -196,7 +207,7 @@ private:
         DirectoryIterator deadeasy_files(DATASET_DIR_BASE+DATASET_DIR_DEADEASY);
         DirectoryIterator easy_files(DATASET_DIR_BASE+DATASET_DIR_EASY);
         string dataset_filename;
-        string output_filename = RESULT_DIR_BASE+"results.csv";
+        string output_filename = RESULT_DIR_BASE+"EasyResults.csv";
         DatasetStatisticsGenerator dsg(output_filename);
         while(deadeasy_files.next_file(&dataset_filename)) {
             dsg.add_graph(dataset_filename);
@@ -204,7 +215,8 @@ private:
         while(easy_files.next_file(&dataset_filename)) {
             dsg.add_graph(dataset_filename);
         }
-        dsg.compute();
+        dsg.compute(true);
+        dsg.print();
         return 0;
     }
 
@@ -228,7 +240,7 @@ private:
      */
     int random_stats() const {
         // No need to output nodes, the graph name is enough
-        srand(time(NULL));
+        srand(time(NULL)); // For random graphs
         DatasetStatisticsGenerator dgs("RandomResults.csv",
                         DSG_COMP_ALL ^ DSG_COMP_TRNG); // Everything except triangulations
         int n[4] = {20,30,40,50};
@@ -250,11 +262,32 @@ private:
         return 0;
     }
 
+    /**
+     * Generates stats (MS's and PMCs, not triangulations) using the difficult
+     * input graphs.
+     */
+    int difficult_graphs() const {
+        DirectoryIterator difficult_files(DATASET_DIR_BASE+DATASET_DIR_DIFFICULT);
+        string dataset_filename;
+        string output_filename = RESULT_DIR_BASE+"DifficultResults.csv";
+        DatasetStatisticsGenerator dsg(output_filename);
+        while(difficult_files.next_file(&dataset_filename)) {
+            dsg.add_graph(dataset_filename);
+        }
+        dsg.compute(true);
+        dsg.print();
+        return 0;
+    }
+
+
     int return_val;
 public:
     // Run the specified program
     Main(MainType mt, int argc=0, char* argv[]=NULL) : return_val(-1) {
         switch(mt) {
+        case MAIN_TMP:
+            return_val = tmp();
+            break;
         case MAIN_MIN_TRIANG_ENUM:
             return_val = triang_enum(argc, argv);
             break;
@@ -266,6 +299,9 @@ public:
             break;
         case MAIN_RANDOM_STATS:
             return_val = random_stats();
+            break;
+        case MAIN_DIFFICULT_STATS:
+            return_val = difficult_graphs();
             break;
         }
     }
@@ -280,7 +316,9 @@ public:
 using namespace tdenum;
 
 int main(int argc, char* argv[]) {
-    return Main(MAIN_RANDOM_STATS).get();
+    int ret1 = Main(MAIN_RANDOM_STATS).get();
+    int ret2 = Main(MAIN_DIFFICULT_STATS).get();
+    return (ret1 != 0 ? ret1 : ret2);
 }
 
 
