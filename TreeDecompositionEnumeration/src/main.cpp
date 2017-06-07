@@ -244,10 +244,10 @@ private:
         DatasetStatisticsGenerator dgs("RandomResults.csv",
                         DSG_COMP_ALL ^ DSG_COMP_TRNG); // Everything except triangulations
         int n[4] = {20,30,40,50};
-        double p[3] = {0.3,0.5,0.7};
-        int instances = 10;
+        double p[1] = {/*0.3,0.5,*/0.7};
+        int instances = 1;
         for (int i=0; i<4; ++i) {
-            for (int j=0; j<3; ++j) {
+            for (int j=0; j<1; ++j) {
                 for (int k=0; k<instances; ++k) {
                     ostringstream s;
                     s << "G(" << n[i] << ":" << p[j] << "); " << k+1 << "/" << instances;

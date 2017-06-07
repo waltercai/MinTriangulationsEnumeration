@@ -123,7 +123,6 @@ void DatasetStatisticsGenerator::add_graph(const string& filename, const string&
 
 void DatasetStatisticsGenerator::compute(bool verbose) {
 
-    // Compute
     for (unsigned int i=0; i<g.size(); ++i) {
 
         // No need to re-compute anything
