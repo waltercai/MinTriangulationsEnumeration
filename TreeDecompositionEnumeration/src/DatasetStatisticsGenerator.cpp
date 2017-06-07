@@ -19,11 +19,41 @@ namespace tdenum {
 DatasetStatisticsGenerator::DatasetStatisticsGenerator(const string& outputfile, int flds) :
     outfilename(outputfile), fields(flds), max_text_len(10)/* Needs to be as long as "Graph text" */ {}
 
+string DatasetStatisticsGenerator::header(bool csv) const {
+
+    ostringstream oss;
+    string delim(csv ? "," : "|");
+
+    // Header
+    oss.setf(std::ios_base::left, std::ios_base::adjustfield);
+    oss << setw(max_text_len) << "Graph text";
+    if (fields & DSG_COMP_N) {
+        oss << delim << "Nodes ";
+    }
+    if (fields & DSG_COMP_M) {
+        oss << delim << "Edges ";
+    }
+    if (fields & DSG_COMP_MS) {
+        oss << delim << "Minimal separators";
+    }
+    if (fields & DSG_COMP_PMC) {
+        oss << delim << "PMCs    ";
+    }
+    if (fields & DSG_COMP_TRNG) {
+        oss << delim << "Minimal triangulations";
+    }
+    oss << endl;
+    if (!csv) {
+        oss << string(max_text_len+7+7+14+9+23, '=') << endl;
+    }
+
+    return oss.str();
+}
 string DatasetStatisticsGenerator::str(unsigned int i, bool csv) const {
 
     // Input validation
     if (i>=g.size() || !valid[i]) {
-        return "INVALID INPUT";
+        return "INVALID INPUT\n";
     }
 
     ostringstream oss;
@@ -57,6 +87,7 @@ string DatasetStatisticsGenerator::str(unsigned int i, bool csv) const {
     if (fields & DSG_COMP_TRNG) {
         oss << delim << setw(22) << triangs[i];
     }
+    oss << endl;
 
     // That's it!
     return oss.str();
@@ -67,36 +98,37 @@ string DatasetStatisticsGenerator::str(bool csv) const {
     string delim(csv ? "," : "|");
 
     // Header
-    oss << setw(max_text_len) << "Graph text";
-    if (fields & DSG_COMP_N) {
-        oss << delim << "Nodes ";
-    }
-    if (fields & DSG_COMP_M) {
-        oss << delim << "Edges ";
-    }
-    if (fields & DSG_COMP_MS) {
-        oss << delim << "Minimal separators";
-    }
-    if (fields & DSG_COMP_PMC) {
-        oss << delim << "PMCs    ";
-    }
-    if (fields & DSG_COMP_TRNG) {
-        oss << delim << "Minimal triangulations";
-    }
-    oss << endl;
-    if (!csv) {
-        oss << "=================================================================" << endl;
-    }
+    oss << header(csv);
 
     // Data
     for (unsigned int i=0; i<g.size(); ++i) {
         // Don't print invalid rows
         if (!valid[i]) continue;
-        oss << str(i,csv) << endl;
+        oss << str(i,csv);
     }
 
     // That's it!
     return oss.str();
+}
+
+
+void DatasetStatisticsGenerator::dump_line(unsigned int i) const {
+    ofstream outfile;
+    outfile.open(outfilename, ios::out | ios::app);
+    if (!outfile.good()) {
+        TRACE(TRACE_LVL__ERROR, "Couldn't open file '" << outfilename << "'");
+        return;
+    }
+    outfile << str(i, true);
+}
+void DatasetStatisticsGenerator::dump_header() const {
+    ofstream outfile;
+    outfile.open(outfilename, ios::out | ios::trunc);
+    if (!outfile.good()) {
+        TRACE(TRACE_LVL__ERROR, "Couldn't open file '" << outfilename << "'");
+        return;
+    }
+    outfile << header(true);
 }
 
 void DatasetStatisticsGenerator::add_graph(const Graph& graph, const string& txt) {
@@ -123,75 +155,73 @@ void DatasetStatisticsGenerator::add_graph(const string& filename, const string&
 
 void DatasetStatisticsGenerator::compute(bool verbose) {
 
+    // Start a new file
+    dump_header();
+
+    // Dump all data, calculate the missing data
     for (unsigned int i=0; i<g.size(); ++i) {
 
         // No need to re-compute anything
-        if (valid[i]) continue;
+        if (!valid[i]) {
 
-        if (verbose) {
-            char s[1000];
-            time_t t = time(NULL);
-            struct tm * p = localtime(&t);
-            strftime(s, 1000, "%c", p);
-            cout << s << ": Computing graph " << i+1 << "/" << g.size() << " (" << text[i] << ")..." << endl;
-        }
+            if (verbose) {
+                char s[1000];
+                time_t t = time(NULL);
+                struct tm * p = localtime(&t);
+                strftime(s, 1000, "%c", p);
+                cout << s << ": Computing graph " << i+1 << "/" << g.size() << " (" << text[i] << ")..." << endl;
+            }
 
-        // Basics
-        if (fields & DSG_COMP_N) {
-            n[i] = g[i].getNumberOfNodes();
-        }
-        if (fields & DSG_COMP_M) {
-            m[i] = g[i].getNumberOfEdges();
-        }
+            // Basics
+            if (fields & DSG_COMP_N) {
+                n[i] = g[i].getNumberOfNodes();
+            }
+            if (fields & DSG_COMP_M) {
+                m[i] = g[i].getNumberOfEdges();
+            }
 
-        // Separators
-        if (fields & DSG_COMP_MS) {
-            ms[i] = 0;
-            MinimalSeparatorsEnumerator mse(g[i], UNIFORM);
-            while(mse.hasNext()) {
-                ++ms[i];
+            // Separators
+            if (fields & DSG_COMP_MS) {
+                ms[i] = 0;
+                MinimalSeparatorsEnumerator mse(g[i], UNIFORM);
+                while(mse.hasNext()) {
+                    ++ms[i];
+                    if (verbose)
+                        cout << "\r " << n[i] << " | " << m[i] << " | " << ms[i] << " | ? | ? | ";
+                    mse.next();
+                }
+            }
+
+            // PMCs
+            if (fields & DSG_COMP_PMC) {
+                PMCEnumerator pmce(g[i]);
+                NodeSetSet nss = pmce.get();
+                pmcs[i] = nss.size();
                 if (verbose)
-                    cout << "\r " << n[i] << " | " << m[i] << " | " << ms[i] << " | ? | ?";
-                mse.next();
+                    cout << "\r " << n[i] << " | " << m[i] << " | " << ms[i] << " | " << pmcs[i] << " | ? | ";
+            }
+
+            // Triangulations
+            if (fields & DSG_COMP_TRNG) {
+                triangs[i] = 0;
+                MinimalTriangulationsEnumerator enumerator(g[i], NONE, UNIFORM, SEPARATORS);
+                while (enumerator.hasNext()) {
+                    ++triangs[i];
+                    if (verbose)
+                        cout << "\r " << n[i] << " | " << m[i] << " | " << ms[i] << " | " << pmcs[i] << " | " << triangs[i];
+                    enumerator.next();
+                }
             }
         }
 
-        // PMCs
-        if (fields & DSG_COMP_PMC) {
-            PMCEnumerator pmce(g[i]);
-            NodeSetSet nss = pmce.get();
-            pmcs[i] = nss.size();
-            if (verbose)
-                cout << "\r " << n[i] << " | " << m[i] << " | " << ms[i] << " | " << pmcs[i] << " | ?";
-        }
-
-        // Triangulations
-        if (fields & DSG_COMP_TRNG) {
-            triangs[i] = 0;
-            MinimalTriangulationsEnumerator enumerator(g[i], NONE, UNIFORM, SEPARATORS);
-            while (enumerator.hasNext()) {
-                ++triangs[i];
-                if (verbose)
-                    cout << "\r " << n[i] << " | " << m[i] << " | " << ms[i] << " | " << pmcs[i] << " | " << triangs[i];
-                enumerator.next();
-            }
-        }
-
-        // That's it for this one!
+        // That's it for this one! Output to file
         valid[i] = true;
         if (verbose)
-            cout << endl;
+            cout << "Done, writing to file..." << endl;
+        dump_line(i);
     }
 
-    // Output
-    if (verbose) cout << "Dumping to file... ";
-    ofstream outfile;
-    outfile.open(outfilename, ios::out | ios::trunc);
-    if (!outfile.good()) {
-        TRACE(TRACE_LVL__ERROR, "Couldn't open file '" << outfilename << "'");
-        return;
-    }
-    outfile << str(true);
+    // Done
     if (verbose) cout << "done." << endl;
 }
 
@@ -200,135 +230,6 @@ void DatasetStatisticsGenerator::print() const {
 }
 
 }
-
-
-
-/*
-const string DatasetStatisticsGenerator::header_str="Filename,Nodes,Edges,Minimal Separators,PMCs,Minimal triangulations\n";
-
-DatasetStatisticsGenerator::DatasetStatisticsGenerator(const string& filename,
-                                                       const string& outfile,
-                                                       bool of) :
-    infilename(filename), outfilename(outfile), valid(false), oldfile(of),
-    n(0), m(0), ms(0), pmcs(0), triangs(0) {
-    if (outfilename == string("")) {
-        string basename = infilename.substr(infilename.rfind(string(1,SLASH))+1);
-        outfilename = DEFAULT_OUTPUT_DIR + basename + ".Stats.csv";
-    }
-    g = GraphReader::read(filename);
-    TRACE(TRACE_LVL__DEBUG, "Created stats generator, output name will be:" << endl
-                            << outfilename << endl);
-    if (!of) {
-        reset_file();
-    }
-}
-DatasetStatisticsGenerator::DatasetStatisticsGenerator(const Graph& G,
-                                                       const string& outfile,
-                                                       bool of) :
-    g(G), outfilename(outfile), valid(false), oldfile(of),
-    n(0), m(0), ms(0), pmcs(0), triangs(0) {
-    outfilename = outfile;
-    if (!of) {
-        reset_file();
-    }
-}
-
-bool DatasetStatisticsGenerator::is_valid() const {
-    return valid;
-}
-
-void DatasetStatisticsGenerator::output_stats(const string& filename_text) {
-
-    ofstream outfile;
-
-    // Make sure values are updated
-    if (!is_valid()) {
-        get();
-    }
-
-    // Output to file
-    outfile.open(outfilename, ios::out | ios::app);
-    if (!outfile.good()) {
-        TRACE(TRACE_LVL__ERROR, "Couldn't open file '" << outfilename << "'");
-        return;
-    }
-    outfile << (filename_text == "" ? infilename : filename_text) << ","
-            << n << ","
-            << m << ","
-            << ms << ","
-            << pmcs << ","
-            << triangs << "\n";
-}
-
-void DatasetStatisticsGenerator::output_header() const {
-    ofstream outfile;
-    outfile.open(outfilename, ios::out | ios::trunc);
-    outfile << DatasetStatisticsGenerator::header_str;
-    return;
-}
-
-void DatasetStatisticsGenerator::reset_file(const string& filename) {
-    if (filename != "") {
-        outfilename = filename;
-    }
-    output_header();
-}
-
-void DatasetStatisticsGenerator::reset_graph(const Graph& G) {
-    g = G;
-    valid = false;
-}
-void DatasetStatisticsGenerator::reset_graph(const string& infile) {
-    g = GraphReader::read(infile);
-    valid = false;
-}
-
-void DatasetStatisticsGenerator::compute_nodes() {
-    n = g.getNumberOfNodes();
-}
-
-void DatasetStatisticsGenerator::compute_edges() {
-    m = g.getNumberOfEdges();
-}
-
-void DatasetStatisticsGenerator::compute_ms() {
-    ms = 0;
-    MinimalSeparatorsEnumerator mse(g, UNIFORM);
-    while(mse.hasNext()) {
-        ++ms;
-        mse.next();
-    }
-}
-
-void DatasetStatisticsGenerator::compute_pmcs() {
-    PMCEnumerator pmce(g);
-    NodeSetSet nss = pmce.get();
-    pmcs = nss.size();
-}
-
-void DatasetStatisticsGenerator::compute_traingulations() {
-    triangs = 0;
-    MinimalTriangulationsEnumerator enumerator(g, NONE, UNIFORM, SEPARATORS);
-    while (enumerator.hasNext()) {
-        ++triangs;
-    }
-}
-
-void DatasetStatisticsGenerator::get() {
-    if (!is_valid()) {
-        compute_nodes();
-        compute_edges();
-        compute_ms();
-        compute_pmcs();
-        compute_traingulations();
-        valid = true;
-    }
-}
-
-}*/
-
-
-
 
 
 

@@ -63,11 +63,18 @@ private:
     // Used for printing to console.
     unsigned int max_text_len;
 
+    // Return a header string
+    string header(bool csv) const;
+
     // Stringify a single result, in CSV format or printable.
     string str(unsigned int i, bool csv) const;
 
     // Stringify the data, in CSV format or printable format.
     string str(bool csv) const;
+
+    // Dump result line to file, or open a new file and output a header
+    void dump_line(unsigned int i) const;
+    void dump_header() const;
 
 public:
 

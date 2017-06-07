@@ -27,6 +27,13 @@ DirectoryIterator::DirectoryIterator(const string& base_dir, bool v, unsigned in
 }
 
 /**
+ * Adds a string to the skip list.
+ */
+void DirectoryIterator::skip(const string& s) {
+    skip_list.push_back(s);
+}
+
+/**
  * Find the next file.
  *
  * If the next dirent is a directory, open it and push it onto the stack,
@@ -64,6 +71,13 @@ bool DirectoryIterator::next_file(string* filename_ptr) {
     // If the directory given is "." or "..", ignore it.
     if (filename == "." || filename == "..") {
         return next_file(filename_ptr);
+    }
+
+    // If the user requested to skip this, skip
+    for (unsigned int i=0; i<skip_list.size(); ++i) {
+        if (fullname.find(skip_list[i]) !=  string::npos) {
+            return next_file(filename_ptr);
+        }
     }
 
     // If this is a directory, push it onto the stack and recurse:

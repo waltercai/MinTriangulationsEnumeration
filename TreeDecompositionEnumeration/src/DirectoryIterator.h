@@ -4,8 +4,10 @@
 #include <string>
 #include <dirent.h>
 #include <stack>
+#include <vector>
 using std::stack;
 using std::string;
+using std::vector;
 
 /**
  * Some useful directory names
@@ -15,6 +17,7 @@ using std::string;
 #define DATASET_DIR_DEADEASY string("DeadEasy"+string(1,SLASH))
 #define DATASET_DIR_EASY string("Easy"+string(1,SLASH)+ "Random"+string(1,SLASH))
 #define DATASET_DIR_DIFFICULT string("Difficult"+string(1,SLASH))
+#define DATASET_DIR_DIFFICULT_BN string(DATASET_DIR_DIFFICULT+"BN"+string(1,SLASH))
 
 namespace tdenum {
 
@@ -25,12 +28,20 @@ class DirectoryIterator {
 private:
     stack<DIR*> dir_ptr_stack;    // Use a stack to keep track of recursive deepening
     stack<string> name_stack;     // The names of the directories in the stack
+    vector<string> skip_list;     // If some s in skip[] is a substring of the current filename, skip it
     bool verbose;                 // If true, prints errors
     unsigned int max_depth;       // Maximal depth of subdirectory recursion
 public:
+
     // Init with the base directory, verbosity (print errors) and maximum depth of
     // directory tree.
-    DirectoryIterator(const string& base_dir, bool verbose = true, unsigned int md = 100);
+    DirectoryIterator(const string& base_dir,
+                      bool verbose = true,
+                      unsigned int md = 100);
+
+    // Add a substring to skip
+    void skip(const string& s);
+
     // Fetches the name of the next file under the directory.
     // Returns true <==> such a file exists (we aren't at the last file).
     bool next_file(string* str);

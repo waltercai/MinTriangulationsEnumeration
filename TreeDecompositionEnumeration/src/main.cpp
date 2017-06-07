@@ -27,7 +27,8 @@ typedef enum {
     MAIN_PMC_TEST,
     MAIN_STATISTIC_GEN,
     MAIN_RANDOM_STATS,
-    MAIN_DIFFICULT_STATS
+    MAIN_DIFFICULT_STATS,
+    MAIN_QUICK_STATS
 } MainType;
 
 class Main {
@@ -203,18 +204,20 @@ private:
      * This relies on an older version of DatasetStatisticsGenerator... see
      * random_stats for a better implementation.
      */
-    int stat_gen() const {
+    void stat_gen_aux(DatasetStatisticsGenerator& dsg) const {
         DirectoryIterator deadeasy_files(DATASET_DIR_BASE+DATASET_DIR_DEADEASY);
         DirectoryIterator easy_files(DATASET_DIR_BASE+DATASET_DIR_EASY);
         string dataset_filename;
-        string output_filename = RESULT_DIR_BASE+"EasyResults.csv";
-        DatasetStatisticsGenerator dsg(output_filename);
         while(deadeasy_files.next_file(&dataset_filename)) {
             dsg.add_graph(dataset_filename);
         }
         while(easy_files.next_file(&dataset_filename)) {
             dsg.add_graph(dataset_filename);
         }
+    }
+    int stat_gen() const {
+        DatasetStatisticsGenerator dsg(RESULT_DIR_BASE+"EasyResults.csv");
+        stat_gen_aux(dsg);
         dsg.compute(true);
         dsg.print();
         return 0;
@@ -238,14 +241,10 @@ private:
      * p=0.3,0.5,0.7 (six graphs). Generate 10 examples of each,
      * and count the number of minimal separators and PMCs in each.
      */
-    int random_stats() const {
-        // No need to output nodes, the graph name is enough
-        srand(time(NULL)); // For random graphs
-        DatasetStatisticsGenerator dgs("RandomResults.csv",
-                        DSG_COMP_ALL ^ DSG_COMP_TRNG); // Everything except triangulations
-        int n[4] = {20,30,40,50};
-        double p[1] = {/*0.3,0.5,*/0.7};
-        int instances = 1;
+    void random_stats_aux(DatasetStatisticsGenerator& dsg,
+                          const vector<int>& n,
+                          const vector<double>& p,
+                          int instances) const {
         for (int i=0; i<4; ++i) {
             for (int j=0; j<1; ++j) {
                 for (int k=0; k<instances; ++k) {
@@ -253,12 +252,18 @@ private:
                     s << "G(" << n[i] << ":" << p[j] << "); " << k+1 << "/" << instances;
                     Graph g(n[i]);
                     g.randomize(p[j]);
-                    dgs.add_graph(g, s.str());
+                    dsg.add_graph(g, s.str());
                 }
             }
         }
-        dgs.compute(true);
-        dgs.print();
+    }
+    int random_stats() const {
+        // No need to output nodes, the graph name is enough
+        DatasetStatisticsGenerator dsg("RandomResults.csv",
+                        DSG_COMP_ALL ^ DSG_COMP_TRNG); // Everything except triangulations
+        random_stats_aux(dsg, {20,30,40,50}, {/*0.3,0.5,*/0.7}, 1);
+        dsg.compute(true);
+        dsg.print();
         return 0;
     }
 
@@ -278,6 +283,30 @@ private:
         dsg.print();
         return 0;
     }
+
+    /**
+     * Gather ONLY the minimal separators on:
+     * - Graphs in easy+deadeasy
+     * - Random graphs with p=70% edges and up to 50 nodes
+     */
+    int quick_graphs() const {
+        // Don't calculate PMCs or triangulations
+        DatasetStatisticsGenerator dsg(RESULT_DIR_BASE+"QuickResults.csv",
+                        DSG_COMP_ALL ^ (DSG_COMP_TRNG | DSG_COMP_PMC));
+        stat_gen_aux(dsg);
+        random_stats_aux(dsg, {20,30,40,50}, {0.7}, 10);
+        DirectoryIterator difficult_files(DATASET_DIR_BASE+DATASET_DIR_DIFFICULT_BN);
+        difficult_files.skip("Grid");
+        string dataset_filename;
+        while(difficult_files.next_file(&dataset_filename)) {
+            dsg.add_graph(dataset_filename);
+        }
+        dsg.compute(true);
+        dsg.print();
+        return 0;
+    }
+
+
 
 
     int return_val;
@@ -303,6 +332,9 @@ public:
         case MAIN_DIFFICULT_STATS:
             return_val = difficult_graphs();
             break;
+        case MAIN_QUICK_STATS:
+            return_val = quick_graphs();
+            break;
         }
     }
     // Output the return value
@@ -316,9 +348,8 @@ public:
 using namespace tdenum;
 
 int main(int argc, char* argv[]) {
-    int ret1 = Main(MAIN_RANDOM_STATS).get();
-    int ret2 = Main(MAIN_DIFFICULT_STATS).get();
-    return (ret1 != 0 ? ret1 : ret2);
+    srand(time(NULL)); // For random graphs
+    return Main(MAIN_QUICK_STATS).get();
 }
 
 
