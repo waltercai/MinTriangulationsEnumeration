@@ -117,7 +117,6 @@ string DatasetStatisticsGenerator::str(bool csv) const {
     return oss.str();
 }
 
-
 void DatasetStatisticsGenerator::dump_line(unsigned int i) {
     ofstream outfile;
     omp_set_lock(&lock);
