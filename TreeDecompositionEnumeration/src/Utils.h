@@ -26,11 +26,12 @@ namespace tdenum {
 #define SLASH '/'
 #endif
 
+
+
 /**
  * Printing and logging.
  *
  * To fork-output all ASSERT_PRINTS to file, call Logger::start(filename).
- *
  */
 #define __FILENAME__ (strrchr(__FILE__, SLASH) ? strrchr(__FILE__, SLASH) + 1 : __FILE__)
 
@@ -59,6 +60,14 @@ public:
         } \
         _LOG_FLAG = true; \
         _LOG_FILE_NAME = _filename; \
+
+
+/**
+ * Useful container wrappers
+ */
+// Remove an element from a vector (by value).
+#define REMOVE_FROM_VECTOR(_v, _elmt) \
+    _v.erase(std::remove(_v.begin(), _v.end(), _elmt), _v.end())
 
 
 // Output vectors / sets, in general

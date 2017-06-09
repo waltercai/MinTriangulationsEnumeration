@@ -17,7 +17,13 @@ using std::setw;
 namespace tdenum {
 
 DatasetStatisticsGenerator::DatasetStatisticsGenerator(const string& outputfile, int flds) :
-    outfilename(outputfile), fields(flds), max_text_len(10)/* Needs to be as long as "Graph text" */ {}
+                            outfilename(outputfile), fields(flds), graphs_computed(0),
+                            max_text_len(10)/* Needs to be as long as "Graph text" */ {
+    omp_init_lock(&lock);
+}
+DatasetStatisticsGenerator::~DatasetStatisticsGenerator() {
+    omp_destroy_lock(&lock);
+}
 
 string DatasetStatisticsGenerator::header(bool csv) const {
 
@@ -112,23 +118,54 @@ string DatasetStatisticsGenerator::str(bool csv) const {
 }
 
 
-void DatasetStatisticsGenerator::dump_line(unsigned int i) const {
+void DatasetStatisticsGenerator::dump_line(unsigned int i) {
     ofstream outfile;
+    omp_set_lock(&lock);
     outfile.open(outfilename, ios::out | ios::app);
     if (!outfile.good()) {
         TRACE(TRACE_LVL__ERROR, "Couldn't open file '" << outfilename << "'");
+        omp_unset_lock(&lock);
         return;
     }
     outfile << str(i, true);
+    omp_unset_lock(&lock);
 }
-void DatasetStatisticsGenerator::dump_header() const {
+void DatasetStatisticsGenerator::dump_header() {
     ofstream outfile;
+    omp_set_lock(&lock);
     outfile.open(outfilename, ios::out | ios::trunc);
     if (!outfile.good()) {
         TRACE(TRACE_LVL__ERROR, "Couldn't open file '" << outfilename << "'");
+        omp_unset_lock(&lock);
         return;
     }
     outfile << header(true);
+    omp_unset_lock(&lock);
+}
+
+void DatasetStatisticsGenerator::print_progress(bool verbose)  {
+
+    // This needs to be locked...
+    omp_set_lock(&lock);
+
+    // Construct and print the string
+    ostringstream oss;
+    oss << "\rN/M";
+    if (fields & DSG_COMP_MS) oss << "/MS";
+    if (fields & DSG_COMP_PMC) oss << "/PMCS";
+    if (fields & DSG_COMP_TRNG) oss << "/TRNG";
+    for(unsigned int i=0; i<graphs_in_progress.size(); ++i) {
+        unsigned int j = graphs_in_progress[i];
+        oss << " | " << n[j] << "/" << m[j];
+        if (fields & DSG_COMP_MS) oss << "/" << ms[j];
+        if (fields & DSG_COMP_PMC) oss << "/" << pmcs[j];
+        if (fields & DSG_COMP_TRNG) oss << "/" << triangs[j];
+    }
+    cout << oss.str();
+
+    // Unlock
+    omp_unset_lock(&lock);
+
 }
 
 void DatasetStatisticsGenerator::add_graph(const Graph& graph, const string& txt) {
@@ -153,76 +190,96 @@ void DatasetStatisticsGenerator::add_graph(const string& filename, const string&
     add_graph(g, text == "" ? filename : text);
 }
 
+void DatasetStatisticsGenerator::compute(unsigned int i, bool verbose) {
+
+    // Add this graph to the  list of 'in progress' graphs.
+    // This is a shared resource, so lock it.
+    omp_set_lock(&lock);
+    graphs_in_progress.push_back(i);
+    omp_unset_lock(&lock);
+
+    // Basics
+    if (fields & DSG_COMP_N) {
+        n[i] = g[i].getNumberOfNodes();
+    }
+    if (fields & DSG_COMP_M) {
+        m[i] = g[i].getNumberOfEdges();
+    }
+
+    // Separators
+    if (fields & DSG_COMP_MS) {
+        ms[i] = 0;
+        MinimalSeparatorsEnumerator mse(g[i], UNIFORM);
+        while(mse.hasNext()) {
+            ++ms[i];
+            print_progress(verbose);
+            mse.next();
+        }
+    }
+
+    // PMCs
+    if (fields & DSG_COMP_PMC) {
+        PMCEnumerator pmce(g[i]);
+        NodeSetSet nss = pmce.get();
+        pmcs[i] = nss.size();
+        print_progress(verbose);
+    }
+
+    // Triangulations
+    if (fields & DSG_COMP_TRNG) {
+        triangs[i] = 0;
+        MinimalTriangulationsEnumerator enumerator(g[i], NONE, UNIFORM, SEPARATORS);
+        while (enumerator.hasNext()) {
+            ++triangs[i];
+            print_progress(verbose);
+            enumerator.next();
+        }
+    }
+
+    // That's it for this one!
+    valid[i] = true;
+
+    // Some cleanup.
+    // Lock
+    omp_set_lock(&lock);
+
+    // Update the graphs in progress (under lock)
+    REMOVE_FROM_VECTOR(graphs_in_progress, i);
+    graphs_computed++;
+
+    // Print
+    if (verbose) {
+
+        // We may need to clear the line (if progress was printed)..
+        cout << "\r" << string(50+max_text_len, ' ') << "\r";
+
+        // Get the time and output.
+        char s[1000];
+        time_t t = time(NULL);
+        struct tm * p = localtime(&t);
+        strftime(s, 1000, "%c", p);
+        cout << s << ": Done computing graph " << graphs_computed+1 << "/" << g.size() << ","
+                  << "'" <<text[i] << "'" << endl;
+    }
+
+    // Unlock
+    omp_unset_lock(&lock);
+
+}
 void DatasetStatisticsGenerator::compute(bool verbose) {
 
     // Start a new file
     dump_header();
 
-    // Dump all data, calculate the missing data
+    // Dump all data, calculate the missing data.
+    // If possible, parallelize this
+#pragma omp parallel for
     for (unsigned int i=0; i<g.size(); ++i) {
-
-        // No need to re-compute anything
         if (!valid[i]) {
-
-            if (verbose) {
-                char s[1000];
-                time_t t = time(NULL);
-                struct tm * p = localtime(&t);
-                strftime(s, 1000, "%c", p);
-                cout << s << ": Computing graph " << i+1 << "/" << g.size() << " (" << text[i] << ")..." << endl;
-            }
-
-            // Basics
-            if (fields & DSG_COMP_N) {
-                n[i] = g[i].getNumberOfNodes();
-            }
-            if (fields & DSG_COMP_M) {
-                m[i] = g[i].getNumberOfEdges();
-            }
-
-            // Separators
-            if (fields & DSG_COMP_MS) {
-                ms[i] = 0;
-                MinimalSeparatorsEnumerator mse(g[i], UNIFORM);
-                while(mse.hasNext()) {
-                    ++ms[i];
-                    if (verbose)
-                        cout << "\r " << n[i] << " | " << m[i] << " | " << ms[i] << " | ? | ? | ";
-                    mse.next();
-                }
-            }
-
-            // PMCs
-            if (fields & DSG_COMP_PMC) {
-                PMCEnumerator pmce(g[i]);
-                NodeSetSet nss = pmce.get();
-                pmcs[i] = nss.size();
-                if (verbose)
-                    cout << "\r " << n[i] << " | " << m[i] << " | " << ms[i] << " | " << pmcs[i] << " | ? | ";
-            }
-
-            // Triangulations
-            if (fields & DSG_COMP_TRNG) {
-                triangs[i] = 0;
-                MinimalTriangulationsEnumerator enumerator(g[i], NONE, UNIFORM, SEPARATORS);
-                while (enumerator.hasNext()) {
-                    ++triangs[i];
-                    if (verbose)
-                        cout << "\r " << n[i] << " | " << m[i] << " | " << ms[i] << " | " << pmcs[i] << " | " << triangs[i];
-                    enumerator.next();
-                }
-            }
+            compute(i, verbose);
         }
-
-        // That's it for this one! Output to file
-        valid[i] = true;
-        if (verbose)
-            cout << "Done, writing to file..." << endl;
         dump_line(i);
     }
-
-    // Done
-    if (verbose) cout << "done." << endl;
 }
 
 void DatasetStatisticsGenerator::print() const {

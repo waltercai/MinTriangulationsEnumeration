@@ -7,6 +7,7 @@
 #include "PMCEnumerator.h"
 #include <string>
 #include <vector>
+#include <omp.h>
 using std::vector;
 
 namespace tdenum {
@@ -46,7 +47,7 @@ private:
     // Single output file, where the data will be dumped.
     const string outfilename;
 
-    // The fields to be calculated.
+    // The fields to be calculated (ORed flags).
     const int fields;
 
     // For every i, the following vectors store the data of graph i.
@@ -60,27 +61,46 @@ private:
     // Are the (n,m,ms,pmcs,triangs) fields valid for graph i?
     vector<bool> valid;
 
-    // Used for printing to console.
+    // While computing a graph's stats, push it's index here so
+    // print_progress will output the current computation status.
+    // Also, add a flag indicating whether or not progress is
+    // currently printed.
+    vector<unsigned int> graphs_in_progress;
+    unsigned int graphs_computed;
+
+    // Used for printing to console (width of first column).
     unsigned int max_text_len;
+
+    // When verbose computation output is requested, it's better
+    // to lock a lock before printing, otherwise we'll get garbage.
+    omp_lock_t lock;
 
     // Return a header string
     string header(bool csv) const;
 
-    // Stringify a single result, in CSV format or printable.
+    // Stringify all data / single result, in CSV format or printable.
     string str(unsigned int i, bool csv) const;
-
-    // Stringify the data, in CSV format or printable format.
     string str(bool csv) const;
 
-    // Dump result line to file, or open a new file and output a header
-    void dump_line(unsigned int i) const;
-    void dump_header() const;
+    // Dump result line to file, or open a new file and output a header.
+    // Can't be const, we need to lock the lock here
+    void dump_line(unsigned int i);
+    void dump_header();
+
+    // If verbose computation is enabled, use this to print progress
+    // to the screen.
+    void print_progress(bool verbose);
+
+    // Used to compute a single graph.
+    // Optionally print verbose output.
+    void compute(unsigned int i, bool verbose=false);
 
 public:
 
     // Creates a new instance of the generator.
     // By ORing different flags the user may decide which fields to compute.
     DatasetStatisticsGenerator(const string& outputfile, int flds = DSG_COMP_ALL);
+    ~DatasetStatisticsGenerator();
 
     // Add graphs.
     // The user may either send an input filename to read the data
