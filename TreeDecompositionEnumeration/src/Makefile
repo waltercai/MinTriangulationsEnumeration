@@ -1,5 +1,5 @@
 CC=g++
-CPPFLAGS=-std=c++11
+CPPFLAGS=-std=c++11 -fopenmp
 LDFLAGS=-fopenmp
 OBJS=ChordalGraph.o Converter.o DatasetStatisticsGenerator.o DataStructures.o DirectoryIterator.o Graph.o GraphReader.o IndSetExtBySeparators.o IndSetExtByTriangulation.o IndSetScorerByTriangulation.o main.o MinimalSeparatorsEnumerator.o MinimalTriangulationsEnumerator.o MinimalTriangulator.o MinTriangulationsEnumeration.o PMCEnumerator.o PMCEnumeratorTester.o SeparatorGraph.o SeparatorsScorer.o SubGraph.o Utils.o
 EXEC=main
@@ -7,7 +7,7 @@ EXEC=main
 $(EXEC): $(OBJS)
 
 clean:
-      rm -rf $(OBJS)
+	rm -rf $(OBJS)
 
 ChordalGraph.o: ChordalGraph.cpp ChordalGraph.h Graph.h DataStructures.h
 Converter.o: Converter.cpp Converter.h Graph.h ChordalGraph.h \
