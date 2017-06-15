@@ -230,8 +230,8 @@ private:
     int pmc_test() const {
         Logger::start("log.txt", false);
         PMCEnumeratorTester p(false);
-        p.clearAll();
-        p.flag_noamsgraphs = true;
+//        p.clearAll();
+//        p.flag_noamsgraphs = true;
         p.go();
         return 0;
     }
@@ -350,6 +350,7 @@ using namespace tdenum;
 int main(int argc, char* argv[]) {
     srand(time(NULL)); // For random graphs
     return Main(MAIN_QUICK_STATS).get();
+//    return Main(MAIN_PMC_TEST).get();
 }
 
 

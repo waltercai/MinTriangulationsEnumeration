@@ -55,6 +55,13 @@ string DatasetStatisticsGenerator::header(bool csv) const {
     if (fields & DSG_COMP_TRNG) {
         oss << delim << "Minimal triangulations";
     }
+    // Error columns
+    if (DSG_MS_TIME_LIMIT != DSG_NO_LIMIT || DSG_TRNG_TIME_LIMIT != DSG_NO_LIMIT) {
+        oss << delim << "Time errors";
+    }
+    if (DSG_MS_COUNT_LIMIT != DSG_NO_LIMIT || DSG_TRNG_COUNT_LIMIT != DSG_NO_LIMIT) {
+        oss << delim << "Count errors";
+    }
     oss << endl;
     if (!csv) {
         oss << string(max_text_len+7+7+14+9+23, '=') << endl;
@@ -93,12 +100,49 @@ string DatasetStatisticsGenerator::str(unsigned int i, bool csv) const {
     }
     if (fields & DSG_COMP_MS) {
         oss << delim << setw(18) << ms[i];
+        if (ms_time_limit[i]) {
+            oss << "t";
+        }
+        else if (ms_count_limit[i]) {
+            oss << "+";
+        }
     }
     if (fields & DSG_COMP_PMC) {
         oss << delim << setw(8) << pmcs[i];
     }
     if (fields & DSG_COMP_TRNG) {
         oss << delim << setw(22) << triangs[i];
+        if (trng_time_limit[i]) {
+            oss << "t";
+        }
+        else if (trng_count_limit[i]) {
+            oss << "+";
+        }
+    }
+    // Error columns
+    if (DSG_MS_TIME_LIMIT != DSG_NO_LIMIT || DSG_TRNG_TIME_LIMIT != DSG_NO_LIMIT) {
+        if (ms_time_limit[i] || trng_time_limit[i]) {
+            string s;
+            if (ms_time_limit[i]) {
+                s += string("MS");
+            }
+            if (trng_time_limit[i]) {
+                s += (ms_time_limit[i] ? "," : "") + string("TRNG");
+            }
+            oss << delim << setw(11) << s;
+        }
+    }
+    if (DSG_MS_COUNT_LIMIT != DSG_NO_LIMIT || DSG_TRNG_COUNT_LIMIT != DSG_NO_LIMIT) {
+        if (ms_count_limit[i] || trng_count_limit[i]) {
+            string s;
+            if (ms_count_limit[i]) {
+                s += string("MS");
+            }
+            if (trng_count_limit[i]) {
+                s += (ms_count_limit[i] ? "," : "") + string("TRNG");
+            }
+            oss << delim << setw(12) << s;
+        }
     }
     oss << endl;
 
@@ -176,9 +220,13 @@ void DatasetStatisticsGenerator::print_progress(bool verbose)  {
     for(unsigned int i=0; i<graphs_in_progress.size(); ++i) {
         unsigned int j = graphs_in_progress[i];
         oss << " | " << n[j] << "/" << m[j];
-        if (fields & DSG_COMP_MS) oss << "/" << ms[j];
+        if (fields & DSG_COMP_MS) {
+            oss << "/" << ms[j] << (ms_count_limit[j] ? "+" : "") << (ms_time_limit[j] ? "t" : "");
+        }
         if (fields & DSG_COMP_PMC) oss << "/" << pmcs[j];
-        if (fields & DSG_COMP_TRNG) oss << "/" << triangs[j];
+        if (fields & DSG_COMP_TRNG) {
+            oss << "/" << triangs[j] << (trng_count_limit[j] ? "+" : "") << (trng_time_limit[j] ? "t" : "");
+        }
     }
     cout << oss.str();
 
@@ -196,6 +244,10 @@ void DatasetStatisticsGenerator::add_graph(const Graph& graph, const string& txt
     g.push_back(graph);
     text.push_back(txt);
     valid.push_back(false);
+    ms_count_limit.push_back(false);
+    ms_time_limit.push_back(false);
+    trng_count_limit.push_back(false);
+    trng_time_limit.push_back(false);
     n.push_back(0);
     m.push_back(0);
     ms.push_back(0);
@@ -219,6 +271,11 @@ void DatasetStatisticsGenerator::add_graph(const string& filename, const string&
  */
 void DatasetStatisticsGenerator::compute(unsigned int i, bool verbose) {
 
+    // For printing the time
+    char s[1000];
+    time_t t;
+    struct tm * p;
+
     // Add this graph to the  list of 'in progress' graphs.
     // This is a shared resource, so lock it.
     omp_set_lock(&lock);
@@ -233,32 +290,57 @@ void DatasetStatisticsGenerator::compute(unsigned int i, bool verbose) {
         m[i] = g[i].getNumberOfEdges();
     }
 
-    // Separators
-    if (fields & DSG_COMP_MS) {
+    // PMCs.
+    // The minimal separators are free, so no need to calculate
+    // them separately.
+    if (fields & DSG_COMP_PMC) {
+        PMCEnumerator pmce(g[i]);
+        pmce.get();
+        pmcs[i] = pmce.get().size();
+        ms[i] = pmce.get_ms().size();
+        print_progress(verbose);
+    }
+
+    // Separators (if PMCs were calculated, no need for this)
+    if ((fields & DSG_COMP_MS) && !(fields & DSG_COMP_PMC)) {
         ms[i] = 0;
         MinimalSeparatorsEnumerator mse(g[i], UNIFORM);
+        if (DSG_MS_TIME_LIMIT != DSG_NO_LIMIT) {
+            t = time(NULL);
+        }
         while(mse.hasNext()) {
             ++ms[i];
             print_progress(verbose);
+            if (DSG_MS_COUNT_LIMIT != DSG_NO_LIMIT && ms[i] > DSG_MS_COUNT_LIMIT) {
+                ms_count_limit[i] = true;
+                break;
+            }
+            if (DSG_MS_TIME_LIMIT != DSG_NO_LIMIT && time(NULL)-t > DSG_MS_TIME_LIMIT) {
+                ms_time_limit[i] = true;
+                break;
+            }
             mse.next();
         }
-    }
-
-    // PMCs
-    if (fields & DSG_COMP_PMC) {
-        PMCEnumerator pmce(g[i]);
-        NodeSetSet nss = pmce.get();
-        pmcs[i] = nss.size();
-        print_progress(verbose);
     }
 
     // Triangulations
     if (fields & DSG_COMP_TRNG) {
         triangs[i] = 0;
         MinimalTriangulationsEnumerator enumerator(g[i], NONE, UNIFORM, SEPARATORS);
+        if (DSG_MS_TIME_LIMIT != DSG_NO_LIMIT) {
+            t = time(NULL);
+        }
         while (enumerator.hasNext()) {
             ++triangs[i];
             print_progress(verbose);
+            if (DSG_TRNG_COUNT_LIMIT != DSG_NO_LIMIT && triangs[i] > DSG_TRNG_COUNT_LIMIT) {
+                trng_count_limit[i] = true;
+                break;
+            }
+            if (DSG_TRNG_TIME_LIMIT != DSG_NO_LIMIT && time(NULL)-t > DSG_TRNG_TIME_LIMIT) {
+                trng_time_limit[i] = true;
+                break;
+            }
             enumerator.next();
         }
     }
@@ -281,11 +363,21 @@ void DatasetStatisticsGenerator::compute(unsigned int i, bool verbose) {
         cout << "\r" << string(50+max_text_len, ' ') << "\r";
 
         // Get the time and output.
-        char s[1000];
-        time_t t = time(NULL);
-        struct tm * p = localtime(&t);
+        // If any limits were encountered, be verbose!
+        t = time(NULL);
+        p = localtime(&t);
         strftime(s, 1000, "%c", p);
-        cout << s << ": Done computing graph " << graphs_computed+1 << "/" << g.size() << ","
+        cout << s << ": ";
+        if (ms_time_limit[i] || trng_time_limit[i]) {
+            cout << "OUT OF TIME on graph ";
+        }
+        else if (ms_count_limit[i] || trng_count_limit[i]) {
+            cout << "HIT NUMERIC LIMIT on graph ";
+        }
+        else {
+            cout << "Done computing graph ";
+        }
+        cout << graphs_computed+1 << "/" << g.size() << ","
                   << "'" <<text[i] << "'" << endl;
     }
 

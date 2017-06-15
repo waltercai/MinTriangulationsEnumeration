@@ -69,6 +69,7 @@ public:
 	// std::set methods
 	unsigned int size() const;
 	bool empty() const;
+	void clear();
 	set<NodeSet>::iterator begin() const;
 	set<NodeSet>::iterator end() const;
 	set<NodeSet>::iterator find(const NodeSet& nodeSet) const;

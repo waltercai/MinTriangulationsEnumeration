@@ -19,7 +19,22 @@ class PMCEnumerator {
     // Test class
     friend class PMCEnumeratorTester;
 
+    // The graph in question
     Graph graph;
+
+    // The PMCs (after calculation)
+    NodeSetSet pmcs;
+
+    // We get the minimal separators as a by-product of the algorithm,
+    // so store it here for later use.
+    // In the future, maybe optionally allow the user to pass the set
+    // of minimal separators as an argument to the constructor, and
+    // calculate the minimal separators of subgraphs given the MSs of
+    // the original graph. This may save a lot of time.
+    NodeSetSet MS;
+
+    // If the calculation is complete, set this to true.
+    bool done;
 
     // Returns true <==> K is a potential maximal clique in G.
     // Assumes K is a subset of the vertices in G.
@@ -36,7 +51,7 @@ class PMCEnumerator {
 
     // get() iterates over all connected components of G and calls this
     // auxiliary function which expects a connected graph.
-    NodeSetSet getConnected(const SubGraph&) const;
+    NodeSetSet getConnected(const SubGraph&);
 
 public:
     PMCEnumerator(const Graph& g);
@@ -44,8 +59,11 @@ public:
     // Resets the instance to use a new graph (allows re-use of variable name).
     void reset(const Graph& g);
 
-    // Return the set of PMCs.
-    NodeSetSet get() const;
+    // Returns the set of PMCs (calculates if need be)
+    NodeSetSet get();
+
+    // Return the set of minimal separators.
+    NodeSetSet get_ms();
 };
 
 } /* namespace tdenum */

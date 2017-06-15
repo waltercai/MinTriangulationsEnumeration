@@ -114,6 +114,9 @@ unsigned int NodeSetSet::size() const {
 bool NodeSetSet::empty() const {
     return sets.empty();
 }
+void NodeSetSet::clear() {
+    sets.clear();
+}
 
 set<NodeSet>::iterator NodeSetSet::begin() const {
     return sets.begin();

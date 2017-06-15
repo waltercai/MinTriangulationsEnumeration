@@ -41,6 +41,26 @@ namespace tdenum {
 #define DSG_COMP_TRNG 16
 #define DSG_COMP_ALL (-1) // All bits are 1
 
+/**
+ * If calculations take too long, limit the number of
+ * minimal separators / triangulations calculated (PMCs
+ * are calculated all-or-nothing anyway), and / or the amount
+ * of time (in seconds) required.
+ *
+ * To run with no limit, set DSG_<MS,TRNG>_<COUNT,TIME>_LIMIT
+ * to DSG_NO_LIMIT.
+ *
+ * The output statistic will contain a "t" for out-of-time, or
+ * a "+" for hitting DSG_COUNT limits.
+ *
+ * The CSV file WILL NOT reflect
+ */
+#define DSG_NO_LIMIT (-1)
+#define DSG_MS_COUNT_LIMIT (100000)
+#define DSG_TRNG_COUNT_LIMIT (100000)
+#define DSG_MS_TIME_LIMIT (10*60) // Ten minutes
+#define DSG_TRNG_TIME_LIMIT (10*60)
+
 class DatasetStatisticsGenerator {
 private:
 
@@ -62,6 +82,11 @@ private:
     vector<int> triangs;
     // Are the (n,m,ms,pmcs,triangs) fields valid for graph i?
     vector<bool> valid;
+    // If the limit was overreached, set the relevant flag.
+    vector<bool> ms_count_limit;
+    vector<bool> ms_time_limit;
+    vector<bool> trng_count_limit;
+    vector<bool> trng_time_limit;
 
     // While computing a graph's stats, push it's index here so
     // print_progress will output the current computation status.

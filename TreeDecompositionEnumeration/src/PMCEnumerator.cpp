@@ -5,50 +5,33 @@
 
 namespace tdenum {
 
-PMCEnumerator::PMCEnumerator(const Graph& g) : graph(g) {}
+PMCEnumerator::PMCEnumerator(const Graph& g) : graph(g), done(false) {}
 
 void PMCEnumerator::reset(const Graph& g) {
     graph = g;
+    done = false;
 }
 
 /**
- * Returns all PMCs by iterating over all connected components and returning
- * the union of all PMCs found.
- * Each PMC in any graph is entirely contained in a single connected component,
- * because a minimal triangulation never merges connected components (no need
- * to add a chord, there'll be no cycle contained in two components).
+ * Returns all PMCs (updates PMCs and MSs in the class)
  */
-NodeSetSet PMCEnumerator::get() const {
-    // Used to have code to handle connected components.
-    // However, the subroutine required specific handling of
-    // adding nodes disconnected from the previous subgraph
-    // (see OneMoreVertex), which also handles the case of
-    // different connected components in the original graph...
-    // So the code is dead, Jim.
-    return getConnected(graph);
-/*    auto C = graph.getComponents(NodeSet());
-    NodeSetSet allPMCs;
-    TRACE(TRACE_LVL__NOISE, "In, doing " << C.size() << " iterations on the graph:\n" << graph.str());
-    for (unsigned int i=0; i<C.size(); ++i) {
-        TRACE(TRACE_LVL__NOISE, "Creating subgraph with component C["<<i<<"]="<<C[i]<<"...");
-        SubGraph sg = SubGraph(graph, C[i]);
-        TRACE(TRACE_LVL__NOISE, "Got a subgraph:\n" << sg << "Fetching node map...");
-        vector<int> nodeMapToMain = sg.getNodeMapToMainGraph();
-        TRACE(TRACE_LVL__NOISE, "Got nodemap=" << nodeMapToMain << ". Entering subroutine...");
-        NodeSetSet currentPMCs = getConnected(sg);
-        TRACE(TRACE_LVL__NOISE, "Done. Got the following PMCs in the subgraph:" << endl << currentPMCs);
-        for (auto it=currentPMCs.begin(); it!=currentPMCs.end(); ++it) {
-            // The returned sets are in terms of the subgraph - use getNodeMapToMainGraph()
-            // to get their real names in the main graph
-            NodeSet realNames(it->size());
-            for (unsigned int i = 0; i < it->size(); ++i) {
-                realNames[i] = nodeMapToMain[(*it)[i]];
-            }
-            allPMCs.insert(realNames);
-        }
+NodeSetSet PMCEnumerator::get() {
+    if (!done) {
+        NodeSetSet nss = getConnected(graph);
+        done = true;
+        pmcs = nss;
     }
-    TRACE(TRACE_LVL__NOISE, "Done! Got " << allPMCs.size() << " PMCs:\n" << allPMCs);
-    return allPMCs;*/
+    return pmcs;
+}
+
+/**
+ * Returns minimal separators.
+ */
+NodeSetSet PMCEnumerator::get_ms() {
+    if (!done) {
+        get();
+    }
+    return MS;
 }
 
 /**
@@ -56,7 +39,7 @@ NodeSetSet PMCEnumerator::get() const {
  * Iteratively finds all PMCs in subgraphs of sequencially increasing size.
  * Assumes g is a connected graph.
  */
-NodeSetSet PMCEnumerator::getConnected(const SubGraph& g) const {
+NodeSetSet PMCEnumerator::getConnected(const SubGraph& g) {
     TRACE(TRACE_LVL__NOISE, "In with G=\n" << g << "Getting nodes vector...");
     vector<Node> nodes = g.getNodesVector();
     int n = g.getNumberOfNodes();
@@ -64,38 +47,52 @@ NodeSetSet PMCEnumerator::getConnected(const SubGraph& g) const {
         return NodeSetSet();
     }
 
-    // P[i] will be the PMCs of Gi (the subgraph with i+1 vertices of G)
-    vector<NodeSetSet> P(n);
-    // D[i] will be the minimal separators of Gi
-    vector<NodeSetSet> D(n);
-    // If the nodes of G are {a_1,...,a_n} then P0 = {{a1}}
-    NodeSet firstSet(1);
-    firstSet[0] = nodes[0];
-    P[0].insert(firstSet);
-    // D[0] should remain empty
+    // Each iteration requires data on two graphs: Gi and Gip1 (i plus 1).
+    NodeSetSet PMCi, PMCip1, MSi, MSip1;
+    vector<SubGraph> subg;
 
-    for (int i=1; i<n; ++i) {
-        // Calculate Di, the relevant subgraphs Gi-1 and Gi, and use
-        // OneMoreVertex.
-        // This is the main function described in the paper.
+    // Start by creating all subgraphs.
+    // This should not constitute a memory bottleneck... if so,
+    // the graphs are WAY too large for these algorithms :)
+    for (int i=1; i<=n; ++i) {
         vector<Node> subnodes = nodes;
-        Node a;
-        subnodes.resize(i+1);
-        a = subnodes.back();
-        SubGraph Gip1 = SubGraph(g, subnodes);
         subnodes.resize(i);
-        SubGraph Gi = SubGraph(g, subnodes);
-        MinimalSeparatorsEnumerator DiEnumerator(Gip1, UNIFORM);
-        while (DiEnumerator.hasNext()) {
-            D[i].insert(DiEnumerator.next());
-        }
-        P[i] = OneMoreVertex(Gip1, Gi, a, D[i], D[i-1], P[i-1]);
-        TRACE(TRACE_LVL__DEBUG, "OneMoreVertex in iteration " << i
-              << " with the graph G(i+1):" << endl << Gip1
-              << "got PMCs:" << endl << P[i]);
+        subg.push_back(SubGraph(g, subnodes));
     }
 
-    return P[n-1];
+    // If the nodes of G are {a_1,...,a_n} then P1 = {{a1}}
+    NodeSet firstSet(1);
+    firstSet[0] = nodes[0];
+    PMCip1.insert(firstSet); // Later, PMCi=PMCip1
+
+    // MS1 should remain empty, so MSi=MSip1 is OK
+
+    for (int i=1; i<n; ++i) {
+        // Calculate MSip1 and PMCip1, and use OneMoreVertex.
+        // This is the main function described in the paper.
+        PMCi = PMCip1;
+        MSi = MSip1;
+        MSip1.clear();
+        Node a = nodes[i];
+
+        // Calculate MSip1
+        MinimalSeparatorsEnumerator DiEnumerator(subg[i], UNIFORM);
+        while (DiEnumerator.hasNext()) {
+            MSip1.insert(DiEnumerator.next());
+        }
+
+        // Calculate PMCip1
+        PMCip1 = OneMoreVertex(subg[i], subg[i-1], a, MSip1, MSi, PMCi);
+        TRACE(TRACE_LVL__DEBUG, "OneMoreVertex in iteration " << i
+              << " with the graph G(i+1):" << endl << subg[i]
+              << "got PMCs:" << endl << PMCip1);
+    }
+
+    // Update the minimal separators
+    MS = MSip1;
+
+    // That's it!
+    return PMCip1;
 }
 
 
