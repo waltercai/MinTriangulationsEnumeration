@@ -1,7 +1,13 @@
 CC=g++
 CPPFLAGS=-std=c++11 -fopenmp
 LDFLAGS=-fopenmp
-OBJS=ChordalGraph.o Converter.o DatasetStatisticsGenerator.o DataStructures.o DirectoryIterator.o Graph.o GraphReader.o IndSetExtBySeparators.o IndSetExtByTriangulation.o IndSetScorerByTriangulation.o main.o MinimalSeparatorsEnumerator.o MinimalTriangulationsEnumerator.o MinimalTriangulator.o MinTriangulationsEnumeration.o PMCEnumerator.o PMCEnumeratorTester.o SeparatorGraph.o SeparatorsScorer.o SubGraph.o Utils.o
+OBJS=ChordalGraph.o Converter.o DatasetStatisticsGenerator.o \
+ DataStructures.o DirectoryIterator.o Graph.o GraphReader.o \
+ IndSetExtBySeparators.o IndSetExtByTriangulation.o \
+ IndSetScorerByTriangulation.o main.o MinimalSeparatorsEnumerator.o \
+ MinimalTriangulationsEnumerator.o MinimalTriangulator.o \
+ MinTriangulationsEnumeration.o PMCEnumerator.o PMCEnumeratorTester.o \
+ SeparatorGraph.o SeparatorsScorer.o SubGraph.o Utils.o
 EXEC=main
 
 $(EXEC): $(OBJS)

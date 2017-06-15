@@ -33,7 +33,7 @@ namespace tdenum {
  * the point of code execution.
  */
 
-#define DEFAULT_OUTPUT_DIR "/"
+#define DEFAULT_OUTPUT_DIR "./"
 #define DSG_COMP_N 1
 #define DSG_COMP_M 2
 #define DSG_COMP_MS 4
@@ -51,6 +51,8 @@ private:
     const int fields;
 
     // For every i, the following vectors store the data of graph i.
+    // Different threads access these at different indexes, so there
+    // should be no need to lock any of them.
     vector<Graph> g;
     vector<string> text;
     vector<int> n;

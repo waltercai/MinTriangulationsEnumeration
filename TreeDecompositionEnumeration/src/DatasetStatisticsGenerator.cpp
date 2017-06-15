@@ -16,15 +16,22 @@ using std::setw;
 
 namespace tdenum {
 
+/**
+ * Note that we're using locks, so they need to be created and destroyed.
+ *
+ * Also, max_text_len needs to be at least the size of the string "Graph text"
+ */
 DatasetStatisticsGenerator::DatasetStatisticsGenerator(const string& outputfile, int flds) :
-                            outfilename(outputfile), fields(flds), graphs_computed(0),
-                            max_text_len(10)/* Needs to be as long as "Graph text" */ {
+                            outfilename(outputfile), fields(flds), graphs_computed(0), max_text_len(10) {
     omp_init_lock(&lock);
 }
 DatasetStatisticsGenerator::~DatasetStatisticsGenerator() {
     omp_destroy_lock(&lock);
 }
 
+/**
+ * Useful for stringifying output, in CSV format or human readable.
+ */
 string DatasetStatisticsGenerator::header(bool csv) const {
 
     ostringstream oss;
@@ -117,6 +124,11 @@ string DatasetStatisticsGenerator::str(bool csv) const {
     return oss.str();
 }
 
+/**
+ * When dumping to file, it's always in CSV format.
+ * Note that dump_line() is called by compute() which may be running
+ * in several parallel instances, so be thread safe!
+ */
 void DatasetStatisticsGenerator::dump_line(unsigned int i) {
     ofstream outfile;
     omp_set_lock(&lock);
@@ -142,7 +154,15 @@ void DatasetStatisticsGenerator::dump_header() {
     omp_unset_lock(&lock);
 }
 
+/**
+ * Useful when running batch jobs with multiple processors.
+ * This may be called by multiple threads, so the overhead here
+ * is for non-garbled output.
+ */
 void DatasetStatisticsGenerator::print_progress(bool verbose)  {
+
+    // Duh.
+    if (!verbose) return;
 
     // This needs to be locked...
     omp_set_lock(&lock);
@@ -167,6 +187,9 @@ void DatasetStatisticsGenerator::print_progress(bool verbose)  {
 
 }
 
+/**
+ * If the graph is given by a filename, GraphReader is used.
+ */
 void DatasetStatisticsGenerator::add_graph(const Graph& graph, const string& txt) {
 
     // Add vector elements
@@ -189,6 +212,11 @@ void DatasetStatisticsGenerator::add_graph(const string& filename, const string&
     add_graph(g, text == "" ? filename : text);
 }
 
+/**
+ * Computes the fields requested by the user for all graphs / a specific graph.
+ * Calling compute() (all graph mode) is parallelized on supporting platforms,
+ * so be cautious when editing compute(i)!
+ */
 void DatasetStatisticsGenerator::compute(unsigned int i, bool verbose) {
 
     // Add this graph to the  list of 'in progress' graphs.
@@ -281,6 +309,10 @@ void DatasetStatisticsGenerator::compute(bool verbose) {
     }
 }
 
+/**
+ * Stringify currently computed data and output to console in human readable
+ * format.
+ */
 void DatasetStatisticsGenerator::print() const {
     cout << str(false);
 }
