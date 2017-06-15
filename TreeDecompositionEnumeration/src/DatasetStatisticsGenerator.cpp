@@ -55,7 +55,10 @@ string DatasetStatisticsGenerator::header(bool csv) const {
     if (fields & DSG_COMP_TRNG) {
         oss << delim << "Minimal triangulations";
     }
-    // Error columns
+    // Special columns
+    if (fields & DSG_COMP_MS) {
+        oss << delim << "MS calculation time";
+    }
     if (DSG_MS_TIME_LIMIT != DSG_NO_LIMIT || DSG_TRNG_TIME_LIMIT != DSG_NO_LIMIT) {
         oss << delim << "Time errors";
     }
@@ -100,26 +103,17 @@ string DatasetStatisticsGenerator::str(unsigned int i, bool csv) const {
     }
     if (fields & DSG_COMP_MS) {
         oss << delim << setw(18) << ms[i];
-        if (ms_time_limit[i]) {
-            oss << "t";
-        }
-        else if (ms_count_limit[i]) {
-            oss << "+";
-        }
     }
     if (fields & DSG_COMP_PMC) {
         oss << delim << setw(8) << pmcs[i];
     }
     if (fields & DSG_COMP_TRNG) {
         oss << delim << setw(22) << triangs[i];
-        if (trng_time_limit[i]) {
-            oss << "t";
-        }
-        else if (trng_count_limit[i]) {
-            oss << "+";
-        }
     }
-    // Error columns
+    // Special columns
+    if (fields & DSG_COMP_MS) {
+        oss << delim << setw(19) << ms_calc_time[i];
+    }
     if (DSG_MS_TIME_LIMIT != DSG_NO_LIMIT || DSG_TRNG_TIME_LIMIT != DSG_NO_LIMIT) {
         if (ms_time_limit[i] || trng_time_limit[i]) {
             string s;
@@ -248,6 +242,7 @@ void DatasetStatisticsGenerator::add_graph(const Graph& graph, const string& txt
     ms_time_limit.push_back(false);
     trng_count_limit.push_back(false);
     trng_time_limit.push_back(false);
+    ms_calc_time.push_back(string("0"));
     n.push_back(0);
     m.push_back(0);
     ms.push_back(0);
@@ -305,9 +300,7 @@ void DatasetStatisticsGenerator::compute(unsigned int i, bool verbose) {
     if ((fields & DSG_COMP_MS) && !(fields & DSG_COMP_PMC)) {
         ms[i] = 0;
         MinimalSeparatorsEnumerator mse(g[i], UNIFORM);
-        if (DSG_MS_TIME_LIMIT != DSG_NO_LIMIT) {
-            t = time(NULL);
-        }
+        t = time(NULL);
         while(mse.hasNext()) {
             ++ms[i];
             print_progress(verbose);
@@ -321,6 +314,10 @@ void DatasetStatisticsGenerator::compute(unsigned int i, bool verbose) {
             }
             mse.next();
         }
+        time_t diff = time(NULL)-t;
+        ostringstream oss;
+        oss << diff/(60*60) << ":" << (diff/60)%60 << ":" << diff%60;
+        ms_calc_time[i] = oss.str();
     }
 
     // Triangulations

@@ -56,8 +56,8 @@ namespace tdenum {
  * The CSV file WILL NOT reflect
  */
 #define DSG_NO_LIMIT (-1)
-#define DSG_MS_COUNT_LIMIT (100000)
-#define DSG_TRNG_COUNT_LIMIT (100000)
+#define DSG_MS_COUNT_LIMIT (500000)
+#define DSG_TRNG_COUNT_LIMIT (500000)
 #define DSG_MS_TIME_LIMIT (10*60) // Ten minutes
 #define DSG_TRNG_TIME_LIMIT (10*60)
 
@@ -87,6 +87,8 @@ private:
     vector<bool> ms_time_limit;
     vector<bool> trng_count_limit;
     vector<bool> trng_time_limit;
+    // The amount of time required to calculate the minimal separators.
+    vector<string> ms_calc_time;
 
     // While computing a graph's stats, push it's index here so
     // print_progress will output the current computation status.
