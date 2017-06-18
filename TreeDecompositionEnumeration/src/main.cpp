@@ -28,7 +28,8 @@ typedef enum {
     MAIN_STATISTIC_GEN,
     MAIN_RANDOM_STATS,
     MAIN_DIFFICULT_STATS,
-    MAIN_QUICK_STATS
+    MAIN_QUICK_STATS,
+    MAIN_FINE_GRAIN_P
 } MainType;
 
 class Main {
@@ -199,10 +200,8 @@ private:
 	}
 
     /**
-     * Test the PMC enumerator.
-     *
-     * This relies on an older version of DatasetStatisticsGenerator... see
-     * random_stats for a better implementation.
+     * Run the DatasetStatisticsGenerator and output files given the datasets NOT in
+     * the "difficult" folder (so it won't take forever).
      */
     void stat_gen_aux(DatasetStatisticsGenerator& dsg) const {
         DirectoryIterator deadeasy_files(DATASET_DIR_BASE+DATASET_DIR_DEADEASY);
@@ -224,8 +223,10 @@ private:
     }
 
     /**
-     * Run the DatasetStatisticsGenerator and output files given the datasets NOT in
-     * the "difficult" folder (so it won't take forever).
+     * Test the PMC enumerator.
+     *
+     * This relies on an older version of DatasetStatisticsGenerator... see
+     * random_stats for a better implementation.
      */
     int pmc_test() const {
         Logger::start("log.txt", false);
@@ -237,21 +238,21 @@ private:
     }
 
     /**
-     * Generate random graphs from G(n,p) where n=20,30 and
-     * p=0.3,0.5,0.7 (six graphs). Generate 10 examples of each,
-     * and count the number of minimal separators and PMCs in each.
+     * Generate random graphs from G(n,p) (where p[i] is a vector of
+     * probabilities for graphs of size n[i]). For each value of n
+     * and p, create and compute stats for 'instances' instances.
      */
     void random_stats_aux(DatasetStatisticsGenerator& dsg,
                           const vector<int>& n,
-                          const vector<double>& p,
+                          const vector<vector<double> >& p,
                           int instances) const {
-        for (int i=0; i<4; ++i) {
-            for (int j=0; j<1; ++j) {
+        for (unsigned int i=0; i<n.size(); ++i) {
+            for (unsigned int j=0; j<p[i].size(); ++j) {
                 for (int k=0; k<instances; ++k) {
                     ostringstream s;
-                    s << "G(" << n[i] << ":" << p[j] << "); " << k+1 << "/" << instances;
+                    s << "G(" << n[i] << ":" << p[i][j] << "); " << k+1 << "/" << instances;
                     Graph g(n[i]);
-                    g.randomize(p[j]);
+                    g.randomize(p[i][j]);
                     dsg.add_graph(g, s.str());
                 }
             }
@@ -261,7 +262,8 @@ private:
         // No need to output nodes, the graph name is enough
         DatasetStatisticsGenerator dsg("RandomResults.csv",
                         DSG_COMP_ALL ^ DSG_COMP_TRNG); // Everything except triangulations
-        random_stats_aux(dsg, {20,30,40,50}, {/*0.3,0.5,*/0.7}, 1);
+        vector<vector<double> > p = {{0.3,0.5,0.7},{0.3,0.5,0.7},{0.3,0.5,0.7},{0.3,0.5,0.7}};
+        random_stats_aux(dsg, {20,30,40,50}, p, 3);
         dsg.compute(true);
         dsg.print();
         return 0;
@@ -294,7 +296,8 @@ private:
         DatasetStatisticsGenerator dsg(RESULT_DIR_BASE+"QuickResults.csv",
                         DSG_COMP_ALL ^ (DSG_COMP_TRNG | DSG_COMP_PMC));
         stat_gen_aux(dsg);
-        random_stats_aux(dsg, {20,30,40,50}, {0.7}, 10);
+        vector<vector<double> > p = {{0.7},{0.7},{0.7},{0.7}};
+        random_stats_aux(dsg, {20,30,40,50}, p, 10);
         DirectoryIterator difficult_files(DATASET_DIR_BASE+DATASET_DIR_DIFFICULT_BN);
         difficult_files.skip("Grid");
         string dataset_filename;
@@ -306,6 +309,22 @@ private:
         return 0;
     }
 
+    /**
+     * Random graphs with p={1/n,2/n,...,(n-1)/n,1} (where n is the number of nodes).
+     */
+    int fine_grained_probability() const {
+        DatasetStatisticsGenerator dsg(RESULT_DIR_BASE+"FineGrainedRandom.csv",
+                        DSG_COMP_ALL ^ (DSG_COMP_TRNG | DSG_COMP_PMC));
+        vector<int> n = {20, 30, 50, 70};
+        vector<vector<double> > p(n.size());
+        for (unsigned int i=0; i<n.size(); ++i)
+            for (int j=1; j<=n[i]; ++j)
+                p[i].push_back(j/(double(n[i])));
+        random_stats_aux(dsg, n, p, 3);
+        dsg.compute(true);
+        dsg.print();
+        return 0;
+    }
 
 
 
@@ -335,6 +354,9 @@ public:
         case MAIN_QUICK_STATS:
             return_val = quick_graphs();
             break;
+        case MAIN_FINE_GRAIN_P:
+            return_val = fine_grained_probability();
+            break;
         }
     }
     // Output the return value
@@ -349,8 +371,7 @@ using namespace tdenum;
 
 int main(int argc, char* argv[]) {
     srand(time(NULL)); // For random graphs
-    return Main(MAIN_QUICK_STATS).get();
-//    return Main(MAIN_PMC_TEST).get();
+    return Main(MAIN_FINE_GRAIN_P).get();
 }
 
 
