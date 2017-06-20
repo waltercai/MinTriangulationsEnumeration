@@ -57,9 +57,9 @@ namespace tdenum {
  */
 #define DSG_NO_LIMIT (-1)
 #define DSG_MS_COUNT_LIMIT (500000)
-#define DSG_TRNG_COUNT_LIMIT (500000)
-#define DSG_MS_TIME_LIMIT (10*60) // Ten minutes
-#define DSG_TRNG_TIME_LIMIT (10*60)
+#define DSG_TRNG_COUNT_LIMIT DSG_MS_COUNT_LIMIT
+#define DSG_MS_TIME_LIMIT (20*60) // Ten minutes
+#define DSG_TRNG_TIME_LIMIT DSG_MS_TIME_LIMIT
 
 class DatasetStatisticsGenerator {
 private:

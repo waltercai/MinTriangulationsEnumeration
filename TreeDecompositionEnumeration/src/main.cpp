@@ -29,7 +29,8 @@ typedef enum {
     MAIN_RANDOM_STATS,
     MAIN_DIFFICULT_STATS,
     MAIN_QUICK_STATS,
-    MAIN_FINE_GRAIN_P
+    MAIN_FINE_GRAIN_P,
+    MAIN_FINE_GRAIN_AND_QUICK
 } MainType;
 
 class Main {
@@ -291,10 +292,7 @@ private:
      * - Graphs in easy+deadeasy
      * - Random graphs with p=70% edges and up to 50 nodes
      */
-    int quick_graphs() const {
-        // Don't calculate PMCs or triangulations
-        DatasetStatisticsGenerator dsg(RESULT_DIR_BASE+"QuickResults.csv",
-                        DSG_COMP_ALL ^ (DSG_COMP_TRNG | DSG_COMP_PMC));
+    void quick_graphs_aux(DatasetStatisticsGenerator& dsg) const {
         stat_gen_aux(dsg);
         vector<vector<double> > p = {{0.7},{0.7},{0.7},{0.7}};
         random_stats_aux(dsg, {20,30,40,50}, p, 10);
@@ -304,6 +302,12 @@ private:
         while(difficult_files.next_file(&dataset_filename)) {
             dsg.add_graph(dataset_filename);
         }
+    }
+    int quick_graphs() const {
+        // Don't calculate PMCs or triangulations
+        DatasetStatisticsGenerator dsg(RESULT_DIR_BASE+"QuickResults.csv",
+                        DSG_COMP_ALL ^ (DSG_COMP_TRNG | DSG_COMP_PMC));
+        quick_graphs_aux(dsg);
         dsg.compute(true);
         dsg.print();
         return 0;
@@ -312,15 +316,31 @@ private:
     /**
      * Random graphs with p={1/n,2/n,...,(n-1)/n,1} (where n is the number of nodes).
      */
-    int fine_grained_probability() const {
-        DatasetStatisticsGenerator dsg(RESULT_DIR_BASE+"FineGrainedRandom.csv",
-                        DSG_COMP_ALL ^ (DSG_COMP_TRNG | DSG_COMP_PMC));
+    void fine_grained_probability_aux(DatasetStatisticsGenerator& dsg) const {
         vector<int> n = {20, 30, 50, 70};
         vector<vector<double> > p(n.size());
         for (unsigned int i=0; i<n.size(); ++i)
             for (int j=1; j<=n[i]; ++j)
                 p[i].push_back(j/(double(n[i])));
         random_stats_aux(dsg, n, p, 3);
+    }
+    int fine_grained_probability() const {
+        DatasetStatisticsGenerator dsg(RESULT_DIR_BASE+"FineGrainedRandom.csv",
+                        DSG_COMP_ALL ^ (DSG_COMP_TRNG | DSG_COMP_PMC));
+        fine_grained_probability_aux(dsg);
+        dsg.compute(true);
+        dsg.print();
+        return 0;
+    }
+
+    /**
+     * Both fine grained and quick graphs.
+     */
+    int fine_grained_and_quick() const {
+        DatasetStatisticsGenerator dsg(RESULT_DIR_BASE+"FineGrainedAndQuick.csv",
+                        DSG_COMP_ALL ^ (DSG_COMP_TRNG | DSG_COMP_PMC));
+        fine_grained_probability_aux(dsg);
+        quick_graphs_aux(dsg);
         dsg.compute(true);
         dsg.print();
         return 0;
@@ -357,6 +377,9 @@ public:
         case MAIN_FINE_GRAIN_P:
             return_val = fine_grained_probability();
             break;
+        case MAIN_FINE_GRAIN_AND_QUICK:
+            return_val = fine_grained_and_quick();
+            break;
         }
     }
     // Output the return value
@@ -371,7 +394,7 @@ using namespace tdenum;
 
 int main(int argc, char* argv[]) {
     srand(time(NULL)); // For random graphs
-    return Main(MAIN_FINE_GRAIN_P).get();
+    return Main(MAIN_FINE_GRAIN_AND_QUICK).get();
 }
 
 
