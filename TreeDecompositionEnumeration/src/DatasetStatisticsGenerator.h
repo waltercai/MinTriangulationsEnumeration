@@ -70,6 +70,10 @@ private:
     // The fields to be calculated (ORed flags).
     const int fields;
 
+    // If at least one of the added graphs is randomized, set this
+    // to true so we know to output an extra column for p.
+    bool has_random;
+
     // For every i, the following vectors store the data of graph i.
     // Different threads access these at different indexes, so there
     // should be no need to lock any of them.

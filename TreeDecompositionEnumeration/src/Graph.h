@@ -22,6 +22,10 @@ class Graph {
 	int numberOfEdges;
 	vector< set<Node> > neighborSets;
 
+	// If the graph is randomized, update these
+	bool isRandomGraph;
+	double p;
+
 	bool isValidNode(Node v) const;
 	vector< vector<Node> > getComponentsAux(vector<int> visitedList, int numberOfUnhandeledNodes) const;
 
@@ -59,6 +63,9 @@ public:
 	int getNumberOfEdges() const;
 	// Returns the number of nodes in the graph
 	int getNumberOfNodes() const;
+	// Self explanatory
+	bool isRandom() const;
+	double getP() const;
 	// Returns the degree of the node. Returns -1 on invalid node
 	int d(Node i) const;
 	// Returns the neighbors of the given node

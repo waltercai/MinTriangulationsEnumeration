@@ -22,7 +22,8 @@ namespace tdenum {
  * Also, max_text_len needs to be at least the size of the string "Graph text"
  */
 DatasetStatisticsGenerator::DatasetStatisticsGenerator(const string& outputfile, int flds) :
-                            outfilename(outputfile), fields(flds), graphs_computed(0), max_text_len(10) {
+                            outfilename(outputfile), fields(flds), has_random(false),
+                            graphs_computed(0), max_text_len(10) {
     omp_init_lock(&lock);
 }
 DatasetStatisticsGenerator::~DatasetStatisticsGenerator() {
@@ -56,6 +57,9 @@ string DatasetStatisticsGenerator::header(bool csv) const {
         oss << delim << "Minimal triangulations";
     }
     // Special columns
+    if (has_random) {
+        oss << delim << "P value";
+    }
     if (fields & DSG_COMP_MS) {
         oss << delim << "MS calculation time";
     }
@@ -67,7 +71,8 @@ string DatasetStatisticsGenerator::header(bool csv) const {
     }
     oss << endl;
     if (!csv) {
-        oss << string(max_text_len+7+7+14+9+23, '=') << endl;
+        // Minus one, for the end-line
+        oss << string(strlen(oss.str().c_str())-1, '=') << endl;
     }
 
     return oss.str();
@@ -111,32 +116,48 @@ string DatasetStatisticsGenerator::str(unsigned int i, bool csv) const {
         oss << delim << setw(22) << triangs[i];
     }
     // Special columns
-    if (fields & DSG_COMP_MS) {
+    if (has_random) {
+        if (g[i].isRandom()) {
+            oss << delim << setw(7) << g[i].getP();
+        }
+        else {
+            oss << delim << setw(7) << " ";
+        }
+    }
+    // MS are calculated in one go if we're calculating PMCs,
+    // no point in printing MS calculation time
+    if ((fields & DSG_COMP_MS) && !(fields & DSG_COMP_PMC)) {
         oss << delim << setw(19) << ms_calc_time[i];
     }
     if (DSG_MS_TIME_LIMIT != DSG_NO_LIMIT || DSG_TRNG_TIME_LIMIT != DSG_NO_LIMIT) {
+        string s;
         if (ms_time_limit[i] || trng_time_limit[i]) {
-            string s;
             if (ms_time_limit[i]) {
                 s += string("MS");
             }
             if (trng_time_limit[i]) {
                 s += (ms_time_limit[i] ? "," : "") + string("TRNG");
             }
-            oss << delim << setw(11) << s;
         }
+        else {
+            s = " ";
+        }
+        oss << delim << setw(11) << s;
     }
     if (DSG_MS_COUNT_LIMIT != DSG_NO_LIMIT || DSG_TRNG_COUNT_LIMIT != DSG_NO_LIMIT) {
+        string s;
         if (ms_count_limit[i] || trng_count_limit[i]) {
-            string s;
             if (ms_count_limit[i]) {
                 s += string("MS");
             }
             if (trng_count_limit[i]) {
                 s += (ms_count_limit[i] ? "," : "") + string("TRNG");
             }
-            oss << delim << setw(12) << s;
         }
+        else {
+            s = " ";
+        }
+        oss << delim << setw(12) << s;
     }
     oss << endl;
 
@@ -252,6 +273,11 @@ void DatasetStatisticsGenerator::add_graph(const Graph& graph, const string& txt
     // Update max text length
     if (max_text_len < strlen(txt.c_str())) {
         max_text_len = strlen(txt.c_str());
+    }
+
+    // If this is a random graph, inform the class
+    if (graph.isRandom()) {
+        has_random = true;
     }
 }
 void DatasetStatisticsGenerator::add_graph(const string& filename, const string& text) {

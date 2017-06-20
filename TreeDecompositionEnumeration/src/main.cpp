@@ -261,10 +261,14 @@ private:
     }
     int random_stats() const {
         // No need to output nodes, the graph name is enough
-        DatasetStatisticsGenerator dsg("RandomResults.csv",
-                        DSG_COMP_ALL ^ DSG_COMP_TRNG); // Everything except triangulations
-        vector<vector<double> > p = {{0.3,0.5,0.7},{0.3,0.5,0.7},{0.3,0.5,0.7},{0.3,0.5,0.7}};
-        random_stats_aux(dsg, {20,30,40,50}, p, 3);
+        DatasetStatisticsGenerator dsg(RESULT_DIR_BASE+"RandomResults.csv",
+                        DSG_COMP_ALL ^ (DSG_COMP_TRNG/* | DSG_COMP_PMC*/)); // Everything except triangulations
+        vector<int> n = {20,30,40,50};
+        vector<vector<double> > p;
+        for (unsigned int i=0; i < n.size(); ++i) {
+            p.push_back({0.3,0.5,0.7});
+        }
+        random_stats_aux(dsg, n, p, 3);
         dsg.compute(true);
         dsg.print();
         return 0;

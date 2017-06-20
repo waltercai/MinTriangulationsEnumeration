@@ -10,10 +10,10 @@
 
 namespace tdenum {
 
-Graph::Graph() : numberOfNodes(0), numberOfEdges(0) {}
+Graph::Graph() : numberOfNodes(0), numberOfEdges(0), isRandomGraph(false) {}
 
 Graph::Graph(int numberOfNodes) : numberOfNodes(numberOfNodes), numberOfEdges(0),
-		neighborSets(numberOfNodes) {}
+		neighborSets(numberOfNodes), isRandomGraph(false) {}
 
 void Graph::reset(int n) {
     numberOfNodes = n;
@@ -22,25 +22,43 @@ void Graph::reset(int n) {
     neighborSets.resize(n);
 }
 
-void Graph::randomize(double p) {
-    if (numberOfEdges > 0) {
-        return;
+void Graph::randomize(double pr) {
+
+    // I need to know if I'm a random graph!
+    isRandomGraph = true;
+    p = pr;
+
+    // Remove all edges
+    for (int i=0; i<numberOfNodes; ++i) {
+        neighborSets[i].clear();
     }
+
     NodeSet nodes = getNodesVector();
     double d;
-    TRACE(TRACE_LVL__NOISE, "In, p=" << p);
-    p *= RAND_MAX;
+    TRACE(TRACE_LVL__NOISE, "In, p=" << pr);
+    pr *= RAND_MAX;
     for (int i=0; i<numberOfNodes; ++i) {
         for (int j=i+1; j<numberOfNodes; ++j) {
             d = rand();
             TRACE(TRACE_LVL__NOISE, "Got d=" << (double)d/RAND_MAX);
-            if (d <= p) {
+            if (d <= pr) {
                 TRACE(TRACE_LVL__NOISE, "Adding edge..");
                 addEdge(nodes[i],nodes[j]);
             }
         }
     }
 }
+bool Graph::isRandom() const {
+    return isRandomGraph;
+}
+double Graph::getP() const {
+    if (!isRandom()) {
+        TRACE(TRACE_LVL__ERROR, "Called getP() on non-random graph!");
+        return -1;
+    }
+    return p;
+}
+
 
 void Graph::removeAllButFirstK(int k) {
     // Remove respective edges from neighbor sets.
