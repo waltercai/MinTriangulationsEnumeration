@@ -7,6 +7,7 @@
 #include <set>
 #include <fstream>
 #include <sstream>
+#include <iomanip>
 using std::ostream;
 using std::vector;
 using std::set;
@@ -14,6 +15,8 @@ using std::string;
 using std::ofstream;
 using std::ostringstream;
 using std::ios;
+using std::setw;
+using std::setfill;
 
 namespace tdenum {
 
@@ -61,6 +64,9 @@ public:
         _LOG_FLAG = true; \
         _LOG_FILE_NAME = _filename; \
 
+
+// Convert time in seconds to hh:mm:ss
+string secs_to_hhmmss(time_t t);
 
 /**
  * Useful container wrappers

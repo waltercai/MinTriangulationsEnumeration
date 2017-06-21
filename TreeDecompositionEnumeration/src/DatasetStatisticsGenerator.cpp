@@ -58,7 +58,7 @@ string DatasetStatisticsGenerator::header(bool csv) const {
     }
     // Special columns
     if (has_random) {
-        oss << delim << "P value";
+        oss << delim << "P value" << delim << "Edge ratio";
     }
     if (fields & DSG_COMP_MS) {
         oss << delim << "MS calculation time";
@@ -119,9 +119,13 @@ string DatasetStatisticsGenerator::str(unsigned int i, bool csv) const {
     if (has_random) {
         if (g[i].isRandom()) {
             oss << delim << setw(7) << g[i].getP();
+            int N = g[i].getNumberOfNodes();
+            int M = g[i].getNumberOfEdges();
+            oss << delim << setw(10) << 2*M / (double(N*(N-1))); // |E|/(|V| choose 2)
         }
         else {
             oss << delim << setw(7) << " ";
+            oss << delim << setw(10) << " ";
         }
     }
     // MS are calculated in one go if we're calculating PMCs,
@@ -340,10 +344,7 @@ void DatasetStatisticsGenerator::compute(unsigned int i, bool verbose) {
             }
             mse.next();
         }
-        time_t diff = time(NULL)-t;
-        ostringstream oss;
-        oss << diff/(60*60) << ":" << (diff/60)%60 << ":" << diff%60;
-        ms_calc_time[i] = oss.str();
+        ms_calc_time[i] = secs_to_hhmmss(time(NULL)-t);
     }
 
     // Triangulations

@@ -23,6 +23,14 @@ void Logger::out(const ostringstream& os) {
     }
 }
 
+string secs_to_hhmmss(time_t t) {
+    ostringstream oss;
+    oss << setfill('0') << setw(2) << t/(60*60);
+    oss << ":" << setfill('0') << setw(2) << (t/60)%60;
+    oss << ":" << setfill('0') << setw(2) << t%60;
+    return oss.str();
+}
+
 string Logger::filename;
 ofstream Logger::file;
 bool Logger::state;
