@@ -202,7 +202,7 @@ Graph GraphReader::read(const string& fileName) {
 	} else if ( extension == "bliss") {
 		return readBliss(input);
 	}
-	cout << "Unrecognized file extension" << endl;
+	cout << "Unrecognized file extension '." << extension << "'" << endl;
 	return Graph();
 }
 

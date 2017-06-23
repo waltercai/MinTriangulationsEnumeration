@@ -30,7 +30,8 @@ typedef enum {
     MAIN_DIFFICULT_STATS,
     MAIN_QUICK_STATS,
     MAIN_FINE_GRAIN_P,
-    MAIN_FINE_GRAIN_AND_QUICK
+    MAIN_FINE_GRAIN_AND_QUICK,
+    MAIN_ALL_BAYESIAN
 } MainType;
 
 class Main {
@@ -350,6 +351,25 @@ private:
         return 0;
     }
 
+    /**
+     * All graphs from http://www.cs.huji.ac.il/project/PASCAL/showNet.php
+     */
+    int all_bayesian() const {
+        DatasetStatisticsGenerator dsg(RESULT_DIR_BASE+"AllBayesian.csv",
+                        DSG_COMP_ALL ^ (DSG_COMP_TRNG | DSG_COMP_PMC));
+        DirectoryIterator difficult_files(DATASET_NEW_DIR_BASE);
+        difficult_files.skip("evid"); // Skip the evidence files
+        string dataset_filename;
+        while(difficult_files.next_file(&dataset_filename)) {
+            cout << "Adding '" << dataset_filename << "'...";
+            dsg.add_graph(dataset_filename);
+            cout << " done." << endl;
+        }
+        dsg.compute(true);
+        dsg.print();
+        return 0;
+    }
+
 
 
     int return_val;
@@ -384,6 +404,9 @@ public:
         case MAIN_FINE_GRAIN_AND_QUICK:
             return_val = fine_grained_and_quick();
             break;
+        case MAIN_ALL_BAYESIAN:
+            return_val = all_bayesian();
+            break;
         }
     }
     // Output the return value
@@ -398,7 +421,7 @@ using namespace tdenum;
 
 int main(int argc, char* argv[]) {
     srand(time(NULL)); // For random graphs
-    return Main(MAIN_FINE_GRAIN_AND_QUICK).get();
+    return Main(MAIN_ALL_BAYESIAN).get();
 }
 
 
