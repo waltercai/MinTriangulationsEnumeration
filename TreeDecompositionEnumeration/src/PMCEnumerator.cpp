@@ -5,11 +5,29 @@
 
 namespace tdenum {
 
-PMCEnumerator::PMCEnumerator(const Graph& g) : graph(g), done(false) {}
+#define CHECK_TIME_OR_RETURN(_x) do { \
+        if (limit == 0) { \
+            break; \
+        } \
+        time_t _t = time(NULL); \
+        if (_t - start_time >= limit) { \
+            out_of_time = true; \
+            return _x; \
+        } \
+    } while(0)
 
-void PMCEnumerator::reset(const Graph& g) {
+
+
+
+PMCEnumerator::PMCEnumerator(const Graph& g, time_t time_limit) :
+    graph(g), done(false), limit(time_limit), start_time(time(NULL)), out_of_time(false) {}
+
+void PMCEnumerator::reset(const Graph& g, time_t time_limit) {
     graph = g;
     done = false;
+    limit = time_limit;
+    start_time = time(NULL);
+    out_of_time = false;
 }
 
 /**
@@ -99,7 +117,7 @@ NodeSetSet PMCEnumerator::getConnected(const SubGraph& g) {
 NodeSetSet PMCEnumerator::OneMoreVertex(
                   const SubGraph& G1, const SubGraph& G2, Node a,
                   const NodeSetSet& D1, const NodeSetSet& D2,
-                  const NodeSetSet& P2) const {
+                  const NodeSetSet& P2) {
     NodeSetSet P1;
 
     // If a supports d(a)=0, then the regular algorithm won't add
@@ -123,6 +141,7 @@ NodeSetSet PMCEnumerator::OneMoreVertex(
                 P1.insert(pmc2a);
             }
         }
+        CHECK_TIME_OR_RETURN(P1);
     }
     for (auto Sit = D1.begin(); Sit != D1.end(); ++Sit) {
         NodeSet S = *Sit;
@@ -165,9 +184,11 @@ NodeSetSet PMCEnumerator::OneMoreVertex(
                     if (IsPMC(SuTcapC, G1)) {
                         P1.insert(SuTcapC);
                     }
+                    CHECK_TIME_OR_RETURN(P1);
                 }
             }
         }
+        CHECK_TIME_OR_RETURN(P1);
     }
 
     return P1;
@@ -193,7 +214,7 @@ NodeSetSet PMCEnumerator::OneMoreVertex(
  * Ci apart from the endpoints x and y.
  */
 
-bool PMCEnumerator::IsPMC(NodeSet K, const SubGraph& G) const {
+bool PMCEnumerator::IsPMC(NodeSet K, const SubGraph& G) {
     vector<NodeSet> C = G.getComponents(K);
     vector<NodeSet> S(C.size());
     unsigned int i,j,k;
@@ -211,6 +232,7 @@ bool PMCEnumerator::IsPMC(NodeSet K, const SubGraph& G) const {
             // Uh oh.. C[i] is a full component
             return false;
         }
+        CHECK_TIME_OR_RETURN(false);
     }
 
     // For each x,y in K (that aren't equal) we need to check if
@@ -238,6 +260,7 @@ bool PMCEnumerator::IsPMC(NodeSet K, const SubGraph& G) const {
                     foundSi = true;
                     break;
                 }
+                CHECK_TIME_OR_RETURN(false);
             }
             if (!foundSi) {
                 // x and y aren't connected in F...
@@ -249,6 +272,9 @@ bool PMCEnumerator::IsPMC(NodeSet K, const SubGraph& G) const {
     return true;
 }
 
+bool PMCEnumerator::is_out_of_time() const {
+    return out_of_time;
+}
 
 } /* namespace tdenum */
 

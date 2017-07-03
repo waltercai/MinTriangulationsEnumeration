@@ -63,7 +63,7 @@ string DatasetStatisticsGenerator::header(bool csv) const {
     if (fields & DSG_COMP_MS) {
         oss << delim << "MS calculation time";
     }
-    if (DSG_MS_TIME_LIMIT != DSG_NO_LIMIT || DSG_TRNG_TIME_LIMIT != DSG_NO_LIMIT) {
+    if (DSG_MS_TIME_LIMIT != DSG_NO_LIMIT || DSG_TRNG_TIME_LIMIT != DSG_NO_LIMIT || DSG_PMC_TIME_LIMIT != DSG_NO_LIMIT) {
         oss << delim << "Time errors";
     }
     if (DSG_MS_COUNT_LIMIT != DSG_NO_LIMIT || DSG_TRNG_COUNT_LIMIT != DSG_NO_LIMIT) {
@@ -133,14 +133,17 @@ string DatasetStatisticsGenerator::str(unsigned int i, bool csv) const {
     if ((fields & DSG_COMP_MS) && !(fields & DSG_COMP_PMC)) {
         oss << delim << setw(19) << ms_calc_time[i];
     }
-    if (DSG_MS_TIME_LIMIT != DSG_NO_LIMIT || DSG_TRNG_TIME_LIMIT != DSG_NO_LIMIT) {
+    if (DSG_MS_TIME_LIMIT != DSG_NO_LIMIT || DSG_TRNG_TIME_LIMIT != DSG_NO_LIMIT || DSG_PMC_TIME_LIMIT != DSG_NO_LIMIT) {
         string s;
-        if (ms_time_limit[i] || trng_time_limit[i]) {
+        if (ms_time_limit[i] || trng_time_limit[i] || pmc_time_limit[i]) {
             if (ms_time_limit[i]) {
                 s += string("MS");
             }
             if (trng_time_limit[i]) {
                 s += (ms_time_limit[i] ? "," : "") + string("TRNG");
+            }
+            if (pmc_time_limit[i]) {
+                s += (ms_time_limit[i] || trng_time_limit[i] ? "," : "") + string("PMC");
             }
         }
         else {
@@ -267,6 +270,7 @@ void DatasetStatisticsGenerator::add_graph(const Graph& graph, const string& txt
     ms_time_limit.push_back(false);
     trng_count_limit.push_back(false);
     trng_time_limit.push_back(false);
+    pmc_time_limit.push_back(false);
     ms_calc_time.push_back(string("0"));
     n.push_back(0);
     m.push_back(0);
@@ -319,10 +323,13 @@ void DatasetStatisticsGenerator::compute(unsigned int i, bool verbose) {
     // The minimal separators are free, so no need to calculate
     // them separately.
     if (fields & DSG_COMP_PMC) {
-        PMCEnumerator pmce(g[i]);
+        PMCEnumerator pmce(g[i], DSG_PMC_TIME_LIMIT == DSG_NO_LIMIT ? 0 : DSG_PMC_TIME_LIMIT);
         pmce.get();
         pmcs[i] = pmce.get().size();
         ms[i] = pmce.get_ms().size();
+        if (pmce.is_out_of_time()) {
+            pmc_time_limit[i] = true;
+        }
         print_progress(verbose);
     }
 
@@ -392,7 +399,7 @@ void DatasetStatisticsGenerator::compute(unsigned int i, bool verbose) {
         p = localtime(&t);
         strftime(s, 1000, "%c", p);
         cout << s << ": ";
-        if (ms_time_limit[i] || trng_time_limit[i]) {
+        if (ms_time_limit[i] || trng_time_limit[i] || pmc_time_limit[i]) {
             cout << "OUT OF TIME on graph ";
         }
         else if (ms_count_limit[i] || trng_count_limit[i]) {

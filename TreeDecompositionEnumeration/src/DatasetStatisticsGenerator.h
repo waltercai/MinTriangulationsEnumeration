@@ -60,6 +60,7 @@ namespace tdenum {
 #define DSG_TRNG_COUNT_LIMIT DSG_MS_COUNT_LIMIT
 #define DSG_MS_TIME_LIMIT (20*60) // Ten minutes
 #define DSG_TRNG_TIME_LIMIT DSG_MS_TIME_LIMIT
+#define DSG_PMC_TIME_LIMIT (5*60)
 
 class DatasetStatisticsGenerator {
 private:
@@ -91,6 +92,7 @@ private:
     vector<bool> ms_time_limit;
     vector<bool> trng_count_limit;
     vector<bool> trng_time_limit;
+    vector<bool> pmc_time_limit;
     // The amount of time required to calculate the minimal separators.
     vector<string> ms_calc_time;
 

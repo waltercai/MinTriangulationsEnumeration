@@ -36,9 +36,14 @@ class PMCEnumerator {
     // If the calculation is complete, set this to true.
     bool done;
 
+    // If time limit exceeded, we need to know
+    time_t limit;
+    time_t start_time;
+    bool out_of_time;
+
     // Returns true <==> K is a potential maximal clique in G.
     // Assumes K is a subset of the vertices in G.
-    bool IsPMC(NodeSet K, const SubGraph& G) const;
+    bool IsPMC(NodeSet K, const SubGraph& G);
 
     // The iterative step of the algorithm.
     // Given graphs G1, G2, a vertex 'a' s.t. G2=G1\{a}, the minimal
@@ -47,23 +52,26 @@ class PMCEnumerator {
     // cliques of G1 in polynomial time.
     NodeSetSet OneMoreVertex(const SubGraph& G1, const SubGraph& G2, Node a,
                   const NodeSetSet& D1, const NodeSetSet& D2,
-                  const NodeSetSet& P2) const;
+                  const NodeSetSet& P2);
 
     // get() iterates over all connected components of G and calls this
     // auxiliary function which expects a connected graph.
     NodeSetSet getConnected(const SubGraph&);
 
 public:
-    PMCEnumerator(const Graph& g);
+    PMCEnumerator(const Graph& g, time_t time_limit = 0);
 
     // Resets the instance to use a new graph (allows re-use of variable name).
-    void reset(const Graph& g);
+    void reset(const Graph& g, time_t time_limit = 0);
 
     // Returns the set of PMCs (calculates if need be)
     NodeSetSet get();
 
     // Return the set of minimal separators.
     NodeSetSet get_ms();
+
+    // If true, the calculation couldn't be completed in the allowed time.
+    bool is_out_of_time() const;
 };
 
 } /* namespace tdenum */
