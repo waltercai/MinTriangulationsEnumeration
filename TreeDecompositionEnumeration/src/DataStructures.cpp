@@ -162,13 +162,4 @@ NodeSet NodeSetProducer::produce() {
 	return members;
 }
 
-NodeSet getBlockNodes(int graphSize, const Block b) {
-	NodeSetProducer bNodes(graphSize);
-	for (auto n = b.first.begin(); n != b.first.end(); n++)
-		bNodes.insert(*n);
-	for (auto n = b.second.begin(); n != b.second.end(); n++)
-		bNodes.insert(*n);
-	return bNodes.produce();
-}
-
 } /* namespace tdenum */

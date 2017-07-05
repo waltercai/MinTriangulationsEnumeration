@@ -34,8 +34,8 @@ namespace tdenum {
 		int blockSize() const;
 		int getLocation() { return locBySize; }
 
-		bool isS(MinimalSeparator&);
-		bool isC(NodeSet&);
+		bool isS(const MinimalSeparator&);
+		bool isC(const NodeSet&);
 
 		// Insert only relevant PMCs into pmcToBlocks
 		void updatePMCs(NodeSetSet& pmc_list);

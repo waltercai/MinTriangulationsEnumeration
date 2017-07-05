@@ -13,9 +13,9 @@ MinimalSeparatorsEnumerator::MinimalSeparatorsEnumerator(const Graph& g, Separat
 		vAndNeighbors.insert(v);
 		vector<Block*> blocks = graph.getBlocks(vAndNeighbors);
 		for (auto it=blocks.begin(); it!=blocks.end(); ++it) {
-			if ((*it)->first.size() > 0) {
-				int score = scorer.scoreSeparator((*it)->first);
-				separatorsToExtend.insert((*it)->first, score);
+			if ((*it)->S.size() > 0) {
+				int score = scorer.scoreSeparator((*it)->S);
+				separatorsToExtend.insert((*it)->S, score);
 			}
 		}
 	}
@@ -59,7 +59,7 @@ MinimalSeparator MinimalSeparatorsEnumerator::next() {
 		xNeighborsAndS.insert(s.begin(),s.end());
 		vector<Block*> blocks = graph.getBlocks(xNeighborsAndS);
 		for (auto j = blocks.begin(); j != blocks.end(); ++j) {
-			minimalSeparatorFound((*j)->first);
+			minimalSeparatorFound((*j)->S);
 		}
 	}
 	return s;

@@ -212,9 +212,9 @@ namespace tdenum {
 		for (int i = 0; i < subBlocks.size(); i++) {
 		//for (auto b = subBlocks.begin(); b != subBlocks.end(); b++) {
 			NodeSetProducer mainS(mainGraph.getNumberOfNodes()), mainC(mainGraph.getNumberOfNodes());
-			for (auto n = subBlocks[i]->first.begin(); n != subBlocks[i]->first.end(); n++)
+			for (auto n = subBlocks[i]->S.begin(); n != subBlocks[i]->S.end(); n++)
 				mainS.insert(nodeMapToMainGraph.at(*n));
-			for (auto n = subBlocks[i]->second.begin(); n != subBlocks[i]->second.end(); n++)
+			for (auto n = subBlocks[i]->C.begin(); n != subBlocks[i]->C.end(); n++)
 				mainC.insert(nodeMapToMainGraph.at(*n));
 			mainBlocks[i] = new Block(mainS.produce(), mainC.produce());
 		}

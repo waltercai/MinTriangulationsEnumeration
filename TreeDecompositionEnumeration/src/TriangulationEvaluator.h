@@ -19,7 +19,6 @@ namespace tdenum {
 		vector<float> blockCostByID;
 
 		const Block* curBlock;
-		NodeSet curBlockNodes;
 		const NodeSet* curBlockBestPMC;
 		float curBlockBestCost;
 
@@ -31,13 +30,13 @@ namespace tdenum {
 	public:
 		TriangulationEvaluator(const Graph& G) :
 			originalGraph(G), blockByID(), blockCostByID(),
-			curBlock(NULL), curBlockNodes(),  curBlockBestPMC(NULL), 
+			curBlock(NULL), curBlockBestPMC(NULL), 
 			inclusionConsts(*(new NodeSetSet())), exclusionConsts(*(new NodeSetSet()))
 			{ curBlockBestCost = maxValue(); }
 
 		TriangulationEvaluator(const Graph& G, const NodeSetSet& incConsts, const NodeSetSet& excConsts) :
 			originalGraph(G), blockByID(), blockCostByID(), 
-			curBlock(NULL), curBlockNodes(), curBlockBestPMC(NULL) , 
+			curBlock(NULL), curBlockBestPMC(NULL) , 
 			inclusionConsts(incConsts), exclusionConsts(excConsts) { curBlockBestCost = maxValue(); }
 		
 		virtual TriangulationEvaluator* extendEvaluator(const NodeSetSet&, const NodeSetSet&) = 0;

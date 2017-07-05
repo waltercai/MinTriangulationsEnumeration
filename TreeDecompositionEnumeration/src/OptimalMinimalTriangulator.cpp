@@ -52,7 +52,7 @@ namespace tdenum {
 			sepsToBlocks[*sep] = vector<BlockInfo*>();
 			for (auto b = sepBlocks.begin(); b != sepBlocks.end(); b++)
 				// Save only full blocks
-				if ((*b)->first.size() == sep->size()) {
+				if ((*b)->S.size() == sep->size()) {
 					BlockInfo* bInfo = new BlockInfo(g, *b);
 					bInfo->updatePMCs(pmcsContainingSep);
 					allBlockInfos.push_back(bInfo);
@@ -105,7 +105,7 @@ namespace tdenum {
 
 			const NodeSet* curBlockPMC = bestBlockPMCs[curBlockID];
 			triang.addClique(*curBlockPMC);
-			triangSeps.insert(allBlockInfos[curBlockID]->B->first);
+			triangSeps.insert(allBlockInfos[curBlockID]->B->S);
 
 			// Add this PMCs blocks to be processed
 			BlockInfo* curBlock = allBlockInfos[curBlockID];

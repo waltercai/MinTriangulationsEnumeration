@@ -485,5 +485,13 @@ ostream& operator<<(ostream& os, const Graph& g) {
     return os;
 }
 
+const NodeSet& getNodeSetUnion(const NodeSet& sep, const NodeSet& comp) {
+	NodeSet* result = new NodeSet();
+	std::set_union(sep.begin(), sep.end(),
+		comp.begin(), comp.end(),
+		std::back_inserter(*result));
+	return *result;
+}
+
 } /* namespace tdenum */
 

@@ -95,8 +95,6 @@ public:
 	NodeSet produce();
 };
 
-NodeSet getBlockNodes(int, const Block);
-
 } /* namespace tdenum */
 
 #endif /* DATASTRUCTURES_H_ */

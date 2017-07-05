@@ -164,13 +164,13 @@ NodeSetSet PMCEnumerator::OneMoreVertex(
 			vector<Block*> blocks = G1.getBlocks(S);
 			for (unsigned int i=0; i<blocks.size(); ++i) {
                 // We only want full components
-                if (S != blocks[i]->first) {
+                if (S != blocks[i]->S) {
                     continue;
                 }
                 for (auto sep2 = D2.begin(); sep2 != D2.end(); ++sep2) {
                     NodeSet TcapC;
                     std::set_intersection(sep2->begin(), sep2->end(),
-                                          blocks[i]->second.begin(), blocks[i]->second.end(),
+                                          blocks[i]->C.begin(), blocks[i]->C.end(),
                                           std::back_inserter(TcapC));
                     NodeSet SuTcapC;
                     std::set_union(TcapC.begin(), TcapC.end(),
@@ -221,7 +221,7 @@ bool PMCEnumerator::IsPMC(NodeSet K, const SubGraph& G) {
     // While doing so make sure we don't have any full components
     for (i=0; i<B.size(); ++i) {
         //std::sort(S[i].begin(), S[i].end());
-        if (B[i]->first == K) {
+        if (B[i]->S == K) {
             // Uh oh.. C[i] is a full component
             return false;
         }
@@ -236,8 +236,8 @@ bool PMCEnumerator::IsPMC(NodeSet K, const SubGraph& G) {
         vector<NodeSet> Sx;
         for (j=0; j<B.size(); ++j) {
             // They're all sorted, so use binary search
-            if (std::binary_search(B[j]->first.begin(), B[j]->first.end(), x)) {
-                Sx.push_back(B[j]->first);
+            if (std::binary_search(B[j]->S.begin(), B[j]->S.end(), x)) {
+                Sx.push_back(B[j]->S);
             }
         }
         // For every unchecked y in K (scanning forward) check adjacency

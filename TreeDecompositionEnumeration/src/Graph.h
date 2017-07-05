@@ -13,7 +13,16 @@ namespace tdenum {
 typedef int Node;
 typedef vector<Node> NodeSet; // sorted vector of node names
 typedef NodeSet MinimalSeparator;
-typedef pair<MinimalSeparator, NodeSet> Block;
+
+const NodeSet& getNodeSetUnion(const NodeSet&, const NodeSet&);
+
+struct Block {
+	const MinimalSeparator S;
+	const NodeSet C;
+	const NodeSet& nodes;
+	Block(const MinimalSeparator& sep, const NodeSet& comp) : 
+		S(sep), C(comp), nodes(getNodeSetUnion(sep,comp)) {}
+};
 
 string str(const NodeSet&);
 void print(const NodeSet&);

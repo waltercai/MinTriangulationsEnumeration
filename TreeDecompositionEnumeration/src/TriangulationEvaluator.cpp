@@ -7,7 +7,6 @@ namespace tdenum {
 			finishedCurBlock();
 		}
 		curBlock = &B;
-		curBlockNodes = getBlockNodes(originalGraph.getNumberOfNodes(), B);
 		curBlockBestPMC = NULL;
 		curBlockBestCost = maxValue();
 	}
@@ -31,7 +30,7 @@ namespace tdenum {
 	bool TriangulationEvaluator::curBlockUpholdsConstraints(const NodeSet& pmc, const vector<int>& pmcBlockIDs) {
 		// If current blocks S is in the exclusion list, 
 		// this block can't be part of a legal triangulation
-		if (exclusionConsts.isMember(curBlock->first))
+		if (exclusionConsts.isMember(curBlock->S))
 			return false;
 
 		NodeSetSet subBlockSeps;
@@ -43,15 +42,15 @@ namespace tdenum {
 			if (blockCostByID[*bID] == CONSTRAINT_VIOLATION)
 				return false;
 
-			subBlockSeps.insert(blockByID[*bID]->first);
-			subBlockNodes.insert(getBlockNodes(originalGraph.getNumberOfNodes(),*(blockByID[*bID])));
+			subBlockSeps.insert(blockByID[*bID]->S);
+			subBlockNodes.insert(blockByID[*bID]->nodes);
 		}
 
 		// Check inclusion constraints are upheld
 		for (auto constraint = inclusionConsts.begin();
 			constraint != inclusionConsts.end(); constraint++) {
 			// If constraint is not contained in this block it is irrelevant
-			if (!includes(curBlockNodes.begin(), curBlockNodes.end(),
+			if (!includes(curBlock->nodes.begin(), curBlock->nodes.end(),
 				constraint->begin(), constraint->end()))
 				continue;
 
@@ -104,7 +103,7 @@ namespace tdenum {
 
 	void TriangFillEvaluator::startNewBlock(const Block& B) {
 		TriangulationEvaluator::startNewBlock(B);
-		curSFill = calcNodeSetFill(B.first);
+		curSFill = calcNodeSetFill(B.S);
 	}
 
 	float TriangFillEvaluator::costSaturatePMC(const NodeSet& pmc, const vector<int>& pmcBlockIDs) {
