@@ -397,6 +397,70 @@ NodeSet Graph::getAdjacent(const NodeSet& C, const NodeSet& K) const {
     return K2;
 }
 
+vector<Block*> Graph::getBlocks(const set<Node>& removedNodes) const {
+	vector<int> visitedList(numberOfNodes, 0);
+	for (set<Node>::iterator i = removedNodes.begin(); i != removedNodes.end(); ++i) {
+		Node v = *i;
+		if (!isValidNode(v)) {
+			return vector<Block*>();
+		}
+		visitedList[v] = -1;
+	}
+	int numberOfUnhandeledNodes = numberOfNodes - removedNodes.size();
+	return getBlocksAux(visitedList, numberOfUnhandeledNodes);
+}
+
+vector<Block*> Graph::getBlocks(const NodeSet& removedNodes) const {
+	vector<int> visitedList(numberOfNodes, 0);
+	for (Node v : removedNodes) {
+		if (!isValidNode(v)) {
+			return vector<Block*>();
+		}
+		visitedList[v] = -1;
+	}
+	int numberOfUnhandeledNodes = numberOfNodes - removedNodes.size();
+	return getBlocksAux(visitedList, numberOfUnhandeledNodes);
+}
+
+vector<Block*> Graph::getBlocksAux(vector<int> visitedList, int numberOfUnhandeledNodes) const {
+	vector<Block*> blocks;
+	// Finds a new component in each iteration
+	while (numberOfUnhandeledNodes > 0) {
+		queue<Node> bfsQueue;
+		NodeSetProducer sepProducer(visitedList.size()), 
+						compProducer(visitedList.size());
+		// Initialize the queue to contain a node not handled
+		for (Node i = 0; i<numberOfNodes; i++) {
+			if (visitedList[i] == 0) {
+				bfsQueue.push(i);
+				visitedList[i] = 1;
+				compProducer.insert(i);
+				numberOfUnhandeledNodes--;
+				break;
+			}
+		}
+		// BFS through the component
+		while (!bfsQueue.empty()) {
+			Node v = bfsQueue.front();
+			bfsQueue.pop();
+			for (set<Node>::iterator i = neighborSets[v].begin();
+				i != neighborSets[v].end(); ++i) {
+				Node u = *i;
+				if (visitedList[u] == 0) {
+					bfsQueue.push(u);
+					visitedList[u] = 1;
+					compProducer.insert(u);
+					numberOfUnhandeledNodes--;
+				}
+				else if (visitedList[u] == -1) {
+					sepProducer.insert(u);
+				}
+			}
+		}
+		blocks.push_back(new Block(sepProducer.produce(), compProducer.produce()));
+	}
+	return blocks;
+}
 string Graph::str() const {
     ostringstream oss;
 	for (Node v=0; v<getNumberOfNodes(); v++) {

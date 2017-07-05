@@ -11,12 +11,11 @@ MinimalSeparatorsEnumerator::MinimalSeparatorsEnumerator(const Graph& g, Separat
 	for (Node v = 0; v < g.getNumberOfNodes(); v++) {
 		set<Node> vAndNeighbors = graph.getNeighbors(v);
 		vAndNeighbors.insert(v);
-		vector<NodeSet> components = graph.getComponents(vAndNeighbors);
-		for (vector<NodeSet>::iterator it=components.begin(); it!=components.end(); ++it) {
-			NodeSet potentialSeparator = graph.getNeighbors(*it);
-			if (potentialSeparator.size() > 0) {
-				int score = scorer.scoreSeparator(potentialSeparator);
-				separatorsToExtend.insert(potentialSeparator, score);
+		vector<Block*> blocks = graph.getBlocks(vAndNeighbors);
+		for (auto it=blocks.begin(); it!=blocks.end(); ++it) {
+			if ((*it)->first.size() > 0) {
+				int score = scorer.scoreSeparator((*it)->first);
+				separatorsToExtend.insert((*it)->first, score);
 			}
 		}
 	}
@@ -58,9 +57,9 @@ MinimalSeparator MinimalSeparatorsEnumerator::next() {
 		Node x = *i;
 		set<Node> xNeighborsAndS = graph.getNeighbors(x);
 		xNeighborsAndS.insert(s.begin(),s.end());
-		vector<NodeSet> components = graph.getComponents(xNeighborsAndS);
-		for (vector<NodeSet>::iterator j = components.begin(); j != components.end(); ++j) {
-			minimalSeparatorFound(graph.getNeighbors(*j));
+		vector<Block*> blocks = graph.getBlocks(xNeighborsAndS);
+		for (auto j = blocks.begin(); j != blocks.end(); ++j) {
+			minimalSeparatorFound((*j)->first);
 		}
 	}
 	return s;

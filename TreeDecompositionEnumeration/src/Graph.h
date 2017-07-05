@@ -5,6 +5,7 @@
 #include <vector>
 #include <iostream>
 #include <string>
+#include <iterator>
 using namespace std;
 
 namespace tdenum {
@@ -12,6 +13,7 @@ namespace tdenum {
 typedef int Node;
 typedef vector<Node> NodeSet; // sorted vector of node names
 typedef NodeSet MinimalSeparator;
+typedef pair<MinimalSeparator, NodeSet> Block;
 
 string str(const NodeSet&);
 void print(const NodeSet&);
@@ -28,6 +30,7 @@ class Graph {
 
 	bool isValidNode(Node v) const;
 	vector< vector<Node> > getComponentsAux(vector<int> visitedList, int numberOfUnhandeledNodes) const;
+	vector< Block* > getBlocksAux(vector<int> visitedList, int numberOfUnhandeledNodes) const;
 
 public:
 	// Constructs an empty graph
@@ -92,6 +95,9 @@ public:
 	// Given a node set K, returns a subset K' of K that are connected
 	// to some node in C.
 	NodeSet getAdjacent(const NodeSet& C, const NodeSet& K) const;
+	// Returns the set of blocks of the given node set
+	vector<Block*> getBlocks(const set<Node>& removedNodes) const;
+	vector<Block*> getBlocks(const NodeSet& removedNodes) const;
 	// Prints the graph
 	string str() const;
 	void print() const;

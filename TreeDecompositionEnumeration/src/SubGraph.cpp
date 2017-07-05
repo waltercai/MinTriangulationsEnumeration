@@ -6,6 +6,7 @@
 
 
 #include "SubGraph.h"
+#include "DataStructures.h"
 
 namespace tdenum {
 	// complexity doesnt matter. used only for debug.
@@ -106,8 +107,10 @@ namespace tdenum {
 		Graph(mainGraph), mainGraph(mainGraph) {
 
 		nodeMapToMainGraph = vector<int>(mainGraph.getNumberOfNodes());
+		nodeMapFromMainGraph = map<Node, Node>();
 		for (unsigned int i = 0; i < nodeMapToMainGraph.size(); i++) {
 			nodeMapToMainGraph[i] = i;
+			nodeMapFromMainGraph[i] = i;
 		}
 	}
 
@@ -121,6 +124,7 @@ namespace tdenum {
 		NodeSet& nodeSetInFather = nodeSetInFatherGraph;
 
 		nodeMapToMainGraph = vector<int>(nodeSetInFather.size());
+		nodeMapFromMainGraph = map<Node, Node>();
 
 		// sub nodes in main
 		vector<int>& subNodesInMain = nodeMapToMainGraph;
@@ -140,6 +144,7 @@ namespace tdenum {
 
 			// saves for each node in sub its node index in the main graph
 			subNodesInMain[nodeInSub] = nodeInMain;
+			nodeMapFromMainGraph[nodeInMain] = nodeInSub;
 
 			// saves for each node in father its nodes in sub if the node
 			// is in nodeSetInFatherGraph, otherwise the value in the index will
@@ -184,9 +189,36 @@ namespace tdenum {
 		this->seps = seps;
 	}
 
+	int SubGraph::getMainNumberOfNodes() const {
+		return mainGraph.getNumberOfNodes();
+	}
+
 	vector<int>& SubGraph::getNodeMapToMainGraph() {
 
 		return nodeMapToMainGraph;
+	}
+
+	vector<Block*> SubGraph::getBlocksByMain(const NodeSet& removedNodesMain) const {
+		// Translate removedNodes to SubGraph numbers
+		NodeSetProducer removedNodesSub(getNumberOfNodes());
+		for (auto n = removedNodesMain.begin(); n != removedNodesMain.end(); n++)
+			removedNodesSub.insert(nodeMapFromMainGraph.at(*n));
+
+		// Calculate SubGraph blocks
+		vector<Block*> subBlocks = getBlocks(removedNodesSub.produce());
+
+		// Translate blocks to Main indexes
+		vector<Block*> mainBlocks(subBlocks.size());
+		for (int i = 0; i < subBlocks.size(); i++) {
+		//for (auto b = subBlocks.begin(); b != subBlocks.end(); b++) {
+			NodeSetProducer mainS(mainGraph.getNumberOfNodes()), mainC(mainGraph.getNumberOfNodes());
+			for (auto n = subBlocks[i]->first.begin(); n != subBlocks[i]->first.end(); n++)
+				mainS.insert(nodeMapToMainGraph.at(*n));
+			for (auto n = subBlocks[i]->second.begin(); n != subBlocks[i]->second.end(); n++)
+				mainC.insert(nodeMapToMainGraph.at(*n));
+			mainBlocks[i] = new Block(mainS.produce(), mainC.produce());
+		}
+		return mainBlocks;
 	}
 
 	void SubGraph::print() const {

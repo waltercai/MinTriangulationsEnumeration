@@ -136,7 +136,7 @@ NodeSetSet PMCEnumerator::OneMoreVertex(
         }
         else {
             NodeSet pmc2a = *pmc2it;
-            pmc2a.insert(pmc2a.end(), a);
+            pmc2a.insert(pmc2a.end(), a); // should already be sorted as a is bigger than previous nodes
             if (IsPMC(pmc2a, G1)) {
                 P1.insert(pmc2a);
             }
@@ -159,23 +159,18 @@ NodeSetSet PMCEnumerator::OneMoreVertex(
             // of G\S so that the set P of all elements of S that are adjacent
             // to some vertex of C supports P=S.
             // Sort S first so we can easily compare P=S later.
-            std::sort(S.begin(), S.end());
-            vector<NodeSet> components = G1.getComponents(S);
-            vector<NodeSet> adjacent(components.size());
-            for (unsigned int i=0; i<components.size(); ++i) {
-                // Sort the adjacency vector so we can easily compare the vectors later
-                adjacent[i] = G1.getAdjacent(components[i], S);
-                std::sort(adjacent[i].begin(), adjacent[i].end());
-            }
-            for (unsigned int i=0; i<components.size(); ++i) {
+            //std::sort(S.begin(), S.end());
+            
+			vector<Block*> blocks = G1.getBlocks(S);
+			for (unsigned int i=0; i<blocks.size(); ++i) {
                 // We only want full components
-                if (S != adjacent[i]) {
+                if (S != blocks[i]->first) {
                     continue;
                 }
                 for (auto sep2 = D2.begin(); sep2 != D2.end(); ++sep2) {
                     NodeSet TcapC;
                     std::set_intersection(sep2->begin(), sep2->end(),
-                                          components[i].begin(), components[i].end(),
+                                          blocks[i]->second.begin(), blocks[i]->second.end(),
                                           std::back_inserter(TcapC));
                     NodeSet SuTcapC;
                     std::set_union(TcapC.begin(), TcapC.end(),
@@ -215,20 +210,18 @@ NodeSetSet PMCEnumerator::OneMoreVertex(
  */
 
 bool PMCEnumerator::IsPMC(NodeSet K, const SubGraph& G) {
-    vector<NodeSet> C = G.getComponents(K);
-    vector<NodeSet> S(C.size());
-    unsigned int i,j,k;
+    vector<Block*> B = G.getBlocks(K);
+	unsigned int i,j,k;
 
 
     // Sort K so we can compare it easily to other vectors
-    std::sort(K.begin(), K.end());
+    //std::sort(K.begin(), K.end());
 
     // Build the sets Si.
     // While doing so make sure we don't have any full components
-    for (i=0; i<C.size(); ++i) {
-        S[i] = G.getAdjacent(C[i], K);
-        std::sort(S[i].begin(), S[i].end());
-        if (S[i] == K) {
+    for (i=0; i<B.size(); ++i) {
+        //std::sort(S[i].begin(), S[i].end());
+        if (B[i]->first == K) {
             // Uh oh.. C[i] is a full component
             return false;
         }
@@ -241,10 +234,10 @@ bool PMCEnumerator::IsPMC(NodeSet K, const SubGraph& G) {
         Node x = K[i];
         // Find the S[i]s containing x
         vector<NodeSet> Sx;
-        for (j=0; j<S.size(); ++j) {
+        for (j=0; j<B.size(); ++j) {
             // They're all sorted, so use binary search
-            if (std::binary_search(S[j].begin(), S[j].end(), x)) {
-                Sx.push_back(S[j]);
+            if (std::binary_search(B[j]->first.begin(), B[j]->first.end(), x)) {
+                Sx.push_back(B[j]->first);
             }
         }
         // For every unchecked y in K (scanning forward) check adjacency

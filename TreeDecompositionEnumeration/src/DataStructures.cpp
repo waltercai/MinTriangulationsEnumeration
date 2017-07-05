@@ -71,21 +71,25 @@ string NodeSetSet::str() const {
         return string("{}");
     }
     ostringstream oss;
-    oss << "\{ \b";
+    oss << "\{ ";
     for(auto it = begin(); it != end(); ++it) {
-        if (it->size() == 0) {
-            oss << "\{},";
+		if (it != begin())
+			oss << ",";
+		if (it->size() == 0) {
+            oss << "\{}";
             continue;
         }
         // *it is now a NodeSet.
         // There's no way to print a NodeSet unless we know it's a vector...
         oss << "\{";
         for(unsigned int j = 0; j < it->size(); ++j) {
-            oss << (*it)[j] << ",";
+            oss << (*it)[j];
+			if (j + 1 < it->size())
+				oss << ",";
         }
-        oss << "\b},";
+        oss << "}";
     }
-    oss << "\b}";
+    oss << "}";
     return oss.str();
 }
 
@@ -99,6 +103,13 @@ void NodeSetSet::insert(const NodeSet& nodeVec) {
 }
 void NodeSetSet::remove(const NodeSet& nodeVec) {
     sets.erase(nodeVec);
+}
+
+NodeSetSet& NodeSetSet::unify(const NodeSetSet& other) const {
+	NodeSetSet* result = new NodeSetSet(other);
+	for (auto ns = begin(); ns != end(); ns++)
+		result->insert(*ns);
+	return *result;
 }
 
 bool NodeSetSet::operator==(const NodeSetSet& nss) const {
@@ -149,6 +160,15 @@ NodeSet NodeSetProducer::produce() {
 		}
 	}
 	return members;
+}
+
+NodeSet getBlockNodes(int graphSize, const Block b) {
+	NodeSetProducer bNodes(graphSize);
+	for (auto n = b.first.begin(); n != b.first.end(); n++)
+		bNodes.insert(*n);
+	for (auto n = b.second.begin(); n != b.second.end(); n++)
+		bNodes.insert(*n);
+	return bNodes.produce();
 }
 
 } /* namespace tdenum */

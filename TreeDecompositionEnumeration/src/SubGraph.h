@@ -12,12 +12,14 @@
 #include <queue>
 #include <algorithm>
 #include <list>
+#include <map>
 
 namespace tdenum {
 	typedef vector<Node> Edge;
 	class SubGraph : public Graph {
 		const Graph& mainGraph;
 		vector<int> nodeMapToMainGraph;
+		map<Node, Node> nodeMapFromMainGraph;
 
 		set<MinimalSeparator> seps;
 
@@ -40,8 +42,14 @@ namespace tdenum {
 		set<Edge> createEdgeSet();
 
 		void setSeps(set<MinimalSeparator>& seps);
+		
+		int getMainNumberOfNodes() const;
 
 		vector<int>& getNodeMapToMainGraph();
+
+		// Given a NodeSet of nodes from the main graph, returns the set
+		// of blocks of the given node set in the subgraph
+		vector<Block*> getBlocksByMain(const NodeSet& removedNodes) const;
 
 		set<MinimalSeparator> createNewSepGroup(NodeSet& subNodesInFather,
 			const MinimalSeparator& excludeSep,

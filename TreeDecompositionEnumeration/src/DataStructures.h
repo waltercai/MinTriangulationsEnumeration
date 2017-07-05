@@ -64,6 +64,7 @@ public:
 	// Adds / removes the given node set to / from the structure.
 	void insert(const NodeSet& nodeSet);
 	void remove(const NodeSet& nodeSet);
+	NodeSetSet& unify(const NodeSetSet& other) const;
 	// Prints out the NodeSets
 	string str() const;
 	// std::set methods
@@ -93,6 +94,8 @@ public:
 	// Returns the subset containing all added nodes, sorted ascending.
 	NodeSet produce();
 };
+
+NodeSet getBlockNodes(int, const Block);
 
 } /* namespace tdenum */
 
