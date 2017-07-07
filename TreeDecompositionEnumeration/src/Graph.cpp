@@ -457,7 +457,7 @@ vector<Block*> Graph::getBlocksAux(vector<int> visitedList, int numberOfUnhandel
 				}
 			}
 		}
-		blocks.push_back(new Block(sepProducer.produce(), compProducer.produce()));
+		blocks.push_back(new Block(sepProducer.produce(), compProducer.produce(),getNumberOfNodes()));
 	}
 	return blocks;
 }
@@ -485,12 +485,26 @@ ostream& operator<<(ostream& os, const Graph& g) {
     return os;
 }
 
-const NodeSet& getNodeSetUnion(const NodeSet& sep, const NodeSet& comp) {
+const NodeSet& Block::getNodeSetUnion(const NodeSet& sep, const NodeSet& comp) {
 	NodeSet* result = new NodeSet();
 	std::set_union(sep.begin(), sep.end(),
 		comp.begin(), comp.end(),
 		std::back_inserter(*result));
 	return *result;
+}
+
+const vector<bool>& Block::getFullNodeVector(const NodeSet& nodes, int numNodes) {
+	vector<bool>* result = new vector<bool>(numNodes, false);
+	for (auto n = nodes.begin(); n != nodes.end(); n++)
+		(*result)[*n] = true;
+	return *result;
+}
+
+bool Block::includesNodes(const NodeSet& toCheck) const {
+	for (auto n = toCheck.begin(); n != toCheck.end(); n++)
+		if (!fullNodes[*n])
+			return false;
+	return true;
 }
 
 } /* namespace tdenum */

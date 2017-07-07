@@ -22,8 +22,7 @@ bool BlockInfo::isC(const NodeSet& ns) {
 
 void BlockInfo::updatePMCs(NodeSetSet& pmcList) {
 	for (auto pmc = pmcList.begin(); pmc != pmcList.end(); pmc++)
-		if (includes(B->nodes.begin(), B->nodes.end(),
-			pmc->begin(), pmc->end()))
+		if (B->includesNodes(*pmc))
 			pmcToBlocks[*pmc] = vector<int>();
 }
 

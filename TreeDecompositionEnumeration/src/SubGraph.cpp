@@ -216,7 +216,7 @@ namespace tdenum {
 				mainS.insert(nodeMapToMainGraph.at(*n));
 			for (auto n = subBlocks[i]->C.begin(); n != subBlocks[i]->C.end(); n++)
 				mainC.insert(nodeMapToMainGraph.at(*n));
-			mainBlocks[i] = new Block(mainS.produce(), mainC.produce());
+			mainBlocks[i] = new Block(mainS.produce(), mainC.produce(),mainGraph.getNumberOfNodes());
 		}
 		return mainBlocks;
 	}

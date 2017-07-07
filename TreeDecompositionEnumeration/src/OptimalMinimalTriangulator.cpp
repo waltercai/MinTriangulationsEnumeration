@@ -68,7 +68,7 @@ namespace tdenum {
 		vector<NodeSet> gComps = g.getComponents(*emptySep);
 		
 		for (auto comp = gComps.begin(); comp != gComps.end(); comp++) {
-			BlockInfo* compBlockInfo = new BlockInfo(g, new Block(*emptySep, *comp));
+			BlockInfo* compBlockInfo = new BlockInfo(g, new Block(*emptySep, *comp, g.getNumberOfNodes()));
 			compBlockInfo->updatePMCs(pmcs);
 			allBlockInfos.push_back(compBlockInfo);
 		}

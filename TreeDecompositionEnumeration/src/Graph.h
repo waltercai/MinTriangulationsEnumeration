@@ -14,14 +14,18 @@ typedef int Node;
 typedef vector<Node> NodeSet; // sorted vector of node names
 typedef NodeSet MinimalSeparator;
 
-const NodeSet& getNodeSetUnion(const NodeSet&, const NodeSet&);
+
 
 struct Block {
 	const MinimalSeparator S;
 	const NodeSet C;
 	const NodeSet& nodes;
-	Block(const MinimalSeparator& sep, const NodeSet& comp) : 
-		S(sep), C(comp), nodes(getNodeSetUnion(sep,comp)) {}
+	const vector<bool>& fullNodes;
+	Block(const MinimalSeparator& sep, const NodeSet& comp, int numNodes) : 
+		S(sep), C(comp), nodes(getNodeSetUnion(sep,comp)), fullNodes(getFullNodeVector(nodes, numNodes)) {}
+	static const NodeSet& getNodeSetUnion(const NodeSet&, const NodeSet&);
+	static const vector<bool>& getFullNodeVector(const NodeSet&, int);
+	bool includesNodes(const NodeSet&) const;
 };
 
 string str(const NodeSet&);

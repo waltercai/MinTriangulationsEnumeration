@@ -33,25 +33,18 @@ namespace tdenum {
 		if (exclusionConsts.isMember(curBlock->S))
 			return false;
 
-		NodeSetSet subBlockSeps;
-		NodeSetSet subBlockNodes;
 		// Iterate once over PMCs sub blocks
-		for (auto bID = pmcBlockIDs.begin(); bID != pmcBlockIDs.end(); bID++) {
+		for (auto bID = pmcBlockIDs.begin(); bID != pmcBlockIDs.end(); bID++)
 			// If the sub block already violates some constraints, 
 			// then so does this block with this PMC filled
 			if (blockCostByID[*bID] == CONSTRAINT_VIOLATION)
 				return false;
 
-			subBlockSeps.insert(blockByID[*bID]->S);
-			subBlockNodes.insert(blockByID[*bID]->nodes);
-		}
-
 		// Check inclusion constraints are upheld
 		for (auto constraint = inclusionConsts.begin();
 			constraint != inclusionConsts.end(); constraint++) {
 			// If constraint is not contained in this block it is irrelevant
-			if (!includes(curBlock->nodes.begin(), curBlock->nodes.end(),
-				constraint->begin(), constraint->end()))
+			if (!(curBlock->includesNodes(*constraint)))
 				continue;
 
 			// If constraint is contained in the current PMC
@@ -63,9 +56,8 @@ namespace tdenum {
 			// If the constraint is contained in some block it has already been checked
 			bool containedInBlock = false;
 			// Check if the constraint is contained in some block
-			for (auto subBlock = subBlockNodes.begin(); subBlock != subBlockNodes.end(); subBlock++)
-				if (includes(subBlock->begin(), subBlock->end(),
-					constraint->begin(), constraint->end())) {
+			for (auto bID = pmcBlockIDs.begin(); bID != pmcBlockIDs.end(); bID++)
+				if (blockByID[*bID]->includesNodes(*constraint)) {
 					containedInBlock = true;
 					break;
 				}
