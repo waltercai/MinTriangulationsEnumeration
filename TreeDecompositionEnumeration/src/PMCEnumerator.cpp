@@ -161,7 +161,7 @@ NodeSetSet PMCEnumerator::OneMoreVertex(
             // Sort S first so we can easily compare P=S later.
             //std::sort(S.begin(), S.end());
             
-			vector<Block*> blocks = G1.getBlocks(S);
+			BlockVec blocks = G1.getBlocks(S);
 			for (unsigned int i=0; i<blocks.size(); ++i) {
                 // We only want full components
                 if (S != blocks[i]->S) {
@@ -210,7 +210,7 @@ NodeSetSet PMCEnumerator::OneMoreVertex(
  */
 
 bool PMCEnumerator::IsPMC(NodeSet K, const SubGraph& G) {
-    vector<Block*> B = G.getBlocks(K);
+	BlockVec B = G.getBlocks(K);
 	unsigned int i,j,k;
 
 

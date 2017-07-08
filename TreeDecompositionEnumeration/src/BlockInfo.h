@@ -16,7 +16,7 @@ namespace tdenum {
 		friend class OptimalMinimalTriangulator;
 
 		// The current block (S,C)
-		const Block* B;
+		const BlockPtr B;
 		// SubGraph of the original graph, induced by block nodes
 		const SubGraph GinducedB;
 		// Location of block in list of graph blocks
@@ -28,8 +28,8 @@ namespace tdenum {
 	public:
 		typedef map<MinimalSeparator, vector<BlockInfo*>> SepToBlockMap;
 
-		BlockInfo(const Graph& originalG, Block* setB);
-		BlockInfo(const SubGraph& originalG, Block* setB);
+		BlockInfo(const Graph& originalG, BlockPtr setB);
+		BlockInfo(const SubGraph& originalG, BlockPtr setB);
 
 		int blockSize() const;
 		int getLocation() { return locBySize; }

@@ -397,12 +397,12 @@ NodeSet Graph::getAdjacent(const NodeSet& C, const NodeSet& K) const {
     return K2;
 }
 
-vector<Block*> Graph::getBlocks(const set<Node>& removedNodes) const {
+BlockVec Graph::getBlocks(const set<Node>& removedNodes) const {
 	vector<int> visitedList(numberOfNodes, 0);
 	for (set<Node>::iterator i = removedNodes.begin(); i != removedNodes.end(); ++i) {
 		Node v = *i;
 		if (!isValidNode(v)) {
-			return vector<Block*>();
+			return BlockVec();
 		}
 		visitedList[v] = -1;
 	}
@@ -410,11 +410,11 @@ vector<Block*> Graph::getBlocks(const set<Node>& removedNodes) const {
 	return getBlocksAux(visitedList, numberOfUnhandeledNodes);
 }
 
-vector<Block*> Graph::getBlocks(const NodeSet& removedNodes) const {
+BlockVec Graph::getBlocks(const NodeSet& removedNodes) const {
 	vector<int> visitedList(numberOfNodes, 0);
 	for (Node v : removedNodes) {
 		if (!isValidNode(v)) {
-			return vector<Block*>();
+			return BlockVec();
 		}
 		visitedList[v] = -1;
 	}
@@ -422,8 +422,8 @@ vector<Block*> Graph::getBlocks(const NodeSet& removedNodes) const {
 	return getBlocksAux(visitedList, numberOfUnhandeledNodes);
 }
 
-vector<Block*> Graph::getBlocksAux(vector<int> visitedList, int numberOfUnhandeledNodes) const {
-	vector<Block*> blocks;
+BlockVec Graph::getBlocksAux(vector<int> visitedList, int numberOfUnhandeledNodes) const {
+	BlockVec blocks;
 	// Finds a new component in each iteration
 	Node unhandeledID = 0;
 	while (numberOfUnhandeledNodes > 0) {
@@ -459,7 +459,7 @@ vector<Block*> Graph::getBlocksAux(vector<int> visitedList, int numberOfUnhandel
 				}
 			}
 		}
-		blocks.push_back(new Block(sepProducer.produce(), compProducer.produce(),getNumberOfNodes()));
+		blocks.push_back(BlockPtr(new Block(sepProducer.produce(), compProducer.produce(),getNumberOfNodes())));
 	}
 	return blocks;
 }

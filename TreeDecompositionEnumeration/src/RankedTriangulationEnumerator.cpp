@@ -5,6 +5,7 @@ namespace tdenum {
 
 	RankedTriangulationsEnumerator::RankedTriangulationsEnumerator(const Graph& G, TriangulationEvaluator* eval) :
 		triangulator(G), resultQueue() {
+		eval->resizeByNumBlocks(triangulator.getNumBlocks());
 		resultQueue.push_back(triangulator.triangulate(eval));
 	}
 
@@ -36,7 +37,7 @@ namespace tdenum {
 			TriangulationResult& newResult = triangulator.triangulate(newEval);
 			if (newResult.cost != CONSTRAINT_VIOLATION) {
 				resultQueue.push_back(newResult);
-				cout << "Pushed cost is " << resultQueue.back().cost << endl;
+				//cout << "Pushed cost is " << resultQueue.back().cost << endl;
 				push_heap(resultQueue.begin(), resultQueue.end());
 			}
 

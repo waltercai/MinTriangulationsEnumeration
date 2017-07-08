@@ -198,17 +198,17 @@ namespace tdenum {
 		return nodeMapToMainGraph;
 	}
 
-	vector<Block*> SubGraph::getBlocksByMain(const NodeSet& removedNodesMain) const {
+	BlockVec SubGraph::getBlocksByMain(const NodeSet& removedNodesMain) const {
 		// Translate removedNodes to SubGraph numbers
 		NodeSetProducer removedNodesSub(getNumberOfNodes());
 		for (auto n = removedNodesMain.begin(); n != removedNodesMain.end(); n++)
 			removedNodesSub.insert(nodeMapFromMainGraph.at(*n));
 
 		// Calculate SubGraph blocks
-		vector<Block*> subBlocks = getBlocks(removedNodesSub.produce());
+		BlockVec subBlocks = getBlocks(removedNodesSub.produce());
 
 		// Translate blocks to Main indexes
-		vector<Block*> mainBlocks(subBlocks.size());
+		BlockVec mainBlocks(subBlocks.size());
 		for (unsigned int i = 0; i < subBlocks.size(); i++) {
 		//for (auto b = subBlocks.begin(); b != subBlocks.end(); b++) {
 			NodeSetProducer mainS(mainGraph.getNumberOfNodes()), mainC(mainGraph.getNumberOfNodes());
@@ -216,7 +216,7 @@ namespace tdenum {
 				mainS.insert(nodeMapToMainGraph.at(*n));
 			for (auto n = subBlocks[i]->C.begin(); n != subBlocks[i]->C.end(); n++)
 				mainC.insert(nodeMapToMainGraph.at(*n));
-			mainBlocks[i] = new Block(mainS.produce(), mainC.produce(),mainGraph.getNumberOfNodes());
+			mainBlocks[i] = BlockPtr(new Block(mainS.produce(), mainC.produce(),mainGraph.getNumberOfNodes()));
 		}
 		return mainBlocks;
 	}

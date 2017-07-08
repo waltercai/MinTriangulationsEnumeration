@@ -49,7 +49,7 @@ namespace tdenum {
 
 		// Given a NodeSet of nodes from the main graph, returns the set
 		// of blocks of the given node set in the subgraph
-		vector<Block*> getBlocksByMain(const NodeSet& removedNodes) const;
+		BlockVec getBlocksByMain(const NodeSet& removedNodes) const;
 
 		set<MinimalSeparator> createNewSepGroup(NodeSet& subNodesInFather,
 			const MinimalSeparator& excludeSep,

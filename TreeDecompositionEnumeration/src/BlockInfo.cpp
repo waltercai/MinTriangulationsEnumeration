@@ -2,10 +2,10 @@
 
 namespace tdenum {
 
-BlockInfo::BlockInfo(const Graph& setG, Block* setB) :
+BlockInfo::BlockInfo(const Graph& setG, BlockPtr setB) :
 	B(setB), GinducedB(setG, setB->nodes),locBySize(-1) { }
 
-BlockInfo::BlockInfo(const SubGraph& setG, Block* setB) :
+BlockInfo::BlockInfo(const SubGraph& setG, BlockPtr setB) :
 	B(setB), GinducedB(setG, setB->nodes), locBySize(-1){}
 
 int BlockInfo::blockSize() const {
@@ -32,7 +32,7 @@ void BlockInfo::updateLocation(int i, SepToBlockMap& SToB) {
 	// For each pmc associated with our current block, and its block list (pmcToB)
 	for (auto pmcToB = pmcToBlocks.begin(); pmcToB != pmcToBlocks.end(); pmcToB++) {
 		// Calculate all PMC blocks
-		vector<Block*> pmcBlocks = GinducedB.getBlocksByMain(pmcToB->first);
+		BlockVec pmcBlocks = GinducedB.getBlocksByMain(pmcToB->first);
 		// For each block (pmcBlock) of the PMC
 		for (auto pmcBlock = pmcBlocks.begin(); pmcBlock != pmcBlocks.end(); pmcBlock++)
 			// For each BlockInfo associated  with pmcBlock's separator (sepBlockInfo)

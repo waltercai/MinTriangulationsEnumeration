@@ -2,18 +2,27 @@
 
 namespace tdenum {
 
-	void TriangulationEvaluator::startNewBlock(const Block& B) {
+	void TriangulationEvaluator::resizeByNumBlocks(int numBlocks) {
+		// If we already started calculating blocks, don't touch the vectors!
+		if (curBlockID > 0)
+			return;
+		blockByID.resize(numBlocks, NULL);
+		blockCostByID.resize(numBlocks, maxValue());
+	}
+
+	void TriangulationEvaluator::startNewBlock(ConstBlockPtr B) {
 		if (curBlock != NULL) {
 			finishedCurBlock();
+			curBlockID++;
 		}
-		curBlock = &B;
+		curBlock = B;
 		curBlockBestPMC = NULL;
 		curBlockBestCost = maxValue();
 	}
 	
 	void TriangulationEvaluator::finishedCurBlock() {
-		blockByID.push_back(curBlock);
-		blockCostByID.push_back(curBlockBestCost);
+		blockByID[curBlockID] = curBlock;
+		blockCostByID[curBlockID] = curBlockBestCost;
 	}
 
 	void TriangulationEvaluator::evalSaturatePMC(const NodeSet& pmc, const vector<int>& pmcBlockIDs) {
@@ -90,12 +99,14 @@ namespace tdenum {
 	}
 
 	TriangulationEvaluator* TriangFillEvaluator::extendEvaluator(const NodeSetSet& newIncs, const NodeSetSet& newExcs) {
-		return new TriangFillEvaluator(originalGraph, inclusionConsts.unify(newIncs), exclusionConsts.unify(newExcs));
+		TriangulationEvaluator* extended = new TriangFillEvaluator(originalGraph, inclusionConsts.unify(newIncs), exclusionConsts.unify(newExcs));
+		extended->resizeByNumBlocks(blockByID.size());
+		return extended;
 	}
 
-	void TriangFillEvaluator::startNewBlock(const Block& B) {
+	void TriangFillEvaluator::startNewBlock(ConstBlockPtr B) {
 		TriangulationEvaluator::startNewBlock(B);
-		curSFill = calcNodeSetFill(B.S);
+		curSFill = calcNodeSetFill(B->S);
 	}
 
 	float TriangFillEvaluator::costSaturatePMC(const NodeSet& pmc, const vector<int>& pmcBlockIDs) {
@@ -127,7 +138,9 @@ namespace tdenum {
 	}
 
 	TriangulationEvaluator* TriangTreeWidthEvaluator::extendEvaluator(const NodeSetSet& newIncs, const NodeSetSet& newExcs) {
-		return new TriangTreeWidthEvaluator(originalGraph, inclusionConsts.unify(newIncs), exclusionConsts.unify(newExcs));
+		TriangulationEvaluator* extended = new TriangTreeWidthEvaluator(originalGraph, inclusionConsts.unify(newIncs), exclusionConsts.unify(newExcs));
+		extended->resizeByNumBlocks(blockByID.size());
+		return extended;
 	}
 
 	float TriangTreeWidthEvaluator::costSaturatePMC(const NodeSet& pmc, const vector<int>& pmcBlockIDs) {

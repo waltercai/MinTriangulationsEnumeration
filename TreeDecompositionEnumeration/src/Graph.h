@@ -6,6 +6,7 @@
 #include <iostream>
 #include <string>
 #include <iterator>
+#include <memory>
 using namespace std;
 
 namespace tdenum {
@@ -28,6 +29,11 @@ struct Block {
 	bool includesNodes(const NodeSet&) const;
 };
 
+typedef shared_ptr<Block> BlockPtr;
+typedef vector<BlockPtr> BlockVec;
+typedef shared_ptr<const Block> ConstBlockPtr;
+typedef vector<ConstBlockPtr> ConstBlockVec;
+
 string str(const NodeSet&);
 void print(const NodeSet&);
 
@@ -43,7 +49,7 @@ class Graph {
 
 	bool isValidNode(Node v) const;
 	vector< vector<Node> > getComponentsAux(vector<int> visitedList, int numberOfUnhandeledNodes) const;
-	vector< Block* > getBlocksAux(vector<int> visitedList, int numberOfUnhandeledNodes) const;
+	BlockVec getBlocksAux(vector<int> visitedList, int numberOfUnhandeledNodes) const;
 
 public:
 	// Constructs an empty graph
@@ -109,8 +115,8 @@ public:
 	// to some node in C.
 	NodeSet getAdjacent(const NodeSet& C, const NodeSet& K) const;
 	// Returns the set of blocks of the given node set
-	vector<Block*> getBlocks(const set<Node>& removedNodes) const;
-	vector<Block*> getBlocks(const NodeSet& removedNodes) const;
+	BlockVec getBlocks(const set<Node>& removedNodes) const;
+	BlockVec getBlocks(const NodeSet& removedNodes) const;
 	// Prints the graph
 	string str() const;
 	void print() const;

@@ -15,10 +15,11 @@ namespace tdenum {
 	protected:
 		const Graph& originalGraph;
 
-		vector<const Block*> blockByID;
+		ConstBlockVec blockByID;
 		vector<float> blockCostByID;
 
-		const Block* curBlock;
+		int curBlockID;
+		ConstBlockPtr curBlock;
 		const NodeSet* curBlockBestPMC;
 		float curBlockBestCost;
 
@@ -30,13 +31,13 @@ namespace tdenum {
 	public:
 		TriangulationEvaluator(const Graph& G) :
 			originalGraph(G), blockByID(), blockCostByID(),
-			curBlock(NULL), curBlockBestPMC(NULL), 
+			curBlockID(0), curBlock(NULL), curBlockBestPMC(NULL), 
 			inclusionConsts(*(new NodeSetSet())), exclusionConsts(*(new NodeSetSet()))
 			{ curBlockBestCost = maxValue(); }
 
 		TriangulationEvaluator(const Graph& G, const NodeSetSet& incConsts, const NodeSetSet& excConsts) :
 			originalGraph(G), blockByID(), blockCostByID(), 
-			curBlock(NULL), curBlockBestPMC(NULL) , 
+			curBlockID(0), curBlock(NULL), curBlockBestPMC(NULL) ,
 			inclusionConsts(incConsts), exclusionConsts(excConsts) { curBlockBestCost = maxValue(); }
 		
 		virtual TriangulationEvaluator* extendEvaluator(const NodeSetSet&, const NodeSetSet&) = 0;
@@ -44,9 +45,11 @@ namespace tdenum {
 		const NodeSetSet& getInclusionConsts() { return inclusionConsts; }
 		const NodeSetSet& getExclusionConsts() { return exclusionConsts; }
 
+		virtual void resizeByNumBlocks(int);
+
 		virtual void finishedCurBlock();
-		virtual void startNewBlock(const Block& B);
-		virtual void startNewBlock(const Block& B, const SubGraph& GinducedB) { startNewBlock(B); }
+		virtual void startNewBlock(ConstBlockPtr B);
+		virtual void startNewBlock(ConstBlockPtr B, const SubGraph& GinducedB) { startNewBlock(B); }
 
 		virtual void evalSaturatePMC(const NodeSet& pmc, const vector<int>& pmcBlockIDs);
 
@@ -70,7 +73,7 @@ namespace tdenum {
 		
 		TriangulationEvaluator* extendEvaluator(const NodeSetSet&, const NodeSetSet&);
 
-		void startNewBlock(const Block& B);
+		void startNewBlock(ConstBlockPtr B);
 		float costSaturatePMC(const NodeSet& pmc, const vector<int>& pmcBlockIDs);
 		float maxValue() { 
 			return float(originalGraph.getNumberOfNodes() * (originalGraph.getNumberOfNodes() - 1)/2); 

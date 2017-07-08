@@ -48,7 +48,7 @@ namespace tdenum {
 					pmcsContainingSep.insert(*pmc);
 			}
 			// Find all full blocks of sep
-			vector<Block*> sepBlocks = g.getBlocks(*sep);
+			BlockVec sepBlocks = g.getBlocks(*sep);
 			sepsToBlocks[*sep] = vector<BlockInfo*>();
 			for (auto b = sepBlocks.begin(); b != sepBlocks.end(); b++)
 				// Save only full blocks
@@ -68,7 +68,7 @@ namespace tdenum {
 		vector<NodeSet> gComps = g.getComponents(*emptySep);
 		
 		for (auto comp = gComps.begin(); comp != gComps.end(); comp++) {
-			BlockInfo* compBlockInfo = new BlockInfo(g, new Block(*emptySep, *comp, g.getNumberOfNodes()));
+			BlockInfo* compBlockInfo = new BlockInfo(g, BlockPtr(new Block(*emptySep, *comp, g.getNumberOfNodes())));
 			compBlockInfo->updatePMCs(pmcs);
 			allBlockInfos.push_back(compBlockInfo);
 		}
@@ -80,7 +80,7 @@ namespace tdenum {
 		// Calculate Omega(S,C) for each block
 		vector<const NodeSet*> bestBlockPMCs;
 		for (auto bInfo = allBlockInfos.begin(); bInfo != allBlockInfos.end(); bInfo++) {
-			eval->startNewBlock(*((*bInfo)->B));
+			eval->startNewBlock((*bInfo)->B);
 			for (auto pmcToB = (*bInfo)->pmcToBlocks.begin();
 				pmcToB != (*bInfo)->pmcToBlocks.end(); pmcToB++) 
 				eval->evalSaturatePMC(pmcToB->first, pmcToB->second);

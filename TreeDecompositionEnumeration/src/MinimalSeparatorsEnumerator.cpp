@@ -11,7 +11,7 @@ MinimalSeparatorsEnumerator::MinimalSeparatorsEnumerator(const Graph& g, Separat
 	for (Node v = 0; v < g.getNumberOfNodes(); v++) {
 		set<Node> vAndNeighbors = graph.getNeighbors(v);
 		vAndNeighbors.insert(v);
-		vector<Block*> blocks = graph.getBlocks(vAndNeighbors);
+		BlockVec blocks = graph.getBlocks(vAndNeighbors);
 		for (auto it=blocks.begin(); it!=blocks.end(); ++it) {
 			if ((*it)->S.size() > 0) {
 				int score = scorer.scoreSeparator((*it)->S);
@@ -57,7 +57,7 @@ MinimalSeparator MinimalSeparatorsEnumerator::next() {
 		Node x = *i;
 		set<Node> xNeighborsAndS = graph.getNeighbors(x);
 		xNeighborsAndS.insert(s.begin(),s.end());
-		vector<Block*> blocks = graph.getBlocks(xNeighborsAndS);
+		BlockVec blocks = graph.getBlocks(xNeighborsAndS);
 		for (auto j = blocks.begin(); j != blocks.end(); ++j) {
 			minimalSeparatorFound((*j)->S);
 		}
