@@ -45,7 +45,15 @@ private:
      * Just a sandbox main
      */
     int tmp() const {
-
+        string certain_file = DATASET_DIR_BASE+DATASET_DIR_DIFFICULT
+                                +"BN"+string(1,SLASH)
+                                +"Grids"+string(1,SLASH)
+                                +"grid10x10.f10.uai";
+        DatasetStatisticsGenerator dsg(RESULT_DIR_BASE+"TempResults.csv",
+                                       DSG_COMP_ALL ^ (DSG_COMP_TRNG));
+        dsg.add_graph(certain_file);
+        dsg.compute(true);
+        dsg.print();
         return 0;
     }
 
@@ -292,7 +300,7 @@ private:
         while(difficult_files.next_file(&dataset_filename)) {
             dsg.add_graph(dataset_filename);
         }
-        dsg.compute(false);
+        dsg.compute(true);
         dsg.print();
         return 0;
     }
@@ -502,43 +510,51 @@ private:
 public:
 
     // Go!
-    Main(MainType mt = MAIN_DIFFICULT_STATS, int argc = 1, char* argv[] = NULL) :
+    Main(MainType mt = MAIN_TMP, int argc = 1, char* argv[] = NULL) :
                                         return_val(-1), main_type(mt) {
-        switch(main_type) {
-        case MAIN_TMP:
-            return_val = tmp();
-            break;
-        case MAIN_MIN_TRIANG_ENUM:
-            return_val = triang_enum(argc, argv);
-            break;
-        case MAIN_PMC_TEST:
-            return_val = pmc_test();
-            break;
-        case MAIN_STATISTIC_GEN:
-            return_val = stat_gen();
-            break;
-        case MAIN_RANDOM_STATS:
-            return_val = random_stats();
-            break;
-        case MAIN_DIFFICULT_STATS:
-            return_val = difficult_graphs();
-            break;
-        case MAIN_QUICK_STATS:
-            return_val = quick_graphs();
-            break;
-        case MAIN_FINE_GRAIN_P:
-            return_val = fine_grained_probability();
-            break;
-        case MAIN_FINE_GRAIN_AND_QUICK:
-            return_val = fine_grained_and_quick();
-            break;
-        case MAIN_ALL_BAYESIAN:
-            return_val = all_bayesian();
-            break;
-        case MAIN_INTERACTIVE:
-            return_val = interactive();
-            break;
-        default: break;
+        try {
+            switch(main_type) {
+            case MAIN_TMP:
+                return_val = tmp();
+                break;
+            case MAIN_MIN_TRIANG_ENUM:
+                return_val = triang_enum(argc, argv);
+                break;
+            case MAIN_PMC_TEST:
+                return_val = pmc_test();
+                break;
+            case MAIN_STATISTIC_GEN:
+                return_val = stat_gen();
+                break;
+            case MAIN_RANDOM_STATS:
+                return_val = random_stats();
+                break;
+            case MAIN_DIFFICULT_STATS:
+                return_val = difficult_graphs();
+                break;
+            case MAIN_QUICK_STATS:
+                return_val = quick_graphs();
+                break;
+            case MAIN_FINE_GRAIN_P:
+                return_val = fine_grained_probability();
+                break;
+            case MAIN_FINE_GRAIN_AND_QUICK:
+                return_val = fine_grained_and_quick();
+                break;
+            case MAIN_ALL_BAYESIAN:
+                return_val = all_bayesian();
+                break;
+            case MAIN_INTERACTIVE:
+                return_val = interactive();
+                break;
+            default: break;
+            }
+        } catch (const std::exception& ex) {
+            ASSERT_PRINT("Caught exception:" << endl << ex.what());
+        } catch (const std::string& s) {
+            ASSERT_PRINT("Caught exception string:" << endl << s);
+        } catch(...) {
+            ASSERT_PRINT("Whoops... unknown exception" << endl);
         }
     }
 

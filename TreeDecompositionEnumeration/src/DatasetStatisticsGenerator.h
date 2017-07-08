@@ -82,6 +82,10 @@ private:
     // output progress.
     bool verbose;
 
+    // If true, every graph added will cause a line to be printed to
+    // console (with graph text).
+    bool show_graphs;
+
     // For every i, the following vectors store the data of graph i.
     // Different threads access these at different indexes, so there
     // should be no need to lock any of them.
@@ -144,6 +148,10 @@ public:
     DatasetStatisticsGenerator(const string& outputfile, int flds = DSG_COMP_ALL);
     ~DatasetStatisticsGenerator();
 
+    // If set to true, whenever a graph is added - print the text.
+    void show_added_graphs();
+    void dont_show_added_graphs();
+
     // Add graphs.
     // The user may either send an input filename to read the data
     // from, or a graph instance.
@@ -157,6 +165,15 @@ public:
     // Computes the desired fields and outputs to file.
     // Optionally, output progress to console.
     void compute(bool verbose = false);
+
+    // Computes only the graph specified by the given number (1-indexed).
+    // This is useful when show_graphs is true and the user wishes to run
+    // the computation only on a specific graph added.
+    // This is 1-indexed, s.t. if "Adding graph X/100: 'good_graph'" is
+    // printed and the user wishes to run the graph good_graph only, call
+    // compute_by_graph_number(X).
+    void compute_by_graph_number(unsigned int i, bool verbose = false);
+    void compute_by_graph_number_range(unsigned int first, unsigned int last, bool verbose = false);
 
     // Prints data to console (only valid data).
     void print() const;

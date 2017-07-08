@@ -23,12 +23,20 @@ namespace tdenum {
  */
 DatasetStatisticsGenerator::DatasetStatisticsGenerator(const string& outputfile, int flds) :
                             outfilename(outputfile), fields(flds), has_random(false),
-                            graphs_computed(0), max_text_len(10) {
+                            show_graphs(true), graphs_computed(0), max_text_len(10) {
     omp_init_lock(&lock);
 }
 DatasetStatisticsGenerator::~DatasetStatisticsGenerator() {
     omp_destroy_lock(&lock);
 }
+
+void DatasetStatisticsGenerator::show_added_graphs() {
+    show_graphs = true;
+}
+void DatasetStatisticsGenerator::dont_show_added_graphs() {
+    show_graphs = false;
+}
+
 
 /**
  * Useful for stringifying output, in CSV format or human readable.
@@ -287,6 +295,12 @@ void DatasetStatisticsGenerator::add_graph(const Graph& graph, const string& txt
     if (graph.isRandom()) {
         has_random = true;
     }
+
+    // If show_graphs is true, print the text
+    if (show_graphs) {
+        cout << "Added graph " << n.size() << ": '" << txt << "'" << endl;
+    }
+
 }
 void DatasetStatisticsGenerator::add_graph(const string& filename, const string& text) {
     Graph g = GraphReader::read(filename);
@@ -419,7 +433,15 @@ void DatasetStatisticsGenerator::compute(unsigned int i) {
     }
 
 }
-void DatasetStatisticsGenerator::compute(bool v) {
+void DatasetStatisticsGenerator::compute_by_graph_number_range(unsigned int first, unsigned int last, bool v) {
+
+    // Validate input
+    if (first < 1 || first > last || last > n.size()) {
+        cout << "Bad parameter: called compute_by_graph_number_range(first,last) "
+             << "with first=" << first << " and last=" << last
+             << ". Legal values require 1<=first<=last<=" << n.size() << endl;
+        return;
+    }
 
     // Set the verbose member:
     verbose = v;
@@ -429,14 +451,27 @@ void DatasetStatisticsGenerator::compute(bool v) {
 
     // Dump all data, calculate the missing data.
     // If possible, parallelize this
-#pragma omp parallel for
-    for (unsigned int i=0; i<g.size(); ++i) {
+//#pragma omp parallel for
+    for (unsigned int i=first-1; i<last; ++i) {
         if (!valid[i]) {
             compute(i);
         }
         dump_line(i);
     }
 }
+void DatasetStatisticsGenerator::compute(bool v) {
+    compute_by_graph_number_range(1, n.size(), v);
+}
+void DatasetStatisticsGenerator::compute_by_graph_number(unsigned int i, bool v) {
+    if (i<1 || i>n.size()) {
+        cout << "Bad parameter: called compute_by_graph_number(i) with i=" << i
+             << ". Legal values of i are between 1 and " << n.size() << endl;
+        return;
+    }
+    compute_by_graph_number_range(i,i,v);
+}
+
+
 
 /**
  * Stringify currently computed data and output to console in human readable
