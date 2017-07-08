@@ -5,9 +5,9 @@
 
 namespace tdenum {
 
-	OptimalMinimalTriangulator::OptimalMinimalTriangulator(const Graph& triangG) : 
+	OptimalMinimalTriangulator::OptimalMinimalTriangulator(const Graph& triangG) :
 		g(triangG), allBlockInfos() {
-		
+
 		// Calculate PMCs
 		PMCEnumerator pmcEnum(g);
 		pmcs = pmcEnum.get();
@@ -33,7 +33,7 @@ namespace tdenum {
 		calculateMainBlockInfos();
 
 		// update block locations
-		for (int i = 0; i < allBlockInfos.size(); i++)
+		for (unsigned int i = 0; i < allBlockInfos.size(); i++)
 			allBlockInfos[i]->updateLocation(i, sepsToBlocks);
 	}
 
@@ -66,13 +66,13 @@ namespace tdenum {
 		// Add a "block" representing the whole graph so it will be optimized as well
 		MinimalSeparator* emptySep = new MinimalSeparator();
 		vector<NodeSet> gComps = g.getComponents(*emptySep);
-		
+
 		for (auto comp = gComps.begin(); comp != gComps.end(); comp++) {
 			BlockInfo* compBlockInfo = new BlockInfo(g, BlockPtr(new Block(*emptySep, *comp, g.getNumberOfNodes())));
 			compBlockInfo->updatePMCs(pmcs);
 			allBlockInfos.push_back(compBlockInfo);
 		}
-		
+
 		numMainBlocks = gComps.size();
 	}
 
@@ -82,7 +82,7 @@ namespace tdenum {
 		for (auto bInfo = allBlockInfos.begin(); bInfo != allBlockInfos.end(); bInfo++) {
 			eval->startNewBlock((*bInfo)->B);
 			for (auto pmcToB = (*bInfo)->pmcToBlocks.begin();
-				pmcToB != (*bInfo)->pmcToBlocks.end(); pmcToB++) 
+				pmcToB != (*bInfo)->pmcToBlocks.end(); pmcToB++)
 				eval->evalSaturatePMC(pmcToB->first, pmcToB->second);
 			bestBlockPMCs.push_back(eval->getBestPMC());
 		}
@@ -93,7 +93,7 @@ namespace tdenum {
 		ChordalGraph triang(g);
 		NodeSetSet triangSeps;
 		queue<int> bestBlockIDs;
-		
+
 		//Start with PMC of last blocks - the ones representing connected components of the graph
 		for (int i = 1; i <= numMainBlocks; i++)
 			bestBlockIDs.push(allBlockInfos.size() - i);

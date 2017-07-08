@@ -108,7 +108,7 @@ void NodeSetSet::remove(const NodeSet& nodeVec) {
 NodeSetSet NodeSetSet::unify(const NodeSetSet& other) const {
 	NodeSetSet result = NodeSetSet(other);
 	for (auto ns = begin(); ns != end(); ns++)
-		result->insert(*ns);
+		result.insert(*ns);
 	return result;
 }
 
