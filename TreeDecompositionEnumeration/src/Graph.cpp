@@ -425,17 +425,19 @@ vector<Block*> Graph::getBlocks(const NodeSet& removedNodes) const {
 vector<Block*> Graph::getBlocksAux(vector<int> visitedList, int numberOfUnhandeledNodes) const {
 	vector<Block*> blocks;
 	// Finds a new component in each iteration
+	Node unhandeledID = 0;
 	while (numberOfUnhandeledNodes > 0) {
 		queue<Node> bfsQueue;
 		NodeSetProducer sepProducer(visitedList.size()), 
 						compProducer(visitedList.size());
 		// Initialize the queue to contain a node not handled
-		for (Node i = 0; i<numberOfNodes; i++) {
-			if (visitedList[i] == 0) {
-				bfsQueue.push(i);
-				visitedList[i] = 1;
-				compProducer.insert(i);
+		for (; unhandeledID<numberOfNodes; unhandeledID++) {
+			if (visitedList[unhandeledID] == 0) {
+				bfsQueue.push(unhandeledID);
+				visitedList[unhandeledID] = 1;
+				compProducer.insert(unhandeledID);
 				numberOfUnhandeledNodes--;
+				unhandeledID++;
 				break;
 			}
 		}
@@ -443,9 +445,9 @@ vector<Block*> Graph::getBlocksAux(vector<int> visitedList, int numberOfUnhandel
 		while (!bfsQueue.empty()) {
 			Node v = bfsQueue.front();
 			bfsQueue.pop();
-			for (set<Node>::iterator i = neighborSets[v].begin();
-				i != neighborSets[v].end(); ++i) {
-				Node u = *i;
+			for (set<Node>::iterator it = neighborSets[v].begin();
+				it != neighborSets[v].end(); ++it) {
+				Node u = *it;
 				if (visitedList[u] == 0) {
 					bfsQueue.push(u);
 					visitedList[u] = 1;
@@ -486,10 +488,10 @@ ostream& operator<<(ostream& os, const Graph& g) {
 }
 
 const NodeSet& Block::getNodeSetUnion(const NodeSet& sep, const NodeSet& comp) {
-	NodeSet* result = new NodeSet();
+	NodeSet* result = new NodeSet(sep.size() + comp.size());
 	std::set_union(sep.begin(), sep.end(),
 		comp.begin(), comp.end(),
-		std::back_inserter(*result));
+		result->begin());
 	return *result;
 }
 

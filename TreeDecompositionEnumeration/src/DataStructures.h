@@ -83,6 +83,7 @@ public:
  */
 class NodeSetProducer {
 	vector<bool> isMember;
+	int numMembers;
 public:
 	NodeSetProducer(int sizeOfOriginalNodeSet);
 	// Adds the given node to the subset.

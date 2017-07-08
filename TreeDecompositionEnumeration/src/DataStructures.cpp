@@ -142,22 +142,27 @@ set<NodeSet>::iterator NodeSetSet::find(const NodeSet& nodeSet) const {
 
 
 NodeSetProducer::NodeSetProducer(int sizeOfOriginalNodeSet) :
-		isMember(sizeOfOriginalNodeSet, false){}
+		isMember(sizeOfOriginalNodeSet, false), numMembers(0) {}
 
 void NodeSetProducer::insert(Node v) {
-	isMember[v] = true;
+	if (!isMember[v]) {
+		isMember[v] = true;
+		numMembers++;
+	}
 }
 
 void NodeSetProducer::remove(Node v) {
-	isMember[v] = false;
+	if (isMember[v]) {
+		isMember[v] = false;
+		numMembers--;
+	}
 }
 
 NodeSet NodeSetProducer::produce() {
-	NodeSet members;
-	for (unsigned int i=0; i<isMember.size(); i++) {
-		if (isMember[i]) {
-			members.push_back(i);
-		}
+	NodeSet members(numMembers);
+	for (unsigned int i=0,node=0; i<numMembers && node<isMember.size(); node++) {
+		if (isMember[node]) 
+			members[i++] = node;
 	}
 	return members;
 }
