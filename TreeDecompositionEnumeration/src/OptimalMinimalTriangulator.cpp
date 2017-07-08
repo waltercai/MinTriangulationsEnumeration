@@ -64,11 +64,11 @@ namespace tdenum {
 
 	void OptimalMinimalTriangulator::calculateMainBlockInfos() {
 		// Add a "block" representing the whole graph so it will be optimized as well
-		MinimalSeparator* emptySep = new MinimalSeparator();
-		vector<NodeSet> gComps = g.getComponents(*emptySep);
+		MinimalSeparator emptySep;
+		vector<NodeSet> gComps = g.getComponents(emptySep);
 
 		for (auto comp = gComps.begin(); comp != gComps.end(); comp++) {
-			BlockInfo* compBlockInfo = new BlockInfo(g, BlockPtr(new Block(*emptySep, *comp, g.getNumberOfNodes())));
+			BlockInfo* compBlockInfo = new BlockInfo(g, BlockPtr(new Block(emptySep, *comp, g.getNumberOfNodes())));
 			compBlockInfo->updatePMCs(pmcs);
 			allBlockInfos.push_back(compBlockInfo);
 		}
@@ -80,7 +80,7 @@ namespace tdenum {
 		// Calculate Omega(S,C) for each block
 		vector<const NodeSet*> bestBlockPMCs;
 		for (auto bInfo = allBlockInfos.begin(); bInfo != allBlockInfos.end(); bInfo++) {
-			eval->startNewBlock((*bInfo)->B);
+			eval->startNewBlock(ConstBlockPtr(&(*bInfo)->B));
 			for (auto pmcToB = (*bInfo)->pmcToBlocks.begin();
 				pmcToB != (*bInfo)->pmcToBlocks.end(); pmcToB++)
 				eval->evalSaturatePMC(pmcToB->first, pmcToB->second);
@@ -105,7 +105,7 @@ namespace tdenum {
 
 			const NodeSet* curBlockPMC = bestBlockPMCs[curBlockID];
 			triang.addClique(*curBlockPMC);
-			triangSeps.insert(allBlockInfos[curBlockID]->B->S);
+			triangSeps.insert(allBlockInfos[curBlockID]->B.S);
 
 			// Add this PMCs blocks to be processed
 			BlockInfo* curBlock = allBlockInfos[curBlockID];

@@ -16,7 +16,7 @@ namespace tdenum {
 		friend class OptimalMinimalTriangulator;
 
 		// The current block (S,C)
-		const BlockPtr B;
+		const Block B;
 		// SubGraph of the original graph, induced by block nodes
 		const SubGraph GinducedB;
 		// Location of block in list of graph blocks
@@ -43,7 +43,6 @@ namespace tdenum {
 		// Update my location and location of each PMC's blocks
 		void updateLocation(int i, SepToBlockMap& SToB);
 
-		//void evaluateBlock(TriangulationEvaluator&);
 	};
 
 	typedef map<MinimalSeparator, vector<BlockInfo*>> SepToBlockMap;
