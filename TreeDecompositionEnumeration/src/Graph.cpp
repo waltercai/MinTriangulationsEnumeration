@@ -487,19 +487,21 @@ ostream& operator<<(ostream& os, const Graph& g) {
     return os;
 }
 
-const NodeSet& Block::getNodeSetUnion(const NodeSet& sep, const NodeSet& comp) {
-	NodeSet* result = new NodeSet(sep.size() + comp.size());
+const NodeSet Block::getNodeSetUnion(const NodeSet& sep, const NodeSet& comp) {
+	// NodeSet* result = new NodeSet(sep.size() + comp.size());
+	NodeSet result(sep.size() + comp.size());
 	std::set_union(sep.begin(), sep.end(),
 		comp.begin(), comp.end(),
-		result->begin());
-	return *result;
+		result.begin());
+	return result;
 }
 
-const vector<bool>& Block::getFullNodeVector(const NodeSet& nodes, int numNodes) {
-	vector<bool>* result = new vector<bool>(numNodes, false);
+const vector<bool> Block::getFullNodeVector(const NodeSet& nodes, int numNodes) {
+	// vector<bool>* result = new vector<bool>(numNodes, false);
+	vector<bool> result(numNodes, false);
 	for (auto n = nodes.begin(); n != nodes.end(); n++)
-		(*result)[*n] = true;
-	return *result;
+		result[*n] = true;
+	return result;
 }
 
 bool Block::includesNodes(const NodeSet& toCheck) const {

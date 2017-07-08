@@ -20,12 +20,12 @@ typedef NodeSet MinimalSeparator;
 struct Block {
 	const MinimalSeparator S;
 	const NodeSet C;
-	const NodeSet& nodes;
-	const vector<bool>& fullNodes;
+	const NodeSet nodes;
+	const vector<bool> fullNodes;
 	Block(const MinimalSeparator& sep, const NodeSet& comp, int numNodes) : 
 		S(sep), C(comp), nodes(getNodeSetUnion(sep,comp)), fullNodes(getFullNodeVector(nodes, numNodes)) {}
-	static const NodeSet& getNodeSetUnion(const NodeSet&, const NodeSet&);
-	static const vector<bool>& getFullNodeVector(const NodeSet&, int);
+	static const NodeSet getNodeSetUnion(const NodeSet&, const NodeSet&);
+	static const vector<bool> getFullNodeVector(const NodeSet&, int);
 	bool includesNodes(const NodeSet&) const;
 };
 
