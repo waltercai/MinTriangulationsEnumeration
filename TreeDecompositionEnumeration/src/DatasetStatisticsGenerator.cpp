@@ -225,7 +225,7 @@ void DatasetStatisticsGenerator::dump_header() {
  * This may be called by multiple threads, so the overhead here
  * is for non-garbled output.
  */
-void DatasetStatisticsGenerator::print_progress(bool verbose)  {
+void DatasetStatisticsGenerator::print_progress()  {
 
     // Duh.
     if (!verbose) return;
@@ -298,7 +298,7 @@ void DatasetStatisticsGenerator::add_graph(const string& filename, const string&
  * Calling compute() (all graph mode) is parallelized on supporting platforms,
  * so be cautious when editing compute(i)!
  */
-void DatasetStatisticsGenerator::compute(unsigned int i, bool verbose) {
+void DatasetStatisticsGenerator::compute(unsigned int i) {
 
     // For printing the time
     char s[1000];
@@ -307,9 +307,13 @@ void DatasetStatisticsGenerator::compute(unsigned int i, bool verbose) {
 
     // Add this graph to the  list of 'in progress' graphs.
     // This is a shared resource, so lock it.
-    omp_set_lock(&lock);
-    graphs_in_progress.push_back(i);
-    omp_unset_lock(&lock);
+    // If verbose is set to false, no need to keep track of the
+    // graphs in progress.
+    if (verbose) {
+        omp_set_lock(&lock);
+        graphs_in_progress.push_back(i);
+        omp_unset_lock(&lock);
+    }
 
     // Basics
     if (fields & DSG_COMP_N) {
@@ -330,7 +334,7 @@ void DatasetStatisticsGenerator::compute(unsigned int i, bool verbose) {
         if (pmce.is_out_of_time()) {
             pmc_time_limit[i] = true;
         }
-        print_progress(verbose);
+        print_progress();
     }
 
     // Separators (if PMCs were calculated, no need for this)
@@ -340,7 +344,7 @@ void DatasetStatisticsGenerator::compute(unsigned int i, bool verbose) {
         t = time(NULL);
         while(mse.hasNext()) {
             ++ms[i];
-            print_progress(verbose);
+            print_progress();
             if (DSG_MS_COUNT_LIMIT != DSG_NO_LIMIT && ms[i] > DSG_MS_COUNT_LIMIT) {
                 ms_count_limit[i] = true;
                 break;
@@ -363,7 +367,7 @@ void DatasetStatisticsGenerator::compute(unsigned int i, bool verbose) {
         }
         while (enumerator.hasNext()) {
             ++triangs[i];
-            print_progress(verbose);
+            print_progress();
             if (DSG_TRNG_COUNT_LIMIT != DSG_NO_LIMIT && triangs[i] > DSG_TRNG_COUNT_LIMIT) {
                 trng_count_limit[i] = true;
                 break;
@@ -379,17 +383,16 @@ void DatasetStatisticsGenerator::compute(unsigned int i, bool verbose) {
     // That's it for this one!
     valid[i] = true;
 
-    // Some cleanup.
-    // Lock
-    omp_set_lock(&lock);
-
-    // Update the graphs in progress (under lock)
-    REMOVE_FROM_VECTOR(graphs_in_progress, i);
-    graphs_computed++;
-
-    // Print
+    // Printing and cleanup.
+    // No need for any of this if verbose isn't true.
     if (verbose) {
+        omp_set_lock(&lock);
 
+        // Update the graphs in progress (while locked)
+        REMOVE_FROM_VECTOR(graphs_in_progress, i);
+        graphs_computed++;
+
+        // Print:
         // We may need to clear the line (if progress was printed)..
         cout << "\r" << string(50+max_text_len, ' ') << "\r";
 
@@ -410,13 +413,16 @@ void DatasetStatisticsGenerator::compute(unsigned int i, bool verbose) {
         }
         cout << graphs_computed+1 << "/" << g.size() << ","
                   << "'" <<text[i] << "'" << endl;
+
+        // Unlock
+        omp_unset_lock(&lock);
     }
 
-    // Unlock
-    omp_unset_lock(&lock);
-
 }
-void DatasetStatisticsGenerator::compute(bool verbose) {
+void DatasetStatisticsGenerator::compute(bool v) {
+
+    // Set the verbose member:
+    verbose = v;
 
     // Start a new file
     dump_header();
@@ -426,7 +432,7 @@ void DatasetStatisticsGenerator::compute(bool verbose) {
 #pragma omp parallel for
     for (unsigned int i=0; i<g.size(); ++i) {
         if (!valid[i]) {
-            compute(i, verbose);
+            compute(i);
         }
         dump_line(i);
     }

@@ -292,7 +292,7 @@ private:
         while(difficult_files.next_file(&dataset_filename)) {
             dsg.add_graph(dataset_filename);
         }
-        dsg.compute(true);
+        dsg.compute(false);
         dsg.print();
         return 0;
     }

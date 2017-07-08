@@ -75,6 +75,13 @@ private:
     // to true so we know to output an extra column for p.
     bool has_random;
 
+    // If this is set to true, thread processes will output progress
+    // during compute().
+    // If set to false, this may greatly improve performance: the lock
+    // used for syncing threads is only relevant when they need to
+    // output progress.
+    bool verbose;
+
     // For every i, the following vectors store the data of graph i.
     // Different threads access these at different indexes, so there
     // should be no need to lock any of them.
@@ -124,11 +131,11 @@ private:
 
     // If verbose computation is enabled, use this to print progress
     // to the screen.
-    void print_progress(bool verbose);
+    void print_progress();
 
     // Used to compute a single graph.
     // Optionally print verbose output.
-    void compute(unsigned int i, bool verbose=false);
+    void compute(unsigned int i);
 
 public:
 

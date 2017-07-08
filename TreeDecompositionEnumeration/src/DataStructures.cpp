@@ -160,8 +160,10 @@ void NodeSetProducer::remove(Node v) {
 
 NodeSet NodeSetProducer::produce() {
 	NodeSet members(numMembers);
-	for (unsigned int i=0,node=0; i<numMembers && node<isMember.size(); node++) {
-		if (isMember[node]) 
+	int i;
+	unsigned int node;
+	for (i=0,node=0; i<numMembers && node<isMember.size(); node++) {
+		if (isMember[node])
 			members[i++] = node;
 	}
 	return members;

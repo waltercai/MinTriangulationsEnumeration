@@ -209,7 +209,7 @@ namespace tdenum {
 
 		// Translate blocks to Main indexes
 		vector<Block*> mainBlocks(subBlocks.size());
-		for (int i = 0; i < subBlocks.size(); i++) {
+		for (unsigned int i = 0; i < subBlocks.size(); i++) {
 		//for (auto b = subBlocks.begin(); b != subBlocks.end(); b++) {
 			NodeSetProducer mainS(mainGraph.getNumberOfNodes()), mainC(mainGraph.getNumberOfNodes());
 			for (auto n = subBlocks[i]->S.begin(); n != subBlocks[i]->S.end(); n++)
