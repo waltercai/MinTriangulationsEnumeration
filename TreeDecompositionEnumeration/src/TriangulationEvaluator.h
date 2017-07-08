@@ -23,8 +23,8 @@ namespace tdenum {
 		const NodeSet* curBlockBestPMC;
 		float curBlockBestCost;
 
-		const NodeSetSet& inclusionConsts;
-		const NodeSetSet& exclusionConsts;
+		const NodeSetSet inclusionConsts;
+		const NodeSetSet exclusionConsts;
 
 		bool curBlockUpholdsConstraints(const NodeSet&, const vector<int>&);
 
