@@ -103,14 +103,16 @@ namespace tdenum {
 			int curBlockID = bestBlockIDs.front();
 			bestBlockIDs.pop();
 
-			const NodeSet* curBlockPMC = bestBlockPMCs[curBlockID];
-			triang.addClique(*curBlockPMC);
-			triangSeps.insert(allBlockInfos[curBlockID]->B.S);
+			const NodeSet& curBlockPMC = *bestBlockPMCs[curBlockID];
+			triang.addClique(curBlockPMC);
+
+			BlockInfo* curBlock = allBlockInfos[curBlockID];
+			if (curBlock->B.S.size() > 0)
+				triangSeps.insert(curBlock->B.S);
 
 			// Add this PMCs blocks to be processed
-			BlockInfo* curBlock = allBlockInfos[curBlockID];
-			for (auto subBlock = curBlock->pmcToBlocks[*curBlockPMC].begin();
-				subBlock != curBlock->pmcToBlocks[*curBlockPMC].end(); subBlock++)
+			for (auto subBlock = curBlock->pmcToBlocks[curBlockPMC].begin();
+				subBlock != curBlock->pmcToBlocks[curBlockPMC].end(); subBlock++)
 				bestBlockIDs.push(*subBlock);
 		}
 
