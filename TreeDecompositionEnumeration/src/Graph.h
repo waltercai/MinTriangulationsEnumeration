@@ -31,8 +31,6 @@ struct Block {
 
 typedef shared_ptr<Block> BlockPtr;
 typedef vector<BlockPtr> BlockVec;
-typedef shared_ptr<const Block> ConstBlockPtr;
-typedef vector<ConstBlockPtr> ConstBlockVec;
 
 string str(const NodeSet&);
 void print(const NodeSet&);

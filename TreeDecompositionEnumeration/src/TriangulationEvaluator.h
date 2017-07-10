@@ -15,11 +15,11 @@ namespace tdenum {
 	protected:
 		const Graph& originalGraph;
 
-		ConstBlockVec blockByID;
+		vector<const Block*> blockByID;
 		vector<float> blockCostByID;
 
 		int curBlockID;
-		ConstBlockPtr curBlock;
+		const Block* curBlock;
 		const NodeSet* curBlockBestPMC;
 		float curBlockBestCost;
 
@@ -32,13 +32,15 @@ namespace tdenum {
 		TriangulationEvaluator(const Graph& G) :
 			originalGraph(G), blockByID(), blockCostByID(),
 			curBlockID(0), curBlock(NULL), curBlockBestPMC(NULL), 
-			inclusionConsts(*(new NodeSetSet())), exclusionConsts(*(new NodeSetSet()))
+			inclusionConsts(), exclusionConsts()
 			{ curBlockBestCost = maxValue(); }
 
 		TriangulationEvaluator(const Graph& G, const NodeSetSet& incConsts, const NodeSetSet& excConsts) :
 			originalGraph(G), blockByID(), blockCostByID(), 
 			curBlockID(0), curBlock(NULL), curBlockBestPMC(NULL) ,
 			inclusionConsts(incConsts), exclusionConsts(excConsts) { curBlockBestCost = maxValue(); }
+
+		~TriangulationEvaluator();
 		
 		virtual TriangulationEvaluator* extendEvaluator(const NodeSetSet&, const NodeSetSet&) = 0;
 
@@ -48,8 +50,8 @@ namespace tdenum {
 		virtual void resizeByNumBlocks(int);
 
 		virtual void finishedCurBlock();
-		virtual void startNewBlock(ConstBlockPtr B);
-		virtual void startNewBlock(ConstBlockPtr B, const SubGraph& GinducedB) { startNewBlock(B); }
+		virtual void startNewBlock(const Block& B);
+		virtual void startNewBlock(const Block& B, const SubGraph& GinducedB) { startNewBlock(B); }
 
 		virtual void evalSaturatePMC(const NodeSet& pmc, const vector<int>& pmcBlockIDs);
 
@@ -73,7 +75,7 @@ namespace tdenum {
 		
 		TriangulationEvaluator* extendEvaluator(const NodeSetSet&, const NodeSetSet&);
 
-		void startNewBlock(ConstBlockPtr B);
+		void startNewBlock(const Block& B);
 		float costSaturatePMC(const NodeSet& pmc, const vector<int>& pmcBlockIDs);
 		float maxValue() { 
 			return float(originalGraph.getNumberOfNodes() * (originalGraph.getNumberOfNodes() - 1)/2); 

@@ -76,7 +76,7 @@ namespace tdenum {
 		// Calculate Omega(S,C) for each block
 		vector<const NodeSet*> bestBlockPMCs;
 		for (auto bInfo = allBlockInfos.begin(); bInfo != allBlockInfos.end(); bInfo++) {
-			eval->startNewBlock(ConstBlockPtr(&(*bInfo)->B));
+			eval->startNewBlock((*bInfo)->B);
 			for (auto pmcToB = (*bInfo)->pmcToBlocks.begin();
 				pmcToB != (*bInfo)->pmcToBlocks.end(); pmcToB++)
 				eval->evalSaturatePMC(pmcToB->first, pmcToB->second);

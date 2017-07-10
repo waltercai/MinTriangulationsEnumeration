@@ -39,10 +39,15 @@ namespace tdenum {
 				//cout << "Pushed cost is " << resultQueue.back().cost << endl;
 				push_heap(resultQueue.begin(), resultQueue.end());
 			}
+			else {
+				newResult.eval = NULL;
+				delete newEval;
+			} 
 
 			newInclusions.insert(*sep);
 		}
 
+		delete next.eval;
 		return next.triangulation;
 	}
 }

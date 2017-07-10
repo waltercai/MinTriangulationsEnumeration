@@ -1,6 +1,11 @@
 #include "TriangulationEvaluator.h"
 
 namespace tdenum {
+	TriangulationEvaluator::~TriangulationEvaluator() {
+		blockByID.clear();
+		curBlock = NULL;
+		curBlockBestPMC = NULL;
+	}
 
 	void TriangulationEvaluator::resizeByNumBlocks(int numBlocks) {
 		// If we already started calculating blocks, don't touch the vectors!
@@ -10,12 +15,12 @@ namespace tdenum {
 		blockCostByID.resize(numBlocks, maxValue());
 	}
 
-	void TriangulationEvaluator::startNewBlock(ConstBlockPtr B) {
+	void TriangulationEvaluator::startNewBlock(const Block& B) {
 		if (curBlock != NULL) {
 			finishedCurBlock();
 			curBlockID++;
 		}
-		curBlock = B;
+		curBlock = &B;
 		curBlockBestPMC = NULL;
 		curBlockBestCost = maxValue();
 	}
@@ -104,9 +109,9 @@ namespace tdenum {
 		return extended;
 	}
 
-	void TriangFillEvaluator::startNewBlock(ConstBlockPtr B) {
+	void TriangFillEvaluator::startNewBlock(const Block& B) {
 		TriangulationEvaluator::startNewBlock(B);
-		curSFill = calcNodeSetFill(B->S);
+		curSFill = calcNodeSetFill(B.S);
 	}
 
 	float TriangFillEvaluator::costSaturatePMC(const NodeSet& pmc, const vector<int>& pmcBlockIDs) {
