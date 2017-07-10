@@ -127,6 +127,14 @@ void ChordalGraph::printTriangulation(const Graph& origin) const {
 	}
 }
 
+void ChordalGraph::printTriangulation(const Graph& origin, ofstream& writeFile) const {
+	vector< set<Node> > fillEdges = getFillEdges(origin);
+	for (vector< set<Node> >::iterator it = fillEdges.begin(); it != fillEdges.end(); ++it) {
+		Node u = *(it->begin());
+		Node v = *(++it->begin());
+		writeFile << u << "-" << v << ";";
+	}
+}
 
 void ChordalGraph::printMaximumClique() const {
 	set<NodeSet> maximalCliques = getMaximalCliques();

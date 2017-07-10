@@ -9,6 +9,8 @@
 #define CHORDALGRAPH_H_
 
 #include "Graph.h"
+#include <iostream>
+#include <fstream>
 
 namespace tdenum {
 
@@ -30,6 +32,8 @@ public:
 	long long getExpBagsSize() const;
 	// Prints the edges in this graph and not in the origin
 	void printTriangulation(const Graph& origin) const;
+	// Prints the edges in this graph and not in the origin to a file
+	void printTriangulation(const Graph& origin, ofstream& writeFile) const;
 	// Prints a clique of the largest size
 	void printMaximumClique() const;
 };

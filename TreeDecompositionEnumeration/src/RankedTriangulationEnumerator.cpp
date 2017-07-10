@@ -22,7 +22,6 @@ namespace tdenum {
 		// Split this elements into new elements and evaluate them.
 		NodeSetSet newInclusions;
 
-		cout << "Num triangulation calculations: " << next.minSeps.size() << endl;
 		for (auto sep = next.minSeps.begin(); sep != next.minSeps.end(); sep++) {
 			// If separator in Inclusion set
 			if (next.eval->getInclusionConsts().isMember(*sep))

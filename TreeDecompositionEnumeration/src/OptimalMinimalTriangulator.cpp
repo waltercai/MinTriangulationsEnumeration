@@ -12,11 +12,7 @@ namespace tdenum {
 		PMCEnumerator pmcEnum(g);
 		pmcs = pmcEnum.get();
 		minSeps = pmcEnum.get_ms();
-
-		cout << "Finished Calculating PMCs, num PMCS: " << pmcs.size() << ", num MinSeps: " << minSeps.size() << endl;
-
 		calculateBlockInfos();
-		cout << "Initialization finished! "<< allBlockInfos.size() << " Blocks!" << endl;
 	}
 
 	void OptimalMinimalTriangulator::calculateBlockInfos() {
