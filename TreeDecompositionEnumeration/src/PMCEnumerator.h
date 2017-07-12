@@ -22,6 +22,12 @@ class PMCEnumerator {
     // The graph in question
     Graph graph;
 
+    // The minimal separators of the graph.
+    // They are required for the algorithm to run correctly; if they
+    // aren't given as a parameter, they need to be calculated.
+    NodeSetSet ms;
+    bool has_ms;
+
     // The PMCs (after calculation)
     NodeSetSet pmcs;
 
@@ -59,7 +65,15 @@ class PMCEnumerator {
     NodeSetSet getConnected(const SubGraph&);
 
 public:
+
+    // Construct the enumerator with the given graph.
+    // Optionally, enforce a time limit.
     PMCEnumerator(const Graph& g, time_t time_limit = 0);
+
+    // If the minimal separators for the original graph has already been
+    // calculated, inform the enumerator.
+    // This also saves some time.
+    void set_minimal_separators(const NodeSetSet& ms);
 
     // Resets the instance to use a new graph (allows re-use of variable name).
     void reset(const Graph& g, time_t time_limit = 0);

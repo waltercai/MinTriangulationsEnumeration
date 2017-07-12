@@ -69,7 +69,7 @@ private:
     const string outfilename;
 
     // The fields to be calculated (ORed flags).
-    const int fields;
+    int fields;
 
     // If at least one of the added graphs is randomized, set this
     // to true so we know to output an extra column for p.

@@ -24,7 +24,14 @@ namespace tdenum {
 DatasetStatisticsGenerator::DatasetStatisticsGenerator(const string& outputfile, int flds) :
                             outfilename(outputfile), fields(flds), has_random(false),
                             show_graphs(true), graphs_computed(0), max_text_len(10) {
+    // Locking mechanism
     omp_init_lock(&lock);
+
+    // If PMCs are to be calculated, we need the minimal separators
+    // anyway. We'll re-use the result, this doesn't slow us down.
+    if (fields & DSG_COMP_PMC) {
+        fields |= DSG_COMP_MS;
+    }
 }
 DatasetStatisticsGenerator::~DatasetStatisticsGenerator() {
     omp_destroy_lock(&lock);
@@ -337,26 +344,15 @@ void DatasetStatisticsGenerator::compute(unsigned int i) {
         m[i] = g[i].getNumberOfEdges();
     }
 
-    // PMCs.
-    // The minimal separators are free, so no need to calculate
-    // them separately.
-    if (fields & DSG_COMP_PMC) {
-        PMCEnumerator pmce(g[i], DSG_PMC_TIME_LIMIT == DSG_NO_LIMIT ? 0 : DSG_PMC_TIME_LIMIT);
-        pmce.get();
-        pmcs[i] = pmce.get().size();
-        ms[i] = pmce.get_ms().size();
-        if (pmce.is_out_of_time()) {
-            pmc_time_limit[i] = true;
-        }
-        print_progress();
-    }
-
-    // Separators (if PMCs were calculated, no need for this)
-    if ((fields & DSG_COMP_MS) && !(fields & DSG_COMP_PMC)) {
+    // Separators.
+    // We may need the result for PMCs
+    NodeSetSet min_seps;
+    if (fields & DSG_COMP_MS) {
         ms[i] = 0;
         MinimalSeparatorsEnumerator mse(g[i], UNIFORM);
         t = time(NULL);
         while(mse.hasNext()) {
+            min_seps.insert(mse.next());
             ++ms[i];
             print_progress();
             if (DSG_MS_COUNT_LIMIT != DSG_NO_LIMIT && ms[i] > DSG_MS_COUNT_LIMIT) {
@@ -370,6 +366,24 @@ void DatasetStatisticsGenerator::compute(unsigned int i) {
             mse.next();
         }
         ms_calc_time[i] = secs_to_hhmmss(time(NULL)-t);
+    }
+
+    // PMCs.
+    // The minimal separators are free, so no need to calculate
+    // them separately.
+    if (fields & DSG_COMP_PMC) {
+        PMCEnumerator pmce(g[i], DSG_PMC_TIME_LIMIT == DSG_NO_LIMIT ? 0 : DSG_PMC_TIME_LIMIT);
+        // Re-use the calculated minimal separators, if relevant
+        if (!(ms_count_limit[i] || ms_time_limit[i])) {
+            pmce.set_minimal_separators(min_seps);
+        }
+        pmce.get();
+        pmcs[i] = pmce.get().size();
+        ms[i] = pmce.get_ms().size();
+        if (pmce.is_out_of_time()) {
+            pmc_time_limit[i] = true;
+        }
+        print_progress();
     }
 
     // Triangulations
@@ -451,7 +465,7 @@ void DatasetStatisticsGenerator::compute_by_graph_number_range(unsigned int firs
 
     // Dump all data, calculate the missing data.
     // If possible, parallelize this
-//#pragma omp parallel for
+#pragma omp parallel for
     for (unsigned int i=first-1; i<last; ++i) {
         if (!valid[i]) {
             compute(i);

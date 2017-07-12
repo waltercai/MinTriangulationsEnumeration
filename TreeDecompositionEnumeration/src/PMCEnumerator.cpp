@@ -20,7 +20,12 @@ namespace tdenum {
 
 
 PMCEnumerator::PMCEnumerator(const Graph& g, time_t time_limit) :
-    graph(g), done(false), limit(time_limit), start_time(time(NULL)), out_of_time(false) {}
+    graph(g), has_ms(false), done(false), limit(time_limit), start_time(time(NULL)), out_of_time(false) {}
+
+void PMCEnumerator::set_minimal_separators(const NodeSetSet& min_seps) {
+    ms = min_seps;
+    has_ms = true;
+}
 
 void PMCEnumerator::reset(const Graph& g, time_t time_limit) {
     graph = g;
@@ -93,14 +98,18 @@ NodeSetSet PMCEnumerator::getConnected(const SubGraph& g) {
         MSip1.clear();
         Node a = nodes[i];
 
-        // Calculate MSip1
-        MinimalSeparatorsEnumerator DiEnumerator(subg[i], UNIFORM);
-        while (DiEnumerator.hasNext()) {
-            MSip1.insert(DiEnumerator.next());
+        // Calculate MSip1 and then the next set of PMCs.
+        // If there's no need, just run the next function.
+        if (has_ms && i == n-1) {
+            PMCip1 = OneMoreVertex(subg[i], subg[i-1], a, ms, MSi, PMCi);
         }
-
-        // Calculate PMCip1
-        PMCip1 = OneMoreVertex(subg[i], subg[i-1], a, MSip1, MSi, PMCi);
+        else {
+            MinimalSeparatorsEnumerator DiEnumerator(subg[i], UNIFORM);
+            while (DiEnumerator.hasNext()) {
+                MSip1.insert(DiEnumerator.next());
+            }
+            PMCip1 = OneMoreVertex(subg[i], subg[i-1], a, MSip1, MSi, PMCi);
+        }
         TRACE(TRACE_LVL__DEBUG, "OneMoreVertex in iteration " << i
               << " with the graph G(i+1):" << endl << subg[i]
               << "got PMCs:" << endl << PMCip1);
@@ -160,7 +169,7 @@ NodeSetSet PMCEnumerator::OneMoreVertex(
             // to some vertex of C supports P=S.
             // Sort S first so we can easily compare P=S later.
             //std::sort(S.begin(), S.end());
-            
+
 			BlockVec blocks = G1.getBlocks(S);
 			for (unsigned int i=0; i<blocks.size(); ++i) {
                 // We only want full components

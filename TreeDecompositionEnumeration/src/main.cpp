@@ -31,6 +31,7 @@ typedef enum {
     MAIN_RANDOM_STATS,
     MAIN_DIFFICULT_STATS,
     MAIN_QUICK_STATS,
+    MAIN_QUICK_STATS_WITH_PMCS,
     MAIN_FINE_GRAIN_P,
     MAIN_FINE_GRAIN_AND_QUICK,
     MAIN_ALL_BAYESIAN,
@@ -321,10 +322,12 @@ private:
             dsg.add_graph(dataset_filename);
         }
     }
-    int quick_graphs() const {
+    int quick_graphs(bool with_pmcs) const {
         // Don't calculate PMCs or triangulations
         DatasetStatisticsGenerator dsg(RESULT_DIR_BASE+"QuickResults.csv",
-                        DSG_COMP_ALL ^ (DSG_COMP_TRNG | DSG_COMP_PMC));
+                        with_pmcs ?
+                            DSG_COMP_ALL ^ DSG_COMP_TRNG :
+                            DSG_COMP_ALL ^ (DSG_COMP_TRNG | DSG_COMP_PMC));
         quick_graphs_aux(dsg);
         dsg.compute(true);
         dsg.print();
@@ -369,14 +372,12 @@ private:
      */
     int all_bayesian() const {
         DatasetStatisticsGenerator dsg(RESULT_DIR_BASE+"AllBayesian.csv",
-                        DSG_COMP_ALL ^ (DSG_COMP_TRNG | DSG_COMP_PMC));
-        DirectoryIterator difficult_files(DATASET_NEW_DIR_BASE);
-        difficult_files.skip("evid"); // Skip the evidence files
+                        DSG_COMP_ALL ^ (DSG_COMP_TRNG));
+        DirectoryIterator di(DATASET_NEW_DIR_BASE);
+        di.skip("evid"); // Skip the evidence files
         string dataset_filename;
-        while(difficult_files.next_file(&dataset_filename)) {
-            cout << "Adding '" << dataset_filename << "'...";
+        while(di.next_file(&dataset_filename)) {
             dsg.add_graph(dataset_filename);
-            cout << " done." << endl;
         }
         dsg.compute(true);
         dsg.print();
@@ -510,7 +511,7 @@ private:
 public:
 
     // Go!
-    Main(MainType mt = MAIN_TMP, int argc = 1, char* argv[] = NULL) :
+    Main(MainType mt = MAIN_QUICK_STATS_WITH_PMCS, int argc = 1, char* argv[] = NULL) :
                                         return_val(-1), main_type(mt) {
         try {
             switch(main_type) {
@@ -533,7 +534,10 @@ public:
                 return_val = difficult_graphs();
                 break;
             case MAIN_QUICK_STATS:
-                return_val = quick_graphs();
+                return_val = quick_graphs(false);
+                break;
+            case MAIN_QUICK_STATS_WITH_PMCS:
+                return_val = quick_graphs(true);
                 break;
             case MAIN_FINE_GRAIN_P:
                 return_val = fine_grained_probability();
