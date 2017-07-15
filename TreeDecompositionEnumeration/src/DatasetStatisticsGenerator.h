@@ -5,6 +5,7 @@
 #include "GraphReader.h"
 #include "MinimalSeparatorsEnumerator.h"
 #include "PMCEnumerator.h"
+#include "DirectoryIterator.h"
 #include <string>
 #include <vector>
 #include <omp.h>
@@ -145,7 +146,11 @@ public:
 
     // Creates a new instance of the generator.
     // By ORing different flags the user may decide which fields to compute.
+    // Optionally send a directory iterator to input graphs from.
     DatasetStatisticsGenerator(const string& outputfile, int flds = DSG_COMP_ALL);
+    DatasetStatisticsGenerator(const string& outputfile,
+                               DirectoryIterator di,
+                               int flds = DSG_COMP_ALL);
     ~DatasetStatisticsGenerator();
 
     // If set to true, whenever a graph is added - print the text.
@@ -161,6 +166,7 @@ public:
     // the filename.
     void add_graph(const Graph& g, const string& text);
     void add_graph(const string& filename, const string& text = "");
+    void add_graphs(DirectoryIterator di); // Uses filenames as text
 
     // Computes the desired fields and outputs to file.
     // Optionally, output progress to console.

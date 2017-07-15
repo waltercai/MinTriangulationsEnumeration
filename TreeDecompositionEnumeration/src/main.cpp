@@ -221,13 +221,8 @@ private:
     void stat_gen_aux(DatasetStatisticsGenerator& dsg) const {
         DirectoryIterator deadeasy_files(DATASET_DIR_BASE+DATASET_DIR_DEADEASY);
         DirectoryIterator easy_files(DATASET_DIR_BASE+DATASET_DIR_EASY);
-        string dataset_filename;
-        while(deadeasy_files.next_file(&dataset_filename)) {
-            dsg.add_graph(dataset_filename);
-        }
-        while(easy_files.next_file(&dataset_filename)) {
-            dsg.add_graph(dataset_filename);
-        }
+        dsg.add_graphs(deadeasy_files);
+        dsg.add_graphs(easy_files);
     }
     int stat_gen() const {
         DatasetStatisticsGenerator dsg(RESULT_DIR_BASE+"EasyResults.csv");
@@ -294,13 +289,9 @@ private:
      */
     int difficult_graphs() const {
         DirectoryIterator difficult_files(DATASET_DIR_BASE+DATASET_DIR_DIFFICULT);
-        string dataset_filename;
-        string output_filename = RESULT_DIR_BASE+"DifficultResults.csv";
-        DatasetStatisticsGenerator dsg(output_filename,
+        DatasetStatisticsGenerator dsg(RESULT_DIR_BASE+"DifficultResults.csv",
+                                       difficult_files,
                                        DSG_COMP_ALL ^ (DSG_COMP_TRNG));
-        while(difficult_files.next_file(&dataset_filename)) {
-            dsg.add_graph(dataset_filename);
-        }
         dsg.compute(true);
         dsg.print();
         return 0;
@@ -315,19 +306,16 @@ private:
         stat_gen_aux(dsg);
         vector<vector<double> > p = {{0.7},{0.7},{0.7},{0.7}};
         random_stats_aux(dsg, {20,30,40,50}, p, 10);
-        DirectoryIterator difficult_files(DATASET_DIR_BASE+DATASET_DIR_DIFFICULT_BN);
-        difficult_files.skip("Grid");
-        string dataset_filename;
-        while(difficult_files.next_file(&dataset_filename)) {
-            dsg.add_graph(dataset_filename);
-        }
     }
     int quick_graphs(bool with_pmcs) const {
         // Don't calculate PMCs or triangulations
+        DirectoryIterator difficult_files(DATASET_DIR_BASE+DATASET_DIR_DIFFICULT_BN);
+        difficult_files.skip("Grid");
         DatasetStatisticsGenerator dsg(RESULT_DIR_BASE+"QuickResults.csv",
-                        with_pmcs ?
-                            DSG_COMP_ALL ^ DSG_COMP_TRNG :
-                            DSG_COMP_ALL ^ (DSG_COMP_TRNG | DSG_COMP_PMC));
+                                       difficult_files,
+                                       with_pmcs ?
+                                           DSG_COMP_ALL ^ DSG_COMP_TRNG :
+                                           DSG_COMP_ALL ^ (DSG_COMP_TRNG | DSG_COMP_PMC));
         quick_graphs_aux(dsg);
         dsg.compute(true);
         dsg.print();
@@ -371,14 +359,11 @@ private:
      * All graphs from http://www.cs.huji.ac.il/project/PASCAL/showNet.php
      */
     int all_bayesian() const {
-        DatasetStatisticsGenerator dsg(RESULT_DIR_BASE+"AllBayesian.csv",
-                        DSG_COMP_ALL ^ (DSG_COMP_TRNG));
         DirectoryIterator di(DATASET_NEW_DIR_BASE);
         di.skip("evid"); // Skip the evidence files
-        string dataset_filename;
-        while(di.next_file(&dataset_filename)) {
-            dsg.add_graph(dataset_filename);
-        }
+        DatasetStatisticsGenerator dsg(RESULT_DIR_BASE+"AllBayesian.csv",
+                                       di,
+                                       DSG_COMP_ALL ^ (DSG_COMP_TRNG));
         dsg.compute(true);
         dsg.print();
         return 0;
@@ -473,12 +458,7 @@ private:
                             di.skip(filter);
                         }
                     }
-                    string filename;
-                    while(di.next_file(&filename)) {
-                        cout << "Adding '" << filename << "'...";
-                        dsg.add_graph(filename);
-                        cout << " done." << endl;
-                    }
+                    dsg.add_graphs(di);
                 }
             }
             else { // Specific files

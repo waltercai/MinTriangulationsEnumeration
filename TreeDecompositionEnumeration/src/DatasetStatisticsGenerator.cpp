@@ -33,6 +33,27 @@ DatasetStatisticsGenerator::DatasetStatisticsGenerator(const string& outputfile,
         fields |= DSG_COMP_MS;
     }
 }
+DatasetStatisticsGenerator::DatasetStatisticsGenerator(const string& outputfile,
+                                                       DirectoryIterator di,
+                                                       int flds) :
+                            outfilename(outputfile), fields(flds), has_random(false),
+                            show_graphs(true), graphs_computed(0), max_text_len(10) {
+    // Locking mechanism
+    omp_init_lock(&lock);
+
+    // If PMCs are to be calculated, we need the minimal separators
+    // anyway. We'll re-use the result, this doesn't slow us down.
+    if (fields & DSG_COMP_PMC) {
+        fields |= DSG_COMP_MS;
+    }
+
+    // Input all graphs using the directory iterator
+    string dataset_filename;
+    while(di.next_file(&dataset_filename)) {
+        add_graph(dataset_filename);
+    }
+}
+
 DatasetStatisticsGenerator::~DatasetStatisticsGenerator() {
     omp_destroy_lock(&lock);
 }
@@ -312,6 +333,12 @@ void DatasetStatisticsGenerator::add_graph(const Graph& graph, const string& txt
 void DatasetStatisticsGenerator::add_graph(const string& filename, const string& text) {
     Graph g = GraphReader::read(filename);
     add_graph(g, text == "" ? filename : text);
+}
+void DatasetStatisticsGenerator::add_graphs(DirectoryIterator di) {
+    string dataset_filename;
+    while(di.next_file(&dataset_filename)) {
+        add_graph(dataset_filename);
+    }
 }
 
 /**
