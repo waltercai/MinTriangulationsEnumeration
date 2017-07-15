@@ -2,6 +2,7 @@
 #include "MinimalSeparatorsEnumerator.h"
 #include "Utils.h"
 #include <set>
+#include <algorithm>
 
 namespace tdenum {
 
@@ -19,111 +20,203 @@ namespace tdenum {
 
 
 
-PMCEnumerator::PMCEnumerator(const Graph& g, time_t time_limit) :
-    graph(g), has_ms(false), done(false), limit(time_limit), start_time(time(NULL)), out_of_time(false) {}
-
-void PMCEnumerator::set_minimal_separators(const NodeSetSet& min_seps) {
-    ms = min_seps;
-    has_ms = true;
+PMCEnumerator::PMCEnumerator(const Graph& g, time_t time_limit) {
+    // Don't use initialization list, so the logic of all default
+    // values stays in set_default_member_vals().
+    set_default_member_vals();
+    graph = g;
+    limit = time_limit;
 }
 
 void PMCEnumerator::reset(const Graph& g, time_t time_limit) {
+    set_default_member_vals();
     graph = g;
-    done = false;
     limit = time_limit;
+}
+
+void PMCEnumerator::set_default_member_vals() {
+    graph = Graph();
+    done = false;
+    limit = 0;
     start_time = time(NULL);
     out_of_time = false;
+    ms.clear();
+    pmcs.clear();
+    has_ms = false;
+    alg = default_alg;
+}
+
+void PMCEnumerator::set_algorithm(Alg a) {
+    alg = a;
 }
 
 /**
- * Returns all PMCs (updates PMCs and MSs in the class)
+ * Allows caller to report the minimal separators of the graph.
  */
-NodeSetSet PMCEnumerator::get() {
-    if (!done) {
-        NodeSetSet nss = getConnected(graph);
-        done = true;
-        pmcs = nss;
-    }
-    return pmcs;
+void PMCEnumerator::set_minimal_separators(const NodeSetSet& min_seps) {
+    ms = min_seps;
+    has_ms = true;
 }
 
 /**
  * Returns minimal separators.
  */
 NodeSetSet PMCEnumerator::get_ms() {
-    if (!done) {
-        get();
+    if (!has_ms) {
+        ms.clear();
+        MinimalSeparatorsEnumerator mse(graph, UNIFORM);
+        while (mse.hasNext()) {
+            ms.insert(mse.next());
+        }
+        has_ms = true;
     }
-    return MS;
+    return ms;
 }
 
 /**
  * Returns all PMCs.
- * Iteratively finds all PMCs in subgraphs of sequencially increasing size.
- * Assumes g is a connected graph.
+ * Iteratively finds all PMCs in subgraphs of sequentially increasing size.
+ *
+ * The NORMAL algorithm iteratively calculates the required minimal separators
+ * from scratch.
+ *
+ * The REVERSE_MS_PRECALC algorithm starts by calculating all sets of minimal
+ * separators - in reverse order - before starting the PMC algorithm.
  */
-NodeSetSet PMCEnumerator::getConnected(const SubGraph& g) {
-    TRACE(TRACE_LVL__NOISE, "In with G=\n" << g << "Getting nodes vector...");
-    vector<Node> nodes = g.getNodesVector();
-    int n = g.getNumberOfNodes();
-    if (n <= 0) {
-        return NodeSetSet();
-    }
+NodeSetSet PMCEnumerator::get() {
+    if (!done) {
 
-    // Each iteration requires data on two graphs: Gi and Gip1 (i plus 1).
-    NodeSetSet PMCi, PMCip1, MSi, MSip1;
-    vector<SubGraph> subg;
+        // Cleanup
+        pmcs.clear();
 
-    // Start by creating all subgraphs.
-    // This should not constitute a memory bottleneck... if so,
-    // the graphs are WAY too large for these algorithms :)
-    for (int i=1; i<=n; ++i) {
-        vector<Node> subnodes = nodes;
-        subnodes.resize(i);
-        subg.push_back(SubGraph(g, subnodes));
-    }
+        TRACE(TRACE_LVL__NOISE, "In with G=\n" << graph << "Fetching nodes vector...");
+        vector<Node> nodes = graph.getNodesVector();
+        int n = graph.getNumberOfNodes();
 
-    // If the nodes of G are {a_1,...,a_n} then P1 = {{a1}}
-    NodeSet firstSet(1);
-    firstSet[0] = nodes[0];
-    PMCip1.insert(firstSet); // Later, PMCi=PMCip1
-
-    // MS1 should remain empty, so MSi=MSip1 is OK
-
-    for (int i=1; i<n; ++i) {
-        // Calculate MSip1 and PMCip1, and use OneMoreVertex.
-        // This is the main function described in the paper.
-        PMCi = PMCip1;
-        MSi = MSip1;
-        MSip1.clear();
-        Node a = nodes[i];
-
-        // Calculate MSip1 and then the next set of PMCs.
-        // If there's no need, just run the next function.
-        if (has_ms && i == n-1) {
-            PMCip1 = OneMoreVertex(subg[i], subg[i-1], a, ms, MSi, PMCi);
+        // If the graph is empty..
+        if (n <= 0) {
+            done = true;
+            return NodeSetSet();
         }
-        else {
-            MinimalSeparatorsEnumerator DiEnumerator(subg[i], UNIFORM);
-            while (DiEnumerator.hasNext()) {
-                MSip1.insert(DiEnumerator.next());
+
+        // Start by creating all subgraphs.
+        // This should not constitute a memory bottleneck... if so,
+        // the graphs are WAY too large for these algorithms :)
+        vector<SubGraph> subg;
+        for (int i=1; i<=n; ++i) {
+            vector<Node> subnodes = nodes;
+            subnodes.resize(i);
+            subg.push_back(SubGraph(graph, subnodes));
+        }
+
+        // Optionally use the (memory-inefficient) algorithm, which
+        // calculates the minimal separators in advance:
+        vector<NodeSetSet> sub_ms(n);
+        if (alg == REVERSE_MS_PRECALC) {
+
+            // Calculate the first set of minimal separators
+            sub_ms[n-1] = get_ms();
+
+            // Use the algorithm described in the PDF
+            for (int i=n-2; i>=0; --i) {
+                sub_ms[i].clear();
+
+                // To prevent checking both S and S u {v}, if they exist
+                NodeSetSet checked_seps;
+
+                // For all S in the parent minimal separators:
+                for (auto it=sub_ms[i+1].begin(); it!=sub_ms[i+1].end(); ++it) {
+                    // Get S
+                    NodeSet S = *it;
+                    // S <- S\{v}
+                    // Assume S is sorted in ascending order, and that each subgraph
+                    // includes the i smallest nodes.
+                    if (S[S.size()-1] == nodes[i+1]) {
+                        S.pop_back();
+                    }
+                    // Make sure it hasn't been checked before
+                    if (checked_seps.isMember(S)) {
+                        continue;
+                    }
+                    // Get connected components of subg[i](S)
+                    auto components = subg[i].getComponents(S);
+                    // Count how many are full components. Stop at 2.
+                    int full_components = 0;
+                    for (auto C: components) {
+                        if (subg[i].isFullComponent(C,S)) {
+                            ++full_components;
+                            if (full_components >= 2) {
+                                break;
+                            }
+                        }
+                    }
+                    // Add S if there were at least two full components
+                    if (full_components >= 2) {
+                        sub_ms[i].insert(S);
+                    }
+                }
             }
-            PMCip1 = OneMoreVertex(subg[i], subg[i-1], a, MSip1, MSi, PMCi);
         }
-        TRACE(TRACE_LVL__DEBUG, "OneMoreVertex in iteration " << i
-              << " with the graph G(i+1):" << endl << subg[i]
-              << "got PMCs:" << endl << PMCip1);
+
+        // Now, back to the main algorithm.
+        // If the minimal separators weren't pre-calculated, use
+        // extra variables Msi and MSip1. Each iteration requires data on two
+        // graphs: Gi and Gip1 (i plus 1).
+        // Use pmcs instead of PMCip1 to save space and a copy at the end.
+        NodeSetSet PMCi, MSi, MSip1;
+
+        // If the nodes of G are {a_1,...,a_n} then P1 = {{a1}}
+        NodeSet firstSet(1);
+        firstSet[0] = nodes[0];
+        pmcs.insert(firstSet); // Later, PMCi=PMCip1
+
+        // MS1 should remain empty, so MSi=MSip1 is OK
+        for (int i=1; i<n; ++i) {
+            // Calculate MSip1 and PMCip1, and use OneMoreVertex.
+            // This is the main function described in the paper.
+            PMCi = pmcs;
+            MSi = MSip1;
+            MSip1.clear();
+            Node a = nodes[i];
+
+            // Calculate MSip1 and then the next set of PMCs.
+            // If there's no need, just run the next function.
+            if (i == n-1 && has_ms) {
+                pmcs = one_more_vertex(subg[i], subg[i-1], a, ms, MSi, PMCi);
+            }
+            else {
+                // The NORMAL algorithm requires calculation of separators
+                if (alg == NORMAL) {
+                    MinimalSeparatorsEnumerator DiEnumerator(subg[i], UNIFORM);
+                    while (DiEnumerator.hasNext()) {
+                        MSip1.insert(DiEnumerator.next());
+                    }
+                    pmcs = one_more_vertex(subg[i], subg[i-1], a, MSip1, MSi, PMCi);
+                }
+                else if (alg == REVERSE_MS_PRECALC) {
+                    pmcs = one_more_vertex(subg[i], subg[i-1], a, sub_ms[i], sub_ms[i-1], PMCi);
+                }
+            }
+            TRACE(TRACE_LVL__DEBUG, "OneMoreVertex in iteration " << i
+                  << " with the graph G(i+1):" << endl << subg[i]
+                  << "got PMCs:" << endl << pmcs);
+        }
+
+        // Update the minimal separators
+        if (!has_ms) {
+            ms = (alg == NORMAL) ? MSip1 : sub_ms[n-1];
+            has_ms = true;
+        }
+
+        // That's it!
+        // pmcs now contains the correct set of PMCs.
+        done = true;
     }
-
-    // Update the minimal separators
-    MS = MSip1;
-
-    // That's it!
-    return PMCip1;
+    return pmcs;
 }
 
 
-NodeSetSet PMCEnumerator::OneMoreVertex(
+NodeSetSet PMCEnumerator::one_more_vertex(
                   const SubGraph& G1, const SubGraph& G2, Node a,
                   const NodeSetSet& D1, const NodeSetSet& D2,
                   const NodeSetSet& P2) {
@@ -140,13 +233,13 @@ NodeSetSet PMCEnumerator::OneMoreVertex(
     }
 
     for (auto pmc2it = P2.begin(); pmc2it != P2.end(); ++pmc2it) {
-        if (IsPMC(*pmc2it, G1)) {
+        if (is_pmc(*pmc2it, G1)) {
             P1.insert(*pmc2it);
         }
         else {
             NodeSet pmc2a = *pmc2it;
             pmc2a.insert(pmc2a.end(), a); // should already be sorted as a is bigger than previous nodes
-            if (IsPMC(pmc2a, G1)) {
+            if (is_pmc(pmc2a, G1)) {
                 P1.insert(pmc2a);
             }
         }
@@ -159,7 +252,7 @@ NodeSetSet PMCEnumerator::OneMoreVertex(
         if (!std::binary_search(Sa.begin(), Sa.end(), a)) {
             Sa.insert(Sa.end(), a);
         }
-        if (IsPMC(Sa, G1)) {
+        if (is_pmc(Sa, G1)) {
             P1.insert(Sa);
         }
         if (std::find(S.begin(), S.end(), a) == S.end() && !D2.isMember(S)) {
@@ -185,7 +278,7 @@ NodeSetSet PMCEnumerator::OneMoreVertex(
                     std::set_union(TcapC.begin(), TcapC.end(),
                                    S.begin(), S.end(),
                                    std::back_inserter(SuTcapC));
-                    if (IsPMC(SuTcapC, G1)) {
+                    if (is_pmc(SuTcapC, G1)) {
                         P1.insert(SuTcapC);
                     }
                     CHECK_TIME_OR_RETURN(P1);
@@ -218,7 +311,7 @@ NodeSetSet PMCEnumerator::OneMoreVertex(
  * Ci apart from the endpoints x and y.
  */
 
-bool PMCEnumerator::IsPMC(NodeSet K, const SubGraph& G) {
+bool PMCEnumerator::is_pmc(NodeSet K, const SubGraph& G) {
 	BlockVec B = G.getBlocks(K);
 	unsigned int i,j,k;
 

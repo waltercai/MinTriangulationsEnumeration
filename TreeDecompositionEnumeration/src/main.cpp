@@ -511,7 +511,7 @@ private:
 public:
 
     // Go!
-    Main(MainType mt = MAIN_QUICK_STATS_WITH_PMCS, int argc = 1, char* argv[] = NULL) :
+    Main(MainType mt = MAIN_PMC_TEST, int argc = 1, char* argv[] = NULL) :
                                         return_val(-1), main_type(mt) {
         try {
             switch(main_type) {

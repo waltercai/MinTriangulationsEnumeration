@@ -314,6 +314,22 @@ vector<NodeSet> Graph::getComponentsAux(vector<int> visitedList, int numberOfUnh
 	return components;
 }
 
+bool Graph::isFullComponent(const vector<Node>& C, const vector<Node>& S) const {
+    for (auto c: C) {
+        bool has_neighbor = false;
+        for (auto s: S) {
+            if (neighborSets[c].find(s) != neighborSets[c].end()) {
+                has_neighbor = true;
+                break;
+            }
+        }
+        if (!has_neighbor) {
+            return false;
+        }
+    }
+    return true;
+}
+
 vector<int> Graph::getComponentsMap(const vector<Node>& removedNodes) const {
 	vector<int> visitedList(numberOfNodes, 0);
 	for (vector<Node>::const_iterator i = removedNodes.begin(); i != removedNodes.end(); ++i) {
@@ -428,7 +444,7 @@ BlockVec Graph::getBlocksAux(vector<int> visitedList, int numberOfUnhandeledNode
 	Node unhandeledID = 0;
 	while (numberOfUnhandeledNodes > 0) {
 		queue<Node> bfsQueue;
-		NodeSetProducer sepProducer(visitedList.size()), 
+		NodeSetProducer sepProducer(visitedList.size()),
 						compProducer(visitedList.size());
 		// Initialize the queue to contain a node not handled
 		for (; unhandeledID<numberOfNodes; unhandeledID++) {

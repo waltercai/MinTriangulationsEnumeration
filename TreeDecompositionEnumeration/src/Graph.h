@@ -22,7 +22,7 @@ struct Block {
 	const NodeSet C;
 	const NodeSet nodes;
 	const vector<bool> fullNodes;
-	Block(const MinimalSeparator& sep, const NodeSet& comp, int numNodes) : 
+	Block(const MinimalSeparator& sep, const NodeSet& comp, int numNodes) :
 		S(sep), C(comp), nodes(getNodeSetUnion(sep,comp)), fullNodes(getFullNodeVector(nodes, numNodes)) {}
 	static const NodeSet getNodeSetUnion(const NodeSet&, const NodeSet&);
 	static const vector<bool> getFullNodeVector(const NodeSet&, int);
@@ -104,8 +104,10 @@ public:
 	vector<int> getComponentsMap(const vector<Node>& removedNodes) const;
 	// Returns the set of components obtained by removing the given node set
 	vector<NodeSet> getComponents(const set<Node>& removedNodes) const;
-	// Returns the set of components obtained by removing the given node set
 	vector<NodeSet> getComponents(const NodeSet& removedNodes) const;
+	// Returns true <=> all nodes in C are neighbors of some element in S.
+	// Note: assumes C is a connected component, and DOES NOT enforce it.
+	bool isFullComponent(const vector<Node>& C, const vector<Node>& S) const;
 	// Returns all the nodes reachable from the node after removing
 	// the removedNodes from the graph
 	set<Node> getComponent(Node v, const set<Node>& removedNodes);

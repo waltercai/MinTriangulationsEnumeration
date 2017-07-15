@@ -12,10 +12,12 @@
  */
 #define SETUP(_n) \
     Graph g(_n); \
-    PMCEnumerator pmce(g)
+    PMCEnumerator pmce(g); \
+    pmce.set_algorithm(PMCEnumerator::REVERSE_MS_PRECALC)
 #define RESET(_n) \
     g.reset(_n); \
-    pmce.reset(g)
+    pmce.reset(g); \
+    pmce.set_algorithm(PMCEnumerator::REVERSE_MS_PRECALC)
 
 namespace tdenum {
 
@@ -28,12 +30,12 @@ bool PMCEnumeratorTester::sanity() const {
 
 bool PMCEnumeratorTester::trivialgraphs() const {
     SETUP(0);
-    ASSERT(pmce.IsPMC(NodeSet(), g));
+    ASSERT(pmce.is_pmc(NodeSet(), g));
     ASSERT_EQUAL(pmce.get(), NodeSetSet());
     RESET(1);
     NodeSet nodeset = g.getNodesVector();
-    ASSERT(!pmce.IsPMC(NodeSet(), g));
-    ASSERT(pmce.IsPMC(nodeset, g));
+    ASSERT(!pmce.is_pmc(NodeSet(), g));
+    ASSERT(pmce.is_pmc(nodeset, g));
     NodeSetSet nss;
     nss.insert(nodeset);
     ASSERT_EQUAL(pmce.get(), nss);
