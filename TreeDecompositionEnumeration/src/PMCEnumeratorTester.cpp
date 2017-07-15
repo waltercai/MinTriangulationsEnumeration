@@ -12,12 +12,10 @@
  */
 #define SETUP(_n) \
     Graph g(_n); \
-    PMCEnumerator pmce(g); \
-    pmce.set_algorithm(PMCEnumerator::REVERSE_MS_PRECALC)
+    PMCEnumerator pmce(g)
 #define RESET(_n) \
     g.reset(_n); \
-    pmce.reset(g); \
-    pmce.set_algorithm(PMCEnumerator::REVERSE_MS_PRECALC)
+    pmce.reset(g)
 
 namespace tdenum {
 
