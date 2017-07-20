@@ -67,7 +67,7 @@ class DatasetStatisticsGenerator {
 private:
 
     // Single output file, where the data will be dumped.
-    const string outfilename;
+    string outfilename;
 
     // The fields to be calculated (ORed flags).
     int fields;
@@ -147,7 +147,7 @@ public:
     // Creates a new instance of the generator.
     // By ORing different flags the user may decide which fields to compute.
     // Optionally send a directory iterator to input graphs from.
-    DatasetStatisticsGenerator(const string& outputfile, int flds = DSG_COMP_ALL);
+    DatasetStatisticsGenerator(const string& outputfile = "DSG_OUT.csv", int flds = DSG_COMP_ALL);
     DatasetStatisticsGenerator(const string& outputfile,
                                DirectoryIterator di,
                                int flds = DSG_COMP_ALL);
@@ -157,6 +157,12 @@ public:
     void show_added_graphs();
     void dont_show_added_graphs();
 
+    // Resets the DSG (doesn't change output filename
+    void reset();
+
+    // Changes filename (doesn't call reset())
+    void change_outfile(const string&);
+
     // Add graphs.
     // The user may either send an input filename to read the data
     // from, or a graph instance.
@@ -165,9 +171,45 @@ public:
     // required parameter if a Graph is sent, otherwise the default is
     // the filename.
     void add_graph(const Graph& g, const string& text);
+    void add_random_graph(unsigned int n, double p, int instances = 1);
     void add_graph(const string& filename, const string& text = "");
-    void add_graphs(DirectoryIterator di); // Uses filenames as text
 
+    // Recursive search.
+    // Allow user to send a directory iterator.
+    // The second method scans the directory given by the user (recursively)
+    // and adds all graphs found. Optionally add filters to the path strings
+    // (graphs with at least one filter as a substring of the path won't be
+    // added).
+    void add_graphs(DirectoryIterator di);
+    void add_graphs_dir(const string& dir,
+                        const vector<string>& filters = vector<string>());
+
+
+    // Adds random graphs to the DSG.
+    // The inputs are:
+    // - A vector of graphs sizes (number of nodes)
+    // - A vector of p values
+    // If mix_match is false, for every i a graph will be sampled from
+    // G(n[i],p[i]).
+    // If mix_match is true, for every i and j a graph will be sampled
+    // from G(n[i],p[j])
+    void add_random_graphs(const vector<unsigned int>& n,
+                           const vector<double>& p,
+                           bool mix_match = false);
+
+    // Adds random graphs. For each graph size (number of nodes) n,
+    // samples a graph from G(n,k*step) for all k from k=1 to 1/step
+    // (not including 1/step).
+    // Allow the user to control the number of sampled instances for
+    // each graph.
+    void add_random_graphs_pstep(const vector<unsigned int>& n,
+                                 double step = 0.5,
+                                 int instances = 3);
+
+    // Scans the directory given by the user (recursively) and
+    // adds all graphs found.
+    // Optionally add filters to the path strings (graphs with
+    // at least one filter as a substring won't be added).
     // Computes the desired fields and outputs to file.
     // Optionally, output progress to console.
     void compute(bool verbose = false);

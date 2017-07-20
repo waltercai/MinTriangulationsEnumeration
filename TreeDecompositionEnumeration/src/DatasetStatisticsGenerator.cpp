@@ -56,6 +56,13 @@ void DatasetStatisticsGenerator::dont_show_added_graphs() {
     show_graphs = false;
 }
 
+void DatasetStatisticsGenerator::reset() {
+    *this = DatasetStatisticsGenerator(outfilename, fields);
+}
+
+void DatasetStatisticsGenerator::change_outfile(const string& name) {
+    outfilename = name;
+}
 
 /**
  * Useful for stringifying output, in CSV format or human readable.
@@ -321,6 +328,16 @@ void DatasetStatisticsGenerator::add_graph(const Graph& graph, const string& txt
     }
 
 }
+void DatasetStatisticsGenerator::add_random_graph(unsigned int n, double p, int instances) {
+    for (int i=0; i<instances; ++i) {
+        ostringstream oss;
+        Graph g(n);
+        g.randomize(p);
+        oss << "G(" << n << "," << p << ") (with " << g.getNumberOfEdges()
+            << " edges), instance " << i+1 << "/" << instances;
+        add_graph(g, oss.str());
+    }
+}
 void DatasetStatisticsGenerator::add_graph(const string& filename, const string& text) {
     Graph g = GraphReader::read(filename);
     add_graph(g, text == "" ? filename : text);
@@ -331,6 +348,47 @@ void DatasetStatisticsGenerator::add_graphs(DirectoryIterator di) {
         add_graph(dataset_filename);
     }
 }
+void DatasetStatisticsGenerator::add_graphs_dir(const string& dir,
+                        const vector<string>& filters) {
+    DirectoryIterator di(dir);
+    for (unsigned i=0; i<filters.size(); ++i)
+        di.skip(filters[i]);
+    add_graphs(di);
+}
+void DatasetStatisticsGenerator::add_random_graphs(const vector<unsigned int>& n,
+                        const vector<double>& p, bool mix_match) {
+    if (!mix_match) {
+        if (n.size() != p.size()) {
+            cout << "Invalid arguments (" << n.size() << " graphs requested, "
+                 << p.size() << " probabilities sent)" << endl;
+            return;
+        }
+        for (unsigned i=0; i<n.size(); ++i) {
+            add_random_graph(n[i],p[i]);
+        }
+    }
+    else {
+        for (unsigned i=0; i<n.size(); ++i) {
+            for (unsigned j=0; j<p.size(); ++j) {
+                add_random_graph(n[i],p[j]);
+            }
+        }
+    }
+}
+void DatasetStatisticsGenerator::add_random_graphs_pstep(const vector<unsigned int>& n,
+                                                         double step,
+                                                         int instances) {
+    if (step >= 1 || step <= 0) {
+        cout << "Step value must be 0<step<1 (is " << step << ")" << endl;
+        return;
+    }
+    for (unsigned i=0; i<n.size(); ++i) {
+        for (unsigned j=1; (double(j))*step < 1; ++j) {
+            add_random_graph(n[i], j*step, instances);
+        }
+    }
+}
+
 
 /**
  * Computes the fields requested by the user for all graphs / a specific graph.
