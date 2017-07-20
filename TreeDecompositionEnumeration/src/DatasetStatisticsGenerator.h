@@ -3,6 +3,7 @@
 
 #include "Graph.h"
 #include "GraphReader.h"
+#include "GraphStats.h"
 #include "MinimalSeparatorsEnumerator.h"
 #include "PMCEnumerator.h"
 #include "DirectoryIterator.h"
@@ -63,6 +64,21 @@ namespace tdenum {
 #define DSG_TRNG_TIME_LIMIT DSG_MS_TIME_LIMIT
 #define DSG_PMC_TIME_LIMIT (5*60)
 
+#define HAS_MS_COUNT_LIMIT \
+    (DSG_MS_COUNT_LIMIT != DSG_NO_LIMIT)
+#define HAS_TRNG_COUNT_LIMIT \
+    (DSG_TRNG_COUNT_LIMIT != DSG_NO_LIMIT)
+#define HAS_MS_TIME_LIMIT \
+    (DSG_MS_TIME_LIMIT != DSG_NO_LIMIT)
+#define HAS_TRNG_TIME_LIMIT \
+    (DSG_TRNG_TIME_LIMIT != DSG_NO_LIMIT)
+#define HAS_PMC_TIME_LIMIT \
+    (DSG_PMC_TIME_LIMIT != DSG_NO_LIMIT)
+#define HAS_COUNT_LIMIT \
+    (HAS_MS_COUNT_LIMIT || HAS_TRNG_COUNT_LIMIT)
+#define HAS_TIME_LIMIT \
+    (HAS_MS_TIME_LIMIT || HAS_TRNG_TIME_LIMIT || HAS_PMC_TIME_LIMIT)
+
 class DatasetStatisticsGenerator {
 private:
 
@@ -90,23 +106,7 @@ private:
     // For every i, the following vectors store the data of graph i.
     // Different threads access these at different indexes, so there
     // should be no need to lock any of them.
-    vector<Graph> g;
-    vector<string> text;
-    vector<int> n;
-    vector<int> m;
-    vector<int> ms;
-    vector<int> pmcs;
-    vector<int> triangs;
-    // Are the (n,m,ms,pmcs,triangs) fields valid for graph i?
-    vector<bool> valid;
-    // If the limit was overreached, set the relevant flag.
-    vector<bool> ms_count_limit;
-    vector<bool> ms_time_limit;
-    vector<bool> trng_count_limit;
-    vector<bool> trng_time_limit;
-    vector<bool> pmc_time_limit;
-    // The amount of time required to calculate the minimal separators.
-    vector<string> ms_calc_time;
+    vector<GraphStats> gs;
 
     // While computing a graph's stats, push it's index here so
     // print_progress will output the current computation status.
