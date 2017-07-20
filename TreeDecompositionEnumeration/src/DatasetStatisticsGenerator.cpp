@@ -36,16 +36,7 @@ DatasetStatisticsGenerator::DatasetStatisticsGenerator(const string& outputfile,
 DatasetStatisticsGenerator::DatasetStatisticsGenerator(const string& outputfile,
                                                        DirectoryIterator di,
                                                        int flds) :
-                            outfilename(outputfile), fields(flds), has_random(false),
-                            show_graphs(true), graphs_computed(0), max_text_len(10) {
-    // Locking mechanism
-    omp_init_lock(&lock);
-
-    // If PMCs are to be calculated, we need the minimal separators
-    // anyway. We'll re-use the result, this doesn't slow us down.
-    if (fields & DSG_COMP_PMC) {
-        fields |= DSG_COMP_MS;
-    }
+                            DatasetStatisticsGenerator(outputfile, flds) {
 
     // Input all graphs using the directory iterator
     string dataset_filename;
