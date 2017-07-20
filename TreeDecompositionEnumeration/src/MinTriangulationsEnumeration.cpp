@@ -69,6 +69,7 @@ void printSummary(ofstream& summaryOutput, InputFile& input, Graph& graph, bool 
 
 }
 
+using namespace tdenum;
 
 /**
  * First parameter is the graph file path. Second is timeout in seconds.
@@ -77,8 +78,6 @@ void printSummary(ofstream& summaryOutput, InputFile& input, Graph& graph, bool 
  * Fourth is the order of extending minimal separators. Options are: size
  * (ascending), fill or none.
  */
-/** MIGRATED TO MAIN.CPP
- *
 int main(int argc, char* argv[]) {
 	// Parse input graph file
 	if (argc < 2) {
@@ -227,6 +226,5 @@ int main(int argc, char* argv[]) {
 
 	return 0;
 }
-*/
 
 

@@ -25,7 +25,6 @@ namespace tdenum {
 
 typedef enum {
     MAIN_TMP,
-    MAIN_MIN_TRIANG_ENUM,
     MAIN_PMC_TEST,
     MAIN_STATISTIC_GEN,
     MAIN_RANDOM_STATS,
@@ -57,162 +56,6 @@ private:
         dsg.print();
         return 0;
     }
-
-    /**
-     * First parameter is the graph file path. Second is timeout in seconds.
-     * Third is the order of extending triangulations. Options are: width, fill,
-     * difference, sepsize, none.
-     * Fourth is the order of extending minimal separators. Options are: size
-     * (ascending), fill or none.
-     */
-    int triang_enum(int argc, char* argv[]) const {
-        // Parse input graph file
-        if (argc < 2) {
-            cout << "No graph file specified" << endl;
-            return 0;
-        }
-        InputFile inputFile(argv[1]);
-        Graph g = GraphReader::read(inputFile.getPath());
-
-        // Define default parameters
-        bool isTimeLimited = false;
-        int timeLimitInSeconds = -1;
-        WhenToPrint print = NEVER;
-        string algorithm = "";
-        TriangulationAlgorithm heuristic = MCS_M;
-        TriangulationScoringCriterion triangulationsOrder = NONE;
-        SeparatorsScoringCriterion separatorsOrder = UNIFORM;
-
-        // Replace parameter specified
-        for (int i=2; i<argc; i++) {
-            string argument = argv[i];
-            string flagName = argument.substr(0, argument.find_last_of("="));
-            string flagValue = argument.substr(argument.find_last_of("=")+1);
-            if (flagName == "time_limit") {
-                timeLimitInSeconds = atoi(flagValue.c_str());
-                if (timeLimitInSeconds >= 0) {
-                    isTimeLimited = true;
-                }
-            } else if (flagName == "print") {
-                if (flagValue == "all") {
-                    print = ALWAYS;
-                } else if (flagValue == "none") {
-                    print = NEVER;
-                } else if (flagValue == "improved") {
-                    print = IF_IMPROVED;
-                }
-            } else if (flagName == "alg") {
-                algorithm = algorithm + "." + flagValue;
-                if (flagValue == "mcs") {
-                    heuristic = MCS_M;
-                } else if (flagValue == "degree") {
-                    heuristic = MIN_DEGREE_LB_TRIANG;
-                } else if (flagValue == "fill") {
-                    heuristic = MIN_FILL_LB_TRIANG;
-                }  else if (flagValue == "initialDegree") {
-                    heuristic = INITIAL_DEGREE_LB_TRIANG;
-                } else if (flagValue == "initialFill") {
-                    heuristic = INITIAL_FILL_LB_TRIANG;
-                } else if (flagValue == "lb") {
-                    heuristic = LB_TRIANG;
-                } else if (flagValue == "combined") {
-                    heuristic = COMBINED;
-                } else if (flagValue == "separators") {
-                    heuristic = SEPARATORS;
-                } else {
-                    cout << "Triangulation algorithm not recognized" << endl;
-                    return 0;
-                }
-            } else if (flagName == "t_order") {
-                algorithm = algorithm + "." + flagValue;
-                if (flagValue == "fill") {
-                    triangulationsOrder = FILL;
-                } else if (flagValue == "width") {
-                    triangulationsOrder = WIDTH;
-                } else if (flagValue == "difference") {
-                    triangulationsOrder = DIFFERENECE;
-                } else if (flagValue == "sepsize") {
-                    triangulationsOrder = MAX_SEP_SIZE;
-                } else if (flagValue == "none") {
-                    triangulationsOrder = NONE;
-                } else {
-                    cout << "Triangulation scoring criterion not recognized" << endl;
-                    return 0;
-                }
-            } else if (flagName == "s_order") {
-                algorithm = algorithm + "." + flagValue;
-                if (flagValue == "size") {
-                    separatorsOrder = ASCENDING_SIZE;
-                } else if (flagValue == "none") {
-                    separatorsOrder = UNIFORM;
-                } else if (flagValue == "fill") {
-                    separatorsOrder = FILL_EDGES;
-                } else {
-                    cout << "Seperators scoring criterion not recognized" << endl;
-                    return 0;
-                }
-            }
-        }
-
-        // Open output files
-        ofstream detailedOutput;
-        if (print != NEVER) {
-            algorithm = algorithm != "" ? algorithm : "mcs";
-            string outputFileName = inputFile.getField() + "." + inputFile.getType()
-                    + "." + inputFile.getName() + "." + algorithm + ".csv";
-            detailedOutput.open(outputFileName.c_str());
-        }
-        string summaryFileName = "summary.csv";
-        ofstream summaryOutput;
-        if (!ifstream(summaryFileName.c_str()).good()) { // summary file doesn't exist
-            summaryOutput.open(summaryFileName.c_str());
-            printSummaryHeader(summaryOutput);
-        } else  {
-            summaryOutput.open(summaryFileName.c_str(), ios::app);
-        }
-
-        // Initialize variables
-        cout << setprecision(2);
-        cout << "Starting enumeration for " << inputFile.getField() << "\\"
-                << inputFile.getType() << "\\" << inputFile.getName() << endl;
-        clock_t startTime = clock();
-        ResultsHandler results(g, detailedOutput, print);
-        bool timeLimitExceeded = false;
-
-        // Generate the results and print details if asked for
-        MinimalTriangulationsEnumerator enumerator(g, triangulationsOrder, separatorsOrder, heuristic);
-        while (enumerator.hasNext()) {
-            ChordalGraph triangulation = enumerator.next();
-            results.newResult(triangulation);
-            double totalTimeInSeconds = double(clock() - startTime) / CLOCKS_PER_SEC;
-            if (isTimeLimited && totalTimeInSeconds >= timeLimitInSeconds) {
-                timeLimitExceeded = true;
-                break;
-            }
-        }
-        if (print != NEVER) {
-            detailedOutput.close();
-        }
-
-        // Print summary to file
-        double totalTimeInSeconds = double(clock() - startTime) / CLOCKS_PER_SEC;
-        int separators = enumerator.getNumberOfMinimalSeperatorsGenerated();
-        printSummary(summaryOutput, inputFile, g, timeLimitExceeded,
-                totalTimeInSeconds, algorithm, separators, results);
-        summaryOutput.close();
-
-        // Print summary to standard output
-        if (timeLimitExceeded) {
-            cout << "Time limit reached." << endl;
-        } else {
-            cout << "All minimal triangulations were generated!" << endl;
-        }
-        results.printReadableSummary(cout);
-        cout << "The graph has " << g.getNumberOfNodes() << " nodes and " << g.getNumberOfEdges() << " edges. ";
-        cout << separators << " minimal separators were generated in the process." << endl;
-
-        return 0;
-	}
 
     /**
      * Run the DatasetStatisticsGenerator and output files given the datasets NOT in
@@ -498,9 +341,6 @@ public:
             case MAIN_TMP:
                 return_val = tmp();
                 break;
-            case MAIN_MIN_TRIANG_ENUM:
-                return_val = triang_enum(argc, argv);
-                break;
             case MAIN_PMC_TEST:
                 return_val = pmc_test();
                 break;
@@ -578,9 +418,6 @@ int main(int argc, char* argv[]) {
                 cout << "Bad parameter given to n: must be between 0 and " << MAIN_LAST-1
                      << ", n is " << main_type << endl;
                 return -1;
-            }
-            if (main_type == MAIN_MIN_TRIANG_ENUM) {
-                return Main(MainType(main_type), argc-2, argv+2).get();
             }
             else {
                 return Main(MainType(main_type)).get();
