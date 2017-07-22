@@ -16,23 +16,40 @@ namespace tdenum {
 
 /**
  * A class responsible for taking input datasets (utilizing
- * the GraphReader class) and generating CSV files with:
+ * the GraphReader class) and generating statistics:
  * - Number of nodes
  * - Number of edges
  * - Number of minimal separators
  * - Number of PMCs
  * - Number of minimal triangulations
  *
- * To use, construct the class with the name of the output file, add
- * graphs and then call compute() (or compute(true) to see progress).
- * To print results to the console, call print().
+ * By default, the results are output to CSV file (optionally, print
+ * formatted statistics to console with the 'verbose' flag). If the DSG
+ * is only being use to generate statistics for use in user code, output
+ * to file may be suppressed by calling suppress_dump().
  *
- * In the future (if required), add functionality to actually list
- * the separators and PMCs themselves.
+ * To use:
+ * 1. Construct the class with the name of the desired output file and
+ *    desired statistics to be calculated. Defaults to DSG_COMP_ALL. The
+ *    'fields' value is a bitmap, so by calling:
+ *    > DatasetStatisticsGenerator("out.csv", DSG_COMP_ALL ^ DSG_COMP_TRNG)
+ *    the output statistics will be everything except triangulations.
+ * 2. Add graphs. Several utility functions exist for adding graphs in
+ *    singles / batch with relative ease (recursive file search with filters,
+ *    batch random graph insertion..).
+ * 3. (OPTIONAL) Specify which PMC algorithm should be used (if calculating
+ *    PMCs).
+ * 4. If no file output is desired, call suppress_dump(). If the computation
+ *    must be sequential (statistics for performance are needed, for example),
+ *    call suppress_async().
+ * 5. Call compute().
  *
  * If the output filename isn't given explicitly, make sure the directory
  * defined by DEFAULT_OUTPUT_DIR exists and can be reached relatively from
  * the point of code execution.
+ *
+ * To print results to the console, call print(), and to get the
+ * statistics vector call get_stats().
  */
 
 #define DEFAULT_OUTPUT_DIR "./"
@@ -49,7 +66,7 @@ namespace tdenum {
  * are calculated all-or-nothing anyway), and / or the amount
  * of time (in seconds) required.
  *
- * To run with no limit, set DSG_<MS,TRNG>_<COUNT,TIME>_LIMIT
+ * To run with no limit, set DSG_<MS|TRNG|PMC>_<COUNT|TIME>_LIMIT
  * to DSG_NO_LIMIT.
  *
  * The output statistic will contain a "t" for out-of-time, or
@@ -64,20 +81,22 @@ namespace tdenum {
 #define DSG_TRNG_TIME_LIMIT DSG_MS_TIME_LIMIT
 #define DSG_PMC_TIME_LIMIT (5*60)
 
-#define HAS_MS_COUNT_LIMIT \
-    (DSG_MS_COUNT_LIMIT != DSG_NO_LIMIT)
-#define HAS_TRNG_COUNT_LIMIT \
-    (DSG_TRNG_COUNT_LIMIT != DSG_NO_LIMIT)
-#define HAS_MS_TIME_LIMIT \
-    (DSG_MS_TIME_LIMIT != DSG_NO_LIMIT)
-#define HAS_TRNG_TIME_LIMIT \
-    (DSG_TRNG_TIME_LIMIT != DSG_NO_LIMIT)
-#define HAS_PMC_TIME_LIMIT \
-    (DSG_PMC_TIME_LIMIT != DSG_NO_LIMIT)
-#define HAS_COUNT_LIMIT \
-    (HAS_MS_COUNT_LIMIT || HAS_TRNG_COUNT_LIMIT)
-#define HAS_TIME_LIMIT \
-    (HAS_MS_TIME_LIMIT || HAS_TRNG_TIME_LIMIT || HAS_PMC_TIME_LIMIT)
+/**
+ *
+ */
+#define DSG_COL_TXT "Graph text"
+#define DSG_COL_NODES "Nodes "
+#define DSG_COL_EDGES "Edges "
+#define DSG_COL_MSS "Minimal separators"
+#define DSG_COL_PMCS "PMCs    "
+#define DSG_COL_TRNG "Minimal triangulations"
+#define DSG_COL_P "P value"
+#define DSG_COL_RATIO "Edge ratio"
+#define DSG_COL_MS_TIME "MS calculation time"
+#define DSG_COL_ERR_TIME "Time errors"
+#define DSG_COL_CNT_TIME "Count errors"
+
+
 
 class DatasetStatisticsGenerator {
 private:
@@ -99,9 +118,32 @@ private:
     // output progress.
     bool verbose;
 
+    // If allow_dump_flag is set to true, file output will be created.
+    bool allow_dump_flag;
+
+    // If allow_parallel is set to true, parallelize the job.
+    // Per graph, the computation is never asynchronous.
+    bool allow_parallel;
+
     // If true, every graph added will cause a line to be printed to
     // console (with graph text).
     bool show_graphs;
+
+    // Time / count limits (if exceeded, processing is stopped and moves
+    // on to the next graph).
+    bool has_ms_time_limit;
+    bool has_pmc_time_limit;
+    bool has_trng_time_limit;
+    bool has_ms_count_limit;
+    bool has_trng_count_limit;
+    time_t ms_time_limit;
+    time_t pmc_time_limit;
+    time_t trng_time_limit;
+    long ms_count_limit;
+    long trng_count_limit;
+
+    // The algorithm to be used when calculating PMCs
+    PMCEnumerator::Alg pmc_alg;
 
     // For every i, the following vectors store the data of graph i.
     // Different threads access these at different indexes, so there
@@ -122,6 +164,10 @@ private:
     // to lock a lock before printing, otherwise we'll get garbage.
     omp_lock_t lock;
 
+    // Useful for printing
+    bool has_time_limit() const;
+    bool has_count_limit() const;
+
     // Return a header string
     string header(bool csv) const;
 
@@ -133,6 +179,7 @@ private:
     // Can't be const, we need to lock the lock here
     void dump_line(unsigned int i);
     void dump_header();
+    void dump_parallel_aux(const string& s);
 
     // If verbose computation is enabled, use this to print progress
     // to the screen.
@@ -157,11 +204,36 @@ public:
     void show_added_graphs();
     void dont_show_added_graphs();
 
-    // Resets the DSG (doesn't change output filename
-    void reset();
+    // Resets the DSG (doesn't change output filename, allows change
+    // of fields to be calculated).
+    void reset(int flds = DSG_COMP_ALL);
 
-    // Changes filename (doesn't call reset())
+    // Sets time/count limits or disables them
+    void disable_all_limits();
+    void disable_all_count_limits();
+    void disable_all_time_limits();
+    void set_ms_time_limit(time_t);
+    void set_trng_time_limit(time_t);
+    void set_pmc_time_limit(time_t);
+    void set_ms_count_limit(unsigned long);
+    void set_trng_count_limit(unsigned long);
+
+    // Sets the 'valid' flag of all graphs to 'false' (to force
+    // recalculation).
+    void force_recalc();
+
+    // Changes filename (doesn't call reset()), or prevents output to file
+    // altogether.
     void change_outfile(const string&);
+    void suppress_dump();
+    void allow_dump();
+
+    // Enables / disables parallel computation of graphs.
+    void suppress_async();
+    void allow_async();
+
+    // Choose the PMC algorithm
+    void set_pmc_alg(PMCEnumerator::Alg);
 
     // Add graphs.
     // The user may either send an input filename to read the data
@@ -222,6 +294,12 @@ public:
     // compute_by_graph_number(X).
     void compute_by_graph_number(unsigned int i, bool verbose = false);
     void compute_by_graph_number_range(unsigned int first, unsigned int last, bool verbose = false);
+
+    // Returns the statistics, as they are (no computation is done).
+    vector<GraphStats> get_stats() const;
+
+    // Returns the number of graphs in the DSG
+    unsigned get_total_graphs() const;
 
     // Prints data to console (only valid data).
     void print() const;

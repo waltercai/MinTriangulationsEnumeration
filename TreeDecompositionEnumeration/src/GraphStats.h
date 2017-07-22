@@ -1,3 +1,6 @@
+#ifndef GRAPHSTATS_H_INCLUDED
+#define GRAPHSTATS_H_INCLUDED
+
 #include "Graph.h"
 #include <string>
 
@@ -11,9 +14,9 @@ public:
     string text;
     int n;
     int m;
-    int ms;
-    int pmcs;
-    int triangs;
+    long ms;
+    long pmcs;
+    long triangs;
     // Are the (n,m,ms,pmcs,triangs) fields valid for graph i?
     // Note: if the DSG didn't request PMCs, then even if valid
     // is true the PMCs should be zero.
@@ -24,8 +27,10 @@ public:
     bool trng_count_limit;
     bool trng_time_limit;
     bool pmc_time_limit;
-    // The amount of time required to calculate the minimal separators.
-    string ms_calc_time;
+    // The amount of time required for calculation the minimal separators.
+    time_t ms_calc_time;
+    time_t pmc_calc_time;
+    time_t trng_calc_time;
 
     /**
      * Basic constructor
@@ -35,3 +40,5 @@ public:
 };
 
 }
+
+#endif // GRAPHSTATS_H_INCLUDED

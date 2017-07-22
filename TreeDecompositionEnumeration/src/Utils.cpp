@@ -31,6 +31,17 @@ string secs_to_hhmmss(time_t t) {
     return oss.str();
 }
 
+void append_string_to_file(const string& filename, const string& str) {
+    ofstream outfile;
+    outfile.open(filename, ios::out | ios::app);
+    if (!outfile.good()) {
+        TRACE(TRACE_LVL__ERROR, "Couldn't open file '" << filename << "'");
+        return;
+    }
+    outfile << str;
+    outfile.close();
+}
+
 string Logger::filename;
 ofstream Logger::file;
 bool Logger::state;

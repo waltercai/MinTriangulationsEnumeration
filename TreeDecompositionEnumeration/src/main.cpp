@@ -9,6 +9,7 @@
 #include "MinimalTriangulationsEnumerator.h"
 #include "MinTriangulationsEnumeration.h"
 #include "ResultsHandler.h"
+#include "PMCRacer.h"
 #include <iostream>
 #include <fstream>
 #include <iomanip>
@@ -33,6 +34,7 @@ typedef enum {
     MAIN_FINE_GRAIN_P,
     MAIN_FINE_GRAIN_AND_QUICK,
     MAIN_ALL_BAYESIAN,
+    MAIN_PMC_RACE,
     MAIN_LAST   // Keep this one last
 } MainType;
 
@@ -69,7 +71,7 @@ private:
         Logger::start("log.txt", false);
         PMCEnumeratorTester p(false);
 //        p.clearAll();
-//        p.flag_noamsgraphs = true;
+//        p.flag_triangleonstilts = true;
         p.go();
         return 0;
     }
@@ -102,11 +104,6 @@ private:
      * - Graphs in easy+deadeasy
      * - Random graphs with p=70% edges and up to 50 nodes
      */
-    void quick_graphs_aux(DatasetStatisticsGenerator& dsg) const {
-        dsg.add_graphs_dir(DATASET_DIR_BASE+DATASET_DIR_DEADEASY);
-        dsg.add_graphs(DATASET_DIR_BASE+DATASET_DIR_EASY);
-        dsg.add_random_graphs({20,30,40,50},{0.7},true);
-    }
     int quick_graphs(bool with_pmcs) const {
         // Don't calculate PMCs or triangulations
         DatasetStatisticsGenerator dsg(RESULT_DIR_BASE+"QuickResults.csv",
@@ -117,7 +114,9 @@ private:
         dsg.add_graphs_dir(DATASET_DIR_BASE+DATASET_DIR_DEADEASY);
         dsg.add_graphs(DATASET_DIR_BASE+DATASET_DIR_EASY);
         dsg.add_random_graphs({20,30,40,50},{0.7},true);
-        dsg.compute(true);
+        dsg.suppress_async();
+        dsg.compute_by_graph_number(80, true);
+//        dsg.compute(true);
         dsg.print();
         return 0;
     }
@@ -161,6 +160,20 @@ private:
         return 0;
     }
 
+    /**
+     * Run the PMCRacer
+     */
+    int pmc_race() const {
+        // Allow 20 minutes per graph
+        PMCRacer pmcr(RESULT_DIR_BASE+"PMCRace.csv", 20*60);
+        pmcr.dsg.add_graphs_dir(DATASET_DIR_BASE+DATASET_DIR_DIFFICULT_BN, {"Grid"});
+        pmcr.dsg.add_graphs_dir(DATASET_DIR_BASE+DATASET_DIR_DEADEASY);
+        pmcr.dsg.add_graphs(DATASET_DIR_BASE+DATASET_DIR_EASY);
+        pmcr.dsg.add_random_graphs({20,30,40,50},{0.7},true);
+        pmcr.go(true);
+        return 0;
+    }
+
     // Store the return value
     int return_val;
     // The main function to run
@@ -168,7 +181,7 @@ private:
 public:
 
     // Go!
-    Main(MainType mt = MAIN_PMC_TEST, int argc = 1, char* argv[] = NULL) :
+    Main(MainType mt = MAIN_QUICK_STATS, int argc = 1, char* argv[] = NULL) :
                                         return_val(-1), main_type(mt) {
         try {
             switch(main_type) {
@@ -198,6 +211,9 @@ public:
                 break;
             case MAIN_ALL_BAYESIAN:
                 return_val = all_bayesian();
+                break;
+            case MAIN_PMC_RACE:
+                return_val = pmc_race();
                 break;
             default: break;
             }

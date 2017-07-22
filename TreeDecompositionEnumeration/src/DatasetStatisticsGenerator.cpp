@@ -9,6 +9,7 @@
 #include <sstream>
 #include <iomanip>
 #include <math.h>
+#include <string>
 using std::ofstream;
 using std::endl;
 using std::ostringstream;
@@ -22,8 +23,26 @@ namespace tdenum {
  * Also, max_text_len needs to be at least the size of the string "Graph text"
  */
 DatasetStatisticsGenerator::DatasetStatisticsGenerator(const string& outputfile, int flds) :
-                            outfilename(outputfile), fields(flds), has_random(false),
-                            show_graphs(true), graphs_computed(0), max_text_len(10) {
+                            outfilename(outputfile),
+                            fields(flds),
+                            has_random(false),
+                            verbose(false),
+                            allow_dump_flag(true),
+                            allow_parallel(true),
+                            show_graphs(true),
+                            has_pmc_time_limit(false),
+                            has_trng_time_limit(false),
+                            has_ms_count_limit(false),
+                            has_trng_count_limit(false),
+                            ms_time_limit(DSG_MS_TIME_LIMIT),
+                            pmc_time_limit(DSG_PMC_TIME_LIMIT),
+                            trng_time_limit(DSG_TRNG_TIME_LIMIT),
+                            ms_count_limit(DSG_MS_COUNT_LIMIT),
+                            trng_count_limit(DSG_TRNG_COUNT_LIMIT),
+                            pmc_alg(PMCEnumerator::ALG_NORMAL),
+                            graphs_computed(0),
+                            max_text_len(STRLEN(DSG_COL_TXT))
+{
     // Locking mechanism
     omp_init_lock(&lock);
 
@@ -36,13 +55,10 @@ DatasetStatisticsGenerator::DatasetStatisticsGenerator(const string& outputfile,
 DatasetStatisticsGenerator::DatasetStatisticsGenerator(const string& outputfile,
                                                        DirectoryIterator di,
                                                        int flds) :
-                            DatasetStatisticsGenerator(outputfile, flds) {
-
+                            DatasetStatisticsGenerator(outputfile, flds)
+{
     // Input all graphs using the directory iterator
-    string dataset_filename;
-    while(di.next_file(&dataset_filename)) {
-        add_graph(dataset_filename);
-    }
+    add_graphs(di);
 }
 
 DatasetStatisticsGenerator::~DatasetStatisticsGenerator() {
@@ -56,12 +72,75 @@ void DatasetStatisticsGenerator::dont_show_added_graphs() {
     show_graphs = false;
 }
 
-void DatasetStatisticsGenerator::reset() {
-    *this = DatasetStatisticsGenerator(outfilename, fields);
+void DatasetStatisticsGenerator::reset(int flds) {
+    *this = DatasetStatisticsGenerator(outfilename, flds);
+}
+
+void DatasetStatisticsGenerator::disable_all_limits() {
+    disable_all_count_limits();
+    disable_all_time_limits();
+}
+void DatasetStatisticsGenerator::disable_all_count_limits() {
+    has_ms_count_limit = false;
+    has_trng_count_limit = false;
+}
+void DatasetStatisticsGenerator::disable_all_time_limits() {
+    has_ms_time_limit = false;
+    has_pmc_time_limit = false;
+    has_trng_time_limit = false;
+}
+void DatasetStatisticsGenerator::set_ms_time_limit(time_t t) {
+    ms_time_limit = t;
+    has_ms_time_limit = true;
+}
+void DatasetStatisticsGenerator::set_trng_time_limit(time_t t) {
+    trng_time_limit = t;
+    has_trng_time_limit = true;
+}
+void DatasetStatisticsGenerator::set_pmc_time_limit(time_t t) {
+    pmc_time_limit = t;
+    has_pmc_time_limit = true;
+}
+void DatasetStatisticsGenerator::set_ms_count_limit(unsigned long x) {
+    ms_count_limit = x;
+    has_ms_count_limit = true;
+}
+void DatasetStatisticsGenerator::set_trng_count_limit(unsigned long x) {
+    trng_count_limit = x;
+    has_trng_count_limit = true;
+}
+bool DatasetStatisticsGenerator::has_time_limit() const {
+    return (has_ms_time_limit || has_pmc_time_limit || has_trng_time_limit);
+}
+bool DatasetStatisticsGenerator::has_count_limit() const {
+    return (has_ms_count_limit || has_trng_count_limit);
+}
+
+void DatasetStatisticsGenerator::force_recalc() {
+    for (unsigned i=0; i<gs.size(); ++i) {
+        gs[i].valid = false;
+    }
 }
 
 void DatasetStatisticsGenerator::change_outfile(const string& name) {
     outfilename = name;
+}
+void DatasetStatisticsGenerator::suppress_dump() {
+    allow_dump_flag = false;
+}
+void DatasetStatisticsGenerator::allow_dump() {
+    allow_dump_flag = true;
+}
+
+void DatasetStatisticsGenerator::suppress_async() {
+    allow_parallel = false;
+}
+void DatasetStatisticsGenerator::allow_async() {
+    allow_parallel = true;
+}
+
+void DatasetStatisticsGenerator::set_pmc_alg(PMCEnumerator::Alg alg) {
+    pmc_alg = alg;
 }
 
 /**
@@ -74,34 +153,34 @@ string DatasetStatisticsGenerator::header(bool csv) const {
 
     // Header
     oss.setf(std::ios_base::left, std::ios_base::adjustfield);
-    oss << setw(max_text_len) << "Graph text";
+    oss << setw(max_text_len) << DSG_COL_TXT;
     if (fields & DSG_COMP_N) {
-        oss << delim << "Nodes ";
+        oss << delim << DSG_COL_NODES;
     }
     if (fields & DSG_COMP_M) {
-        oss << delim << "Edges ";
+        oss << delim << DSG_COL_EDGES;
     }
     if (fields & DSG_COMP_MS) {
-        oss << delim << "Minimal separators";
+        oss << delim << DSG_COL_MSS;
     }
     if (fields & DSG_COMP_PMC) {
-        oss << delim << "PMCs    ";
+        oss << delim << DSG_COL_PMCS;
     }
     if (fields & DSG_COMP_TRNG) {
-        oss << delim << "Minimal triangulations";
+        oss << delim << DSG_COL_TRNG;
     }
     // Special columns
     if (has_random) {
-        oss << delim << "P value" << delim << "Edge ratio";
+        oss << delim << DSG_COL_P << delim << DSG_COL_RATIO;
     }
     if (fields & DSG_COMP_MS) {
-        oss << delim << "MS calculation time";
+        oss << delim << DSG_COL_MS_TIME;
     }
-    if (DSG_MS_TIME_LIMIT != DSG_NO_LIMIT || DSG_TRNG_TIME_LIMIT != DSG_NO_LIMIT || DSG_PMC_TIME_LIMIT != DSG_NO_LIMIT) {
-        oss << delim << "Time errors";
+    if (has_time_limit()) {
+        oss << delim << DSG_COL_ERR_TIME;
     }
-    if (DSG_MS_COUNT_LIMIT != DSG_NO_LIMIT || DSG_TRNG_COUNT_LIMIT != DSG_NO_LIMIT) {
-        oss << delim << "Count errors";
+    if (has_count_limit()) {
+        oss << delim << DSG_COL_CNT_TIME;
     }
     oss << endl;
     if (!csv) {
@@ -135,39 +214,39 @@ string DatasetStatisticsGenerator::str(unsigned int i, bool csv) const {
 
     // Fields
     if (fields & DSG_COMP_N) {
-        oss << delim << setw(6) << gs[i].n;
+        oss << delim << setw(STRLEN(DSG_COL_NODES)) << gs[i].n;
     }
     if (fields & DSG_COMP_M) {
-        oss << delim << setw(6) << gs[i].m;
+        oss << delim << setw(STRLEN(DSG_COL_EDGES)) << gs[i].m;
     }
     if (fields & DSG_COMP_MS) {
-        oss << delim << setw(18) << gs[i].ms;
+        oss << delim << setw(STRLEN(DSG_COL_MSS)) << gs[i].ms;
     }
     if (fields & DSG_COMP_PMC) {
-        oss << delim << setw(8) << gs[i].pmcs;
+        oss << delim << setw(STRLEN(DSG_COL_PMCS)) << gs[i].pmcs;
     }
     if (fields & DSG_COMP_TRNG) {
-        oss << delim << setw(22) << gs[i].triangs;
+        oss << delim << setw(STRLEN(DSG_COL_TRNG)) << gs[i].triangs;
     }
     // Special columns
     if (has_random) {
         if (gs[i].g.isRandom()) {
-            oss << delim << setw(7) << gs[i].g.getP();
+            oss << delim << setw(STRLEN(DSG_COL_P)) << gs[i].g.getP();
             int N = gs[i].g.getNumberOfNodes();
             int M = gs[i].g.getNumberOfEdges();
-            oss << delim << setw(10) << 2*M / (double(N*(N-1))); // |E|/(|V| choose 2)
+            oss << delim << setw(STRLEN(DSG_COL_RATIO)) << 2*M / (double(N*(N-1))); // |E|/(|V| choose 2)
         }
         else {
-            oss << delim << setw(7) << " ";
-            oss << delim << setw(10) << " ";
+            oss << delim << setw(STRLEN(DSG_COL_P)) << " ";
+            oss << delim << setw(STRLEN(DSG_COL_RATIO)) << " ";
         }
     }
     // MS are calculated in one go if we're calculating PMCs,
     // no point in printing MS calculation time
     if ((fields & DSG_COMP_MS) && !(fields & DSG_COMP_PMC)) {
-        oss << delim << setw(19) << gs[i].ms_calc_time;
+        oss << delim << setw(STRLEN(DSG_COL_MS_TIME)) << gs[i].ms_calc_time;
     }
-    if (HAS_TIME_LIMIT) {
+    if (has_time_limit()) {
         string s;
         if (gs[i].ms_time_limit || gs[i].trng_time_limit || gs[i].pmc_time_limit) {
             if (gs[i].ms_time_limit) {
@@ -183,9 +262,9 @@ string DatasetStatisticsGenerator::str(unsigned int i, bool csv) const {
         else {
             s = " ";
         }
-        oss << delim << setw(11) << s;
+        oss << delim << setw(STRLEN(DSG_COL_ERR_TIME)) << s;
     }
-    if (HAS_COUNT_LIMIT) {
+    if (has_count_limit()) {
         string s;
         if (gs[i].ms_count_limit || gs[i].trng_count_limit) {
             if (gs[i].ms_count_limit) {
@@ -198,7 +277,7 @@ string DatasetStatisticsGenerator::str(unsigned int i, bool csv) const {
         else {
             s = " ";
         }
-        oss << delim << setw(12) << s;
+        oss << delim << setw(STRLEN(DSG_COL_CNT_TIME)) << s;
     }
     oss << endl;
 
@@ -229,29 +308,26 @@ string DatasetStatisticsGenerator::str(bool csv) const {
  * Note that dump_line() is called by compute() which may be running
  * in several parallel instances, so be thread safe!
  */
-void DatasetStatisticsGenerator::dump_line(unsigned int i) {
-    ofstream outfile;
-    omp_set_lock(&lock);
-    outfile.open(outfilename, ios::out | ios::app);
-    if (!outfile.good()) {
-        TRACE(TRACE_LVL__ERROR, "Couldn't open file '" << outfilename << "'");
+void DatasetStatisticsGenerator::dump_parallel_aux(const string& s) {
+    if(allow_dump_flag) {
+        ofstream outfile;
+        omp_set_lock(&lock);
+        outfile.open(outfilename, ios::out | ios::app);
+        if (!outfile.good()) {
+            TRACE(TRACE_LVL__ERROR, "Couldn't open file '" << outfilename << "'");
+            omp_unset_lock(&lock);
+            return;
+        }
+        outfile << s;
+        outfile.close();
         omp_unset_lock(&lock);
-        return;
     }
-    outfile << str(i, true);
-    omp_unset_lock(&lock);
+}
+void DatasetStatisticsGenerator::dump_line(unsigned int i) {
+    dump_parallel_aux(str(i, true));
 }
 void DatasetStatisticsGenerator::dump_header() {
-    ofstream outfile;
-    omp_set_lock(&lock);
-    outfile.open(outfilename, ios::out | ios::trunc);
-    if (!outfile.good()) {
-        TRACE(TRACE_LVL__ERROR, "Couldn't open file '" << outfilename << "'");
-        omp_unset_lock(&lock);
-        return;
-    }
-    outfile << header(true);
-    omp_unset_lock(&lock);
+    dump_parallel_aux(header(true));
 }
 
 /**
@@ -417,31 +493,34 @@ void DatasetStatisticsGenerator::compute(unsigned int i) {
             min_seps.insert(mse.next());
             ++gs[i].ms;
             print_progress();
-            if (HAS_MS_COUNT_LIMIT && gs[i].ms > DSG_MS_COUNT_LIMIT) {
+            if (has_ms_count_limit && gs[i].ms > ms_count_limit) {
                 gs[i].ms_count_limit = true;
                 break;
             }
-            if (HAS_MS_TIME_LIMIT && time(NULL)-t > DSG_MS_TIME_LIMIT) {
+            if (has_ms_time_limit && time(NULL)-t > ms_time_limit) {
                 gs[i].ms_time_limit = true;
                 break;
             }
             mse.next();
         }
-        gs[i].ms_calc_time = secs_to_hhmmss(time(NULL)-t);
+        gs[i].ms_calc_time = time(NULL)-t;
     }
 
     // PMCs.
     // The minimal separators are free, so no need to calculate
     // them separately.
     if (fields & DSG_COMP_PMC) {
-        PMCEnumerator pmce(gs[i].g, HAS_PMC_TIME_LIMIT ? DSG_PMC_TIME_LIMIT : 0);
+        PMCEnumerator pmce(gs[i].g, has_pmc_time_limit ? pmc_time_limit : 0);
+        pmce.set_algorithm(pmc_alg);
         // Re-use the calculated minimal separators, if relevant
         if (!(gs[i].ms_count_limit || gs[i].ms_time_limit)) {
             pmce.set_minimal_separators(min_seps);
         }
+        t = time(NULL);
         pmce.get();
+        gs[i].pmc_calc_time = time(NULL) - t;
         gs[i].pmcs = pmce.get().size();
-        gs[i].ms = pmce.get_ms().size();
+        gs[i].ms = pmce.get_ms().size(); // Redundant? Not expensive, though..
         if (pmce.is_out_of_time()) {
             gs[i].pmc_time_limit = true;
         }
@@ -452,22 +531,21 @@ void DatasetStatisticsGenerator::compute(unsigned int i) {
     if (fields & DSG_COMP_TRNG) {
         gs[i].triangs = 0;
         MinimalTriangulationsEnumerator enumerator(gs[i].g, NONE, UNIFORM, SEPARATORS);
-        if (DSG_MS_TIME_LIMIT != DSG_NO_LIMIT) {
-            t = time(NULL);
-        }
+        t = time(NULL);
         while (enumerator.hasNext()) {
             ++gs[i].triangs;
             print_progress();
-            if (HAS_TRNG_COUNT_LIMIT && gs[i].triangs > DSG_TRNG_COUNT_LIMIT) {
+            if (has_trng_count_limit && gs[i].triangs > trng_count_limit) {
                 gs[i].trng_count_limit = true;
                 break;
             }
-            if (HAS_TRNG_TIME_LIMIT && time(NULL)-t > DSG_TRNG_TIME_LIMIT) {
+            if (has_trng_time_limit && time(NULL)-t > trng_time_limit) {
                 gs[i].trng_time_limit = true;
                 break;
             }
             enumerator.next();
         }
+        gs[i].trng_calc_time = time(NULL)-t;
     }
 
     // That's it for this one!
@@ -527,7 +605,7 @@ void DatasetStatisticsGenerator::compute_by_graph_number_range(unsigned int firs
 
     // Dump all data, calculate the missing data.
     // If possible, parallelize this
-#pragma omp parallel for
+#pragma omp parallel for if(allow_parallel)
     for (unsigned int i=first-1; i<last; ++i) {
         if (!gs[i].valid) {
             compute(i);
@@ -545,6 +623,14 @@ void DatasetStatisticsGenerator::compute_by_graph_number(unsigned int i, bool v)
         return;
     }
     compute_by_graph_number_range(i,i,v);
+}
+
+vector<GraphStats> DatasetStatisticsGenerator::get_stats() const {
+    return gs;
+}
+
+unsigned DatasetStatisticsGenerator::get_total_graphs() const {
+    return gs.size();
 }
 
 /**

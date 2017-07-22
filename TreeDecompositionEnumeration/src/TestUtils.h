@@ -10,14 +10,14 @@ using std::cout;
  */
 #define ASSERT(_testname) do { \
         if (!(_testname)) { \
-            ASSERT_PRINT("'" << #_testname << "' is FALSE"); \
+            TRACE(TRACE_LVL__TEST, "'" << #_testname << "' is FALSE"); \
             return false; \
         } \
     } while(0)
 
 #define ASSERT_EQUAL(_x,_y) do { \
         if (!(_x == _y)) { \
-            ASSERT_PRINT("'" << #_x << "' isn't equal to '" << #_y << "'!"); \
+            TRACE(TRACE_LVL__TEST, "'" << #_x << "' isn't equal to '" << #_y << "'!"); \
             return false; \
         } \
     } while(0)

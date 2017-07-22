@@ -315,10 +315,10 @@ vector<NodeSet> Graph::getComponentsAux(vector<int> visitedList, int numberOfUnh
 }
 
 bool Graph::isFullComponent(const vector<Node>& C, const vector<Node>& S) const {
-    for (auto c: C) {
+    for (auto s: S) {
         bool has_neighbor = false;
-        for (auto s: S) {
-            if (neighborSets[c].find(s) != neighborSets[c].end()) {
+        for (auto c: C) {
+            if (neighborSets[s].find(c) != neighborSets[s].end()) {
                 has_neighbor = true;
                 break;
             }

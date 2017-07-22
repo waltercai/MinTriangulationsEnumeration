@@ -15,13 +15,20 @@ namespace tdenum {
  * Listing all potential maximal cliques of a graph.
  * Vincent Bouchitte, Ioan Todinca, 2000
  */
+#define PMC_ALG_TABLE \
+    X(NORMAL) \
+    X(REVERSE_MS_PRECALC)
 class PMCEnumerator {
 public:
     typedef enum {
-        NORMAL,
-        REVERSE_MS_PRECALC
+    #define X(name) ALG_##name,
+        PMC_ALG_TABLE
+        ALG_LAST
+    #undef X
     } Alg;
 private:
+
+    static const string alg_names[PMCEnumerator::ALG_LAST+1];
 
     // Test class
     friend class PMCEnumeratorTester;
@@ -31,7 +38,7 @@ private:
 
     // The algorithm to be used (defaults to default_alg)
     Alg alg;
-    static const Alg default_alg = REVERSE_MS_PRECALC;
+    static const Alg default_alg = ALG_REVERSE_MS_PRECALC;
 
     // The minimal separators of the graph.
     // They are required for the algorithm to run correctly; if they
@@ -75,8 +82,10 @@ public:
     // Resets the instance to use a new graph (allows re-use of variable name).
     void reset(const Graph& g, time_t time_limit = 0);
 
-    // Sets the algorithm to be used.
+    // Sets / gets the algorithm to be used.
     void set_algorithm(Alg a);
+    PMCEnumerator::Alg get_alg() const;
+    static string get_alg_name(Alg a);
 
     // If the minimal separators for the original graph has already been
     // calculated, inform the enumerator.

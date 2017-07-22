@@ -2,6 +2,7 @@
 #define UTILS_H_INCLUDED
 
 #include <string.h>
+#include <string>
 #include <iostream>
 #include <vector>
 #include <set>
@@ -17,6 +18,7 @@ using std::ostringstream;
 using std::ios;
 using std::setw;
 using std::setfill;
+using std::cout;
 
 namespace tdenum {
 
@@ -29,13 +31,13 @@ namespace tdenum {
 #define SLASH '/'
 #endif
 
-
-
 /**
- * Printing and logging.
+ * String manipulation, printing and logging.
  *
  * To fork-output all ASSERT_PRINTS to file, call Logger::start(filename).
  */
+#define STRLEN(_x) (std::char_traits<char>::length(_x))
+
 #define __FILENAME__ (strrchr(__FILE__, SLASH) ? strrchr(__FILE__, SLASH) + 1 : __FILE__)
 
 #define ASSERT_PRINT(_stream) do { \
@@ -67,6 +69,9 @@ public:
 
 // Convert time in seconds to hh:mm:ss
 string secs_to_hhmmss(time_t t);
+
+// Appends a string of output to a file
+void append_string_to_file(const string& filename, const string& str);
 
 /**
  * Useful container wrappers
@@ -101,6 +106,7 @@ typedef enum _TRACE_LVL_CODES {
     TRACE_LVL__NONE,
     TRACE_LVL__ERROR,
     TRACE_LVL__WARNING,
+    TRACE_LVL__TEST,
     TRACE_LVL__DEBUG,
     TRACE_LVL__NOISE
 } TRACE_LVL__CODES;

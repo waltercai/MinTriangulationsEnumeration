@@ -18,36 +18,38 @@ namespace tdenum {
     } while(0)
 
 
+const string PMCEnumerator::alg_names[PMCEnumerator::ALG_LAST+1] = {
+    #define X(name) #name,
+        PMC_ALG_TABLE
+        "Invalid algorithm"
+    #undef X
+    };
 
-
-PMCEnumerator::PMCEnumerator(const Graph& g, time_t time_limit) {
-    // Don't use initialization list, so the logic of all default
-    // values stays in set_default_member_vals().
-    set_default_member_vals();
-    graph = g;
-    limit = time_limit;
+PMCEnumerator::PMCEnumerator(const Graph& g, time_t time_limit) :
+        graph(g),
+        alg(default_alg),
+        has_ms(false),
+        done(false),
+        limit(time_limit),
+        start_time(time(NULL)),
+        out_of_time(false)
+{
+    ms.clear();
+    pmcs.clear();
 }
 
 void PMCEnumerator::reset(const Graph& g, time_t time_limit) {
-    set_default_member_vals();
-    graph = g;
-    limit = time_limit;
-}
-
-void PMCEnumerator::set_default_member_vals() {
-    graph = Graph();
-    done = false;
-    limit = 0;
-    start_time = time(NULL);
-    out_of_time = false;
-    ms.clear();
-    pmcs.clear();
-    has_ms = false;
-    alg = default_alg;
+    *this = PMCEnumerator(g, time_limit);
 }
 
 void PMCEnumerator::set_algorithm(Alg a) {
     alg = a;
+}
+PMCEnumerator::Alg PMCEnumerator::get_alg() const {
+    return alg;
+}
+string PMCEnumerator::get_alg_name(Alg a) {
+    return PMCEnumerator::alg_names[a];
 }
 
 /**
@@ -112,13 +114,14 @@ NodeSetSet PMCEnumerator::get() {
         // Optionally use the (memory-inefficient) algorithm, which
         // calculates the minimal separators in advance:
         vector<NodeSetSet> sub_ms(n);
-        if (alg == REVERSE_MS_PRECALC) {
+        if (alg == ALG_REVERSE_MS_PRECALC) {
 
             // Calculate the first set of minimal separators
             sub_ms[n-1] = get_ms();
 
             // Use the algorithm described in the PDF
             for (int i=n-2; i>=0; --i) {
+
                 sub_ms[i].clear();
 
                 // To prevent checking both S and S u {v}, if they exist
@@ -128,10 +131,14 @@ NodeSetSet PMCEnumerator::get() {
                 for (auto it=sub_ms[i+1].begin(); it!=sub_ms[i+1].end(); ++it) {
                     // Get S
                     NodeSet S = *it;
+
                     // S <- S\{v}
                     // Assume S is sorted in ascending order, and that each subgraph
                     // includes the i smallest nodes.
-                    if (S[S.size()-1] == nodes[i+1]) {
+                    // Note that S may be the empty set - the same logic applies (the
+                    // empty has two full components <==> the graph isn't connected, and
+                    // then S is indeed a minimal separator).
+                    if (!S.empty() && S[S.size()-1] == nodes[i+1]) {
                         S.pop_back();
                     }
                     // Make sure it hasn't been checked before
@@ -176,35 +183,34 @@ NodeSetSet PMCEnumerator::get() {
             // This is the main function described in the paper.
             PMCi = pmcs;
             MSi = MSip1;
+            pmcs.clear();
             MSip1.clear();
             Node a = nodes[i];
 
             // Calculate MSip1 and then the next set of PMCs.
             // If there's no need, just run the next function.
-            if (i == n-1 && has_ms) {
-                pmcs = one_more_vertex(subg[i], subg[i-1], a, ms, MSi, PMCi);
-            }
-            else {
-                // The NORMAL algorithm requires calculation of separators
-                if (alg == NORMAL) {
+
+            // The NORMAL algorithm requires calculation of separators
+            if (alg == ALG_NORMAL) {
+                if (i == n-1) {
+                    pmcs = one_more_vertex(subg[i], subg[i-1], a, get_ms(), MSi, PMCi);
+                }
+                else {
                     MinimalSeparatorsEnumerator DiEnumerator(subg[i], UNIFORM);
                     while (DiEnumerator.hasNext()) {
                         MSip1.insert(DiEnumerator.next());
                     }
                     pmcs = one_more_vertex(subg[i], subg[i-1], a, MSip1, MSi, PMCi);
                 }
-                else if (alg == REVERSE_MS_PRECALC) {
-                    pmcs = one_more_vertex(subg[i], subg[i-1], a, sub_ms[i], sub_ms[i-1], PMCi);
-                }
             }
-            TRACE(TRACE_LVL__DEBUG, "OneMoreVertex in iteration " << i
-                  << " with the graph G(i+1):" << endl << subg[i]
-                  << "got PMCs:" << endl << pmcs);
+            else if (alg == ALG_REVERSE_MS_PRECALC) {
+                pmcs = one_more_vertex(subg[i], subg[i-1], a, sub_ms[i], sub_ms[i-1], PMCi);
+            }
         }
 
         // Update the minimal separators
         if (!has_ms) {
-            ms = (alg == NORMAL) ? MSip1 : sub_ms[n-1];
+            ms = (alg == ALG_NORMAL) ? MSip1 : sub_ms[n-1];
             has_ms = true;
         }
 

@@ -259,7 +259,8 @@ bool PMCEnumeratorTester::fourgraphs() const {
     g.addEdge(3,0);
     pmce.reset(g);
     pmcs=pmce.get();
-    TRACE(TRACE_LVL__DEBUG, "Got pmcs:" << pmcs);
+    TRACE(TRACE_LVL__TEST, "Got pmcs:" << pmcs);
+    TRACE(TRACE_LVL__TEST, "alg=" << PMCEnumerator::get_alg_name(pmce.get_alg()));
     ASSERT_EQUAL(pmcs.size(), 4);
     ASSERT(pmcs.isMember(abc));
     ASSERT(pmcs.isMember(abd));
@@ -395,9 +396,12 @@ bool PMCEnumeratorTester::triangleonstilts() const {
     ASSERT(pmcs.isMember(ae));
     ASSERT_EQUAL(pmcs.size(), 3);
 
+    TRACE(TRACE_LVL__TEST, "Graph before random rename:" << endl << g);
     g.randomNodeRename();
+    TRACE(TRACE_LVL__TEST, "Graph After random rename:" << endl << g);
     pmce.reset(g);
     pmcs = pmce.get();
+    TRACE(TRACE_LVL__TEST, "Got pmcs:" << endl << pmcs);
     ASSERT_EQUAL(pmcs.size(), 3);
     return true;
 }
