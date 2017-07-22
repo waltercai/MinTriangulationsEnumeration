@@ -3,14 +3,16 @@ CPPFLAGS=-std=c++11 -fopenmp
 LDFLAGS=-fopenmp
 OBJS=ChordalGraph.o Converter.o DatasetStatisticsGenerator.o \
  DataStructures.o DirectoryIterator.o Graph.o GraphReader.o \
- IndSetExtBySeparators.o IndSetExtByTriangulation.o \
- IndSetScorerByTriangulation.o main.o MinimalSeparatorsEnumerator.o \
+ GraphStats.o IndSetExtBySeparators.o IndSetExtByTriangulation.o \
+ IndSetScorerByTriangulation.o MinimalSeparatorsEnumerator.o \
  MinimalTriangulationsEnumerator.o MinimalTriangulator.o \
- MinTriangulationsEnumeration.o PMCEnumerator.o PMCEnumeratorTester.o \
- SeparatorGraph.o SeparatorsScorer.o SubGraph.o Utils.o
+ PMCEnumerator.o PMCEnumeratorTester.o \
+ PMCRacer.o SeparatorGraph.o SeparatorsScorer.o SubGraph.o Utils.o
+OBJS_TRNG_ENUM=$(OBJS) MinTriangulationsEnumeration.o
+OBJS_MAIN=$(OBJS) main.o
 EXEC=main
 
-$(EXEC): $(OBJS)
+$(EXEC): $(OBJS_MAIN)
 
 clean:
 	rm -rf $(OBJS)
@@ -32,6 +34,7 @@ DirectoryIterator.o: DirectoryIterator.cpp TestUtils.h Utils.h \
  DirectoryIterator.h
 Graph.o: Graph.cpp Graph.h DataStructures.h Utils.h
 GraphReader.o: GraphReader.cpp GraphReader.h Graph.h
+GraphStats.o: GraphStats.cpp GraphStats.h Graph.h
 IndSetExtBySeparators.o: IndSetExtBySeparators.cpp \
  IndSetExtBySeparators.h IndependentSetExtender.h Graph.h SubGraph.h
 IndSetExtByTriangulation.o: IndSetExtByTriangulation.cpp \
@@ -82,6 +85,7 @@ PMCEnumeratorTester.o: PMCEnumeratorTester.cpp PMCEnumeratorTester.h \
  MinimalTriangulator.h IndSetExtBySeparators.h \
  MaximalIndependentSetsEnumerator.h IndependentSetScorer.h \
  IndSetScorerByTriangulation.h
+PMCRacer.o: PMCRacer.cpp DatasetStatisticsGenerator.h GraphStats.h PMCEnumerator.h
 SeparatorGraph.o: SeparatorGraph.cpp SeparatorGraph.h \
  MinimalSeparatorsEnumerator.h Graph.h SeparatorsScorer.h \
  DataStructures.h SuccinctGraphRepresentation.h
