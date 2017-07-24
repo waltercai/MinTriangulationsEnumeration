@@ -27,6 +27,8 @@ public:
 	bool hasNext();
 	// Returns another minimal separator
 	MinimalSeparator next();
+	// Returns all minimal separators as a NodeSetSet
+	NodeSetSet getAll();
 };
 
 } /* namespace tdenum */

@@ -3,6 +3,7 @@
 
 namespace tdenum {
 
+GraphStats::GraphStats() : GraphStats(Graph(), "") {}
 GraphStats::GraphStats(const Graph& graph, const string& s) :
                        g(graph),
                        text(s),

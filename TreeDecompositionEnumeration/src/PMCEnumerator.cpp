@@ -67,9 +67,7 @@ NodeSetSet PMCEnumerator::get_ms() {
     if (!has_ms) {
         ms.clear();
         MinimalSeparatorsEnumerator mse(graph, UNIFORM);
-        while (mse.hasNext()) {
-            ms.insert(mse.next());
-        }
+        ms = mse.getAll();
         has_ms = true;
     }
     return ms;
@@ -197,9 +195,7 @@ NodeSetSet PMCEnumerator::get() {
                 }
                 else {
                     MinimalSeparatorsEnumerator DiEnumerator(subg[i], UNIFORM);
-                    while (DiEnumerator.hasNext()) {
-                        MSip1.insert(DiEnumerator.next());
-                    }
+                    MSip1 = DiEnumerator.getAll();
                     pmcs = one_more_vertex(subg[i], subg[i-1], a, MSip1, MSi, PMCi);
                 }
             }

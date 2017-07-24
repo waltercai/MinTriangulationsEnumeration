@@ -243,7 +243,6 @@ public:
     // required parameter if a Graph is sent, otherwise the default is
     // the filename.
     void add_graph(const Graph& g, const string& text);
-    void add_random_graph(unsigned int n, double p, int instances = 1);
     void add_graph(const string& filename, const string& text = "");
 
     // Recursive search.
@@ -265,6 +264,7 @@ public:
     // G(n[i],p[i]).
     // If mix_match is true, for every i and j a graph will be sampled
     // from G(n[i],p[j])
+    void add_random_graph(unsigned int n, double p, int instances = 1);
     void add_random_graphs(const vector<unsigned int>& n,
                            const vector<double>& p,
                            bool mix_match = false);

@@ -70,8 +70,8 @@ public:
 // Convert time in seconds to hh:mm:ss
 string secs_to_hhmmss(time_t t);
 
-// Appends a string of output to a file
-void append_string_to_file(const string& filename, const string& str);
+// Writes / appends a string of output to a file (doesn't append, by default)
+void dump_string_to_file(const string& filename, const string& str, bool append = false);
 
 /**
  * Useful container wrappers

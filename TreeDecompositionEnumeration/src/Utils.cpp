@@ -31,9 +31,9 @@ string secs_to_hhmmss(time_t t) {
     return oss.str();
 }
 
-void append_string_to_file(const string& filename, const string& str) {
+void dump_string_to_file(const string& filename, const string& str, bool append) {
     ofstream outfile;
-    outfile.open(filename, ios::out | ios::app);
+    outfile.open(filename, ios::out | (append ? ios::app : ios::trunc));
     if (!outfile.good()) {
         TRACE(TRACE_LVL__ERROR, "Couldn't open file '" << filename << "'");
         return;

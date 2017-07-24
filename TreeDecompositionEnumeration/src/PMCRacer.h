@@ -34,16 +34,24 @@ private:
     // The graph statistics for each algorithm.
     vector<GraphStats> alg_gs[PMCEnumerator::ALG_LAST];
 
-public:
+    // Input graph statistics objects.
+    // May have redundant data, but nothing too bad... we need graphs
+    // and graph text.
+    vector<GraphStats> gs;
 
-    // The DSG used.
-    // Should be available to the user (to utilize all the graph-adding
-    // mechanics).
-    DatasetStatisticsGenerator dsg;
+    // Helper functions
+    string stringify_header() const;
+    string stringify_result(unsigned i) const;
+
+public:
 
     // Construct the PMCR with an output filename and an optional time limit
     // per graph.
     PMCRacer(const string& out, time_t limit = 0);
+
+    // Adds graphs to race, given the graph statistics object.
+    void add(const Graph&, const string&);
+    void add(const vector<GraphStats>&);
 
     // If calculating PMCs takes too long, stop and move on.
     void set_time_limit(time_t);

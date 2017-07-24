@@ -33,8 +33,10 @@ public:
     time_t trng_calc_time;
 
     /**
-     * Basic constructor
+     * Basic constructors.
+     * We need a default constructor for vectors.
      */
+    GraphStats();
     GraphStats(const Graph&, const string&);
 
 };

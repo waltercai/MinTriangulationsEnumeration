@@ -1,5 +1,6 @@
 #include "DatasetStatisticsGenerator.h"
 #include "DataStructures.h"
+#include "GraphProducer.h"
 #include "DirectoryIterator.h"
 #include "Utils.h"
 #include "TestUtils.h"
@@ -114,9 +115,9 @@ private:
         dsg.add_graphs_dir(DATASET_DIR_BASE+DATASET_DIR_DEADEASY);
         dsg.add_graphs(DATASET_DIR_BASE+DATASET_DIR_EASY);
         dsg.add_random_graphs({20,30,40,50},{0.7},true);
-        dsg.suppress_async();
-        dsg.compute_by_graph_number(80, true);
-//        dsg.compute(true);
+//        dsg.suppress_async();
+//        dsg.compute_by_graph_number(80, true);
+        dsg.compute(true);
         dsg.print();
         return 0;
     }
@@ -166,10 +167,10 @@ private:
     int pmc_race() const {
         // Allow 20 minutes per graph
         PMCRacer pmcr(RESULT_DIR_BASE+"PMCRace.csv", 20*60);
-        pmcr.dsg.add_graphs_dir(DATASET_DIR_BASE+DATASET_DIR_DIFFICULT_BN, {"Grid"});
-        pmcr.dsg.add_graphs_dir(DATASET_DIR_BASE+DATASET_DIR_DEADEASY);
-        pmcr.dsg.add_graphs(DATASET_DIR_BASE+DATASET_DIR_EASY);
-        pmcr.dsg.add_random_graphs({20,30,40,50},{0.7},true);
+        pmcr.add(GraphProducer().add_random({20,30,40,50},{0.7},true).get());
+        pmcr.add(GraphProducer().add_by_dir(DATASET_DIR_BASE+DATASET_DIR_DEADEASY).get());
+        pmcr.add(GraphProducer().add_by_dir(DATASET_DIR_BASE+DATASET_DIR_EASY).get());
+        pmcr.add(GraphProducer().add_by_dir(DATASET_DIR_BASE+DATASET_DIR_DIFFICULT_BN, {"Grid"}).get());
         pmcr.go(true);
         return 0;
     }
@@ -181,7 +182,7 @@ private:
 public:
 
     // Go!
-    Main(MainType mt = MAIN_QUICK_STATS, int argc = 1, char* argv[] = NULL) :
+    Main(MainType mt = MAIN_PMC_RACE, int argc = 1, char* argv[] = NULL) :
                                         return_val(-1), main_type(mt) {
         try {
             switch(main_type) {

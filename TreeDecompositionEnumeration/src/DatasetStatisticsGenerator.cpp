@@ -1,6 +1,7 @@
 #include "DatasetStatisticsGenerator.h"
 #include "MinimalTriangulationsEnumerator.h"
 #include "DataStructures.h"
+#include "GraphProducer.h"
 #include "DirectoryIterator.h"
 #include "Utils.h"
 #include "TestUtils.h"
@@ -30,6 +31,7 @@ DatasetStatisticsGenerator::DatasetStatisticsGenerator(const string& outputfile,
                             allow_dump_flag(true),
                             allow_parallel(true),
                             show_graphs(true),
+                            has_ms_time_limit(false),
                             has_pmc_time_limit(false),
                             has_trng_time_limit(false),
                             has_ms_count_limit(false),
@@ -120,6 +122,7 @@ void DatasetStatisticsGenerator::force_recalc() {
     for (unsigned i=0; i<gs.size(); ++i) {
         gs[i].valid = false;
     }
+    graphs_computed = 0;
 }
 
 void DatasetStatisticsGenerator::change_outfile(const string& name) {
@@ -310,16 +313,8 @@ string DatasetStatisticsGenerator::str(bool csv) const {
  */
 void DatasetStatisticsGenerator::dump_parallel_aux(const string& s) {
     if(allow_dump_flag) {
-        ofstream outfile;
         omp_set_lock(&lock);
-        outfile.open(outfilename, ios::out | ios::app);
-        if (!outfile.good()) {
-            TRACE(TRACE_LVL__ERROR, "Couldn't open file '" << outfilename << "'");
-            omp_unset_lock(&lock);
-            return;
-        }
-        outfile << s;
-        outfile.close();
+        dump_string_to_file(outfilename, s, true);
         omp_unset_lock(&lock);
     }
 }
@@ -392,13 +387,8 @@ void DatasetStatisticsGenerator::add_graph(const Graph& graph, const string& txt
 
 }
 void DatasetStatisticsGenerator::add_random_graph(unsigned int n, double p, int instances) {
-    for (int i=0; i<instances; ++i) {
-        ostringstream oss;
-        Graph g(n);
-        g.randomize(p);
-        oss << "G(" << n << "," << p << ") (with " << g.getNumberOfEdges()
-            << " edges), instance " << i+1 << "/" << instances;
-        add_graph(g, oss.str());
+    for (auto graph_stat: GraphProducer().add_random(n, p, instances).get()) {
+        add_graph(graph_stat.g, graph_stat.text);
     }
 }
 void DatasetStatisticsGenerator::add_graph(const string& filename, const string& text) {
@@ -406,49 +396,27 @@ void DatasetStatisticsGenerator::add_graph(const string& filename, const string&
     add_graph(g, text == "" ? filename : text);
 }
 void DatasetStatisticsGenerator::add_graphs(DirectoryIterator di) {
-    string dataset_filename;
-    while(di.next_file(&dataset_filename)) {
-        add_graph(dataset_filename);
+    for (auto graph_stat: GraphProducer().add_by_dir(di).get()) {
+        add_graph(graph_stat.g, graph_stat.text);
     }
 }
 void DatasetStatisticsGenerator::add_graphs_dir(const string& dir,
                         const vector<string>& filters) {
-    DirectoryIterator di(dir);
-    for (unsigned i=0; i<filters.size(); ++i)
-        di.skip(filters[i]);
-    add_graphs(di);
+    for (auto graph_stat: GraphProducer().add_by_dir(dir, filters).get()) {
+        add_graph(graph_stat.g, graph_stat.text);
+    }
 }
 void DatasetStatisticsGenerator::add_random_graphs(const vector<unsigned int>& n,
                         const vector<double>& p, bool mix_match) {
-    if (!mix_match) {
-        if (n.size() != p.size()) {
-            cout << "Invalid arguments (" << n.size() << " graphs requested, "
-                 << p.size() << " probabilities sent)" << endl;
-            return;
-        }
-        for (unsigned i=0; i<n.size(); ++i) {
-            add_random_graph(n[i],p[i]);
-        }
-    }
-    else {
-        for (unsigned i=0; i<n.size(); ++i) {
-            for (unsigned j=0; j<p.size(); ++j) {
-                add_random_graph(n[i],p[j]);
-            }
-        }
+    for (auto graph_stat: GraphProducer().add_random(n, p, mix_match).get()) {
+        add_graph(graph_stat.g, graph_stat.text);
     }
 }
 void DatasetStatisticsGenerator::add_random_graphs_pstep(const vector<unsigned int>& n,
                                                          double step,
                                                          int instances) {
-    if (step >= 1 || step <= 0) {
-        cout << "Step value must be 0<step<1 (is " << step << ")" << endl;
-        return;
-    }
-    for (unsigned i=0; i<n.size(); ++i) {
-        for (unsigned j=1; (double(j))*step < 1; ++j) {
-            add_random_graph(n[i], j*step, instances);
-        }
+    for (auto graph_stat: GraphProducer().add_random_pstep(n, step, instances).get()) {
+        add_graph(graph_stat.g, graph_stat.text);
     }
 }
 
@@ -579,7 +547,7 @@ void DatasetStatisticsGenerator::compute(unsigned int i) {
         else {
             cout << "Done computing graph ";
         }
-        cout << graphs_computed+1 << "/" << gs.size() << ","
+        cout << graphs_computed << "/" << gs.size() << ","
                   << "'" << gs[i].text << "'" << endl;
 
         // Unlock

@@ -65,4 +65,12 @@ MinimalSeparator MinimalSeparatorsEnumerator::next() {
 	return s;
 }
 
+NodeSetSet MinimalSeparatorsEnumerator::getAll() {
+    NodeSetSet ms;
+    while (hasNext()) {
+        ms.insert(next());
+    }
+    return ms;
+}
+
 } /* namespace tdenum */
