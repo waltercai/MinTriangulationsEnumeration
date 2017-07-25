@@ -3,6 +3,8 @@
 
 namespace tdenum {
 
+const long GraphStats::invalid_value = -1;
+
 GraphStats::GraphStats() : GraphStats(Graph(), "") {}
 GraphStats::GraphStats(const Graph& graph, const string& s) :
                        g(graph),
@@ -12,7 +14,9 @@ GraphStats::GraphStats(const Graph& graph, const string& s) :
                        ms(0),
                        pmcs(0),
                        triangs(0),
-                       valid(false),
+                       ms_valid(false),
+                       pmc_valid(false),
+                       trng_valid(false),
                        ms_count_limit(false),
                        ms_time_limit(false),
                        trng_count_limit(false),
@@ -21,5 +25,42 @@ GraphStats::GraphStats(const Graph& graph, const string& s) :
                        ms_calc_time(0),
                        pmc_calc_time(0)
 {}
+
+time_t GraphStats::actual_pmc_calc_time() const {
+    return ms_calc_time + pmc_calc_time;
+}
+
+void GraphStats::set_all_invalid() {
+    ms_valid = false;
+    pmc_valid = false;
+    trng_valid = false;
+}
+
+int GraphStats::get_n() const {
+    return n;
+}
+int GraphStats::get_m() const {
+    return m;
+}
+long GraphStats::get_ms(bool get_if_limit) const {
+    return (ms_valid || (get_if_limit && (ms_count_limit || ms_time_limit)))
+        ? ms : GraphStats::invalid_value;
+}
+long GraphStats::get_pmc(bool get_if_limit) const {
+    return (pmc_valid || (get_if_limit && pmc_time_limit))
+        ? pmcs : GraphStats::invalid_value;
+}
+long GraphStats::get_trng(bool get_if_limit) const {
+    return (trng_valid || (get_if_limit && (trng_count_limit || trng_time_limit)))
+        ? triangs : GraphStats::invalid_value;
+}
+
+bool GraphStats::valid(int fields) const {
+    // A value is valid if it's being used and has a valid calculated value.
+    return
+        GRAPHSTATS_TEST_MS(fields) && ms_valid &&
+        GRAPHSTATS_TEST_PMC(fields) && pmc_valid &&
+        GRAPHSTATS_TEST_TRNG(fields) && trng_valid;
+}
 
 }

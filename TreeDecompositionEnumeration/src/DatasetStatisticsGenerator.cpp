@@ -36,11 +36,11 @@ DatasetStatisticsGenerator::DatasetStatisticsGenerator(const string& outputfile,
                             has_trng_time_limit(false),
                             has_ms_count_limit(false),
                             has_trng_count_limit(false),
-                            ms_time_limit(DSG_MS_TIME_LIMIT),
-                            pmc_time_limit(DSG_PMC_TIME_LIMIT),
-                            trng_time_limit(DSG_TRNG_TIME_LIMIT),
-                            ms_count_limit(DSG_MS_COUNT_LIMIT),
-                            trng_count_limit(DSG_TRNG_COUNT_LIMIT),
+                            ms_time_limit(GRAPHSTATS_MS_TIME_LIMIT),
+                            pmc_time_limit(GRAPHSTATS_PMC_TIME_LIMIT),
+                            trng_time_limit(GRAPHSTATS_TRNG_TIME_LIMIT),
+                            ms_count_limit(GRAPHSTATS_MS_COUNT_LIMIT),
+                            trng_count_limit(GRAPHSTATS_TRNG_COUNT_LIMIT),
                             pmc_alg(PMCEnumerator::ALG_NORMAL),
                             graphs_computed(0),
                             max_text_len(STRLEN(DSG_COL_TXT))
@@ -50,8 +50,8 @@ DatasetStatisticsGenerator::DatasetStatisticsGenerator(const string& outputfile,
 
     // If PMCs are to be calculated, we need the minimal separators
     // anyway. We'll re-use the result, this doesn't slow us down.
-    if (fields & DSG_COMP_PMC) {
-        fields |= DSG_COMP_MS;
+    if (GRAPHSTATS_TEST_PMC(fields)) {
+        GRAPHSTATS_SET_MS(fields);
     }
 }
 DatasetStatisticsGenerator::DatasetStatisticsGenerator(const string& outputfile,
@@ -61,6 +61,11 @@ DatasetStatisticsGenerator::DatasetStatisticsGenerator(const string& outputfile,
 {
     // Input all graphs using the directory iterator
     add_graphs(di);
+}
+DatasetStatisticsGenerator::DatasetStatisticsGenerator(int flds) :
+                            DatasetStatisticsGenerator("", flds)
+{
+    suppress_dump();
 }
 
 DatasetStatisticsGenerator::~DatasetStatisticsGenerator() {
@@ -120,7 +125,7 @@ bool DatasetStatisticsGenerator::has_count_limit() const {
 
 void DatasetStatisticsGenerator::force_recalc() {
     for (unsigned i=0; i<gs.size(); ++i) {
-        gs[i].valid = false;
+        gs[i].set_all_invalid();
     }
     graphs_computed = 0;
 }
@@ -131,7 +136,8 @@ void DatasetStatisticsGenerator::change_outfile(const string& name) {
 void DatasetStatisticsGenerator::suppress_dump() {
     allow_dump_flag = false;
 }
-void DatasetStatisticsGenerator::allow_dump() {
+void DatasetStatisticsGenerator::allow_dump(const string& name) {
+    change_outfile(name);
     allow_dump_flag = true;
 }
 
@@ -157,26 +163,26 @@ string DatasetStatisticsGenerator::header(bool csv) const {
     // Header
     oss.setf(std::ios_base::left, std::ios_base::adjustfield);
     oss << setw(max_text_len) << DSG_COL_TXT;
-    if (fields & DSG_COMP_N) {
+    if (GRAPHSTATS_TEST_N(fields)) {
         oss << delim << DSG_COL_NODES;
     }
-    if (fields & DSG_COMP_M) {
+    if (GRAPHSTATS_TEST_M(fields)) {
         oss << delim << DSG_COL_EDGES;
     }
-    if (fields & DSG_COMP_MS) {
+    if (GRAPHSTATS_TEST_MS(fields)) {
         oss << delim << DSG_COL_MSS;
     }
-    if (fields & DSG_COMP_PMC) {
+    if (GRAPHSTATS_TEST_PMC(fields)) {
         oss << delim << DSG_COL_PMCS;
     }
-    if (fields & DSG_COMP_TRNG) {
+    if (GRAPHSTATS_TEST_TRNG(fields)) {
         oss << delim << DSG_COL_TRNG;
     }
     // Special columns
     if (has_random) {
         oss << delim << DSG_COL_P << delim << DSG_COL_RATIO;
     }
-    if (fields & DSG_COMP_MS) {
+    if (GRAPHSTATS_TEST_MS(fields)) {
         oss << delim << DSG_COL_MS_TIME;
     }
     if (has_time_limit()) {
@@ -196,7 +202,7 @@ string DatasetStatisticsGenerator::header(bool csv) const {
 string DatasetStatisticsGenerator::str(unsigned int i, bool csv) const {
 
     // Input validation
-    if (i>=gs.size() || !gs[i].valid) {
+    if (i>=gs.size() || !gs[i].valid(fields)) {
         return "INVALID INPUT\n";
     }
 
@@ -216,19 +222,19 @@ string DatasetStatisticsGenerator::str(unsigned int i, bool csv) const {
     }
 
     // Fields
-    if (fields & DSG_COMP_N) {
+    if (GRAPHSTATS_TEST_N(fields)) {
         oss << delim << setw(STRLEN(DSG_COL_NODES)) << gs[i].n;
     }
-    if (fields & DSG_COMP_M) {
+    if (GRAPHSTATS_TEST_M(fields)) {
         oss << delim << setw(STRLEN(DSG_COL_EDGES)) << gs[i].m;
     }
-    if (fields & DSG_COMP_MS) {
+    if (GRAPHSTATS_TEST_MS(fields)) {
         oss << delim << setw(STRLEN(DSG_COL_MSS)) << gs[i].ms;
     }
-    if (fields & DSG_COMP_PMC) {
+    if (GRAPHSTATS_TEST_PMC(fields)) {
         oss << delim << setw(STRLEN(DSG_COL_PMCS)) << gs[i].pmcs;
     }
-    if (fields & DSG_COMP_TRNG) {
+    if (GRAPHSTATS_TEST_TRNG(fields)) {
         oss << delim << setw(STRLEN(DSG_COL_TRNG)) << gs[i].triangs;
     }
     // Special columns
@@ -246,7 +252,7 @@ string DatasetStatisticsGenerator::str(unsigned int i, bool csv) const {
     }
     // MS are calculated in one go if we're calculating PMCs,
     // no point in printing MS calculation time
-    if ((fields & DSG_COMP_MS) && !(fields & DSG_COMP_PMC)) {
+    if (GRAPHSTATS_TEST_MS(fields) && !GRAPHSTATS_TEST_PMC(fields)) {
         oss << delim << setw(STRLEN(DSG_COL_MS_TIME)) << gs[i].ms_calc_time;
     }
     if (has_time_limit()) {
@@ -298,7 +304,7 @@ string DatasetStatisticsGenerator::str(bool csv) const {
     // Data
     for (unsigned int i=0; i<gs.size(); ++i) {
         // Don't print invalid rows
-        if (!gs[i].valid) continue;
+        if (!gs[i].valid(fields)) continue;
         oss << str(i,csv);
     }
 
@@ -341,17 +347,17 @@ void DatasetStatisticsGenerator::print_progress()  {
     // Construct and print the string
     ostringstream oss;
     oss << "\rN/M";
-    if (fields & DSG_COMP_MS) oss << "/MS";
-    if (fields & DSG_COMP_PMC) oss << "/PMCS";
-    if (fields & DSG_COMP_TRNG) oss << "/TRNG";
+    if (GRAPHSTATS_TEST_MS(fields)) oss << "/MS";
+    if (GRAPHSTATS_TEST_PMC(fields)) oss << "/PMCS";
+    if (GRAPHSTATS_TEST_TRNG(fields)) oss << "/TRNG";
     for(unsigned int i=0; i<graphs_in_progress.size(); ++i) {
         unsigned int j = graphs_in_progress[i];
         oss << " | " << gs[j].n << "/" << gs[j].m;
-        if (fields & DSG_COMP_MS) {
+        if (GRAPHSTATS_TEST_MS(fields)) {
             oss << "/" << gs[j].ms << (gs[j].ms_count_limit ? "+" : "") << (gs[j].ms_time_limit ? "t" : "");
         }
-        if (fields & DSG_COMP_PMC) oss << "/" << gs[j].pmcs;
-        if (fields & DSG_COMP_TRNG) {
+        if (GRAPHSTATS_TEST_PMC(fields)) oss << "/" << gs[j].pmcs;
+        if (GRAPHSTATS_TEST_TRNG(fields)) {
             oss << "/" << gs[j].triangs << (gs[j].trng_count_limit ? "+" : "") << (gs[j].trng_time_limit ? "t" : "");
         }
     }
@@ -443,17 +449,17 @@ void DatasetStatisticsGenerator::compute(unsigned int i) {
     }
 
     // Basics
-    if (fields & DSG_COMP_N) {
+    if (GRAPHSTATS_TEST_N(fields)) {
         gs[i].n = gs[i].g.getNumberOfNodes();
     }
-    if (fields & DSG_COMP_M) {
+    if (GRAPHSTATS_TEST_M(fields)) {
         gs[i].m = gs[i].g.getNumberOfEdges();
     }
 
     // Separators.
     // We may need the result for PMCs
     NodeSetSet min_seps;
-    if (fields & DSG_COMP_MS) {
+    if (GRAPHSTATS_TEST_MS(fields)) {
         gs[i].ms = 0;
         MinimalSeparatorsEnumerator mse(gs[i].g, UNIFORM);
         t = time(NULL);
@@ -472,12 +478,13 @@ void DatasetStatisticsGenerator::compute(unsigned int i) {
             mse.next();
         }
         gs[i].ms_calc_time = time(NULL)-t;
+        gs[i].ms_valid = !(gs[i].ms_time_limit || gs[i].ms_count_limit);
     }
 
     // PMCs.
     // The minimal separators are free, so no need to calculate
     // them separately.
-    if (fields & DSG_COMP_PMC) {
+    if (GRAPHSTATS_TEST_PMC(fields)) {
         PMCEnumerator pmce(gs[i].g, has_pmc_time_limit ? pmc_time_limit : 0);
         pmce.set_algorithm(pmc_alg);
         // Re-use the calculated minimal separators, if relevant
@@ -493,10 +500,11 @@ void DatasetStatisticsGenerator::compute(unsigned int i) {
             gs[i].pmc_time_limit = true;
         }
         print_progress();
+        gs[i].pmc_valid = !pmce.is_out_of_time();
     }
 
     // Triangulations
-    if (fields & DSG_COMP_TRNG) {
+    if (GRAPHSTATS_TEST_TRNG(fields)) {
         gs[i].triangs = 0;
         MinimalTriangulationsEnumerator enumerator(gs[i].g, NONE, UNIFORM, SEPARATORS);
         t = time(NULL);
@@ -514,10 +522,8 @@ void DatasetStatisticsGenerator::compute(unsigned int i) {
             enumerator.next();
         }
         gs[i].trng_calc_time = time(NULL)-t;
+        gs[i].trng_valid = !(gs[i].trng_time_limit || gs[i].trng_count_limit);
     }
-
-    // That's it for this one!
-    gs[i].valid = true;
 
     // Printing and cleanup.
     // No need for any of this if verbose isn't true.
@@ -575,7 +581,7 @@ void DatasetStatisticsGenerator::compute_by_graph_number_range(unsigned int firs
     // If possible, parallelize this
 #pragma omp parallel for if(allow_parallel)
     for (unsigned int i=first-1; i<last; ++i) {
-        if (!gs[i].valid) {
+        if (!gs[i].valid(fields)) {
             compute(i);
         }
         dump_line(i);

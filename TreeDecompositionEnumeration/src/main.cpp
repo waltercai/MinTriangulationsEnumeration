@@ -80,7 +80,7 @@ private:
     int random_stats() const {
         // No need to output nodes, the graph name is enough
         DatasetStatisticsGenerator dsg(RESULT_DIR_BASE+"RandomResults.csv",
-                        DSG_COMP_ALL ^ (DSG_COMP_TRNG/* | DSG_COMP_PMC*/)); // Everything except triangulations
+                        GRAPHSTATS_USING_ALL ^ (GRAPHSTATS_USING_TRNG/* | DSG_COMP_PMC*/)); // Everything except triangulations
         dsg.add_random_graphs({20,30,40,50},{0.3,0.5,0.7},true);
         dsg.compute(true);
         dsg.print();
@@ -94,7 +94,7 @@ private:
     int difficult_graphs() const {
         DatasetStatisticsGenerator dsg(RESULT_DIR_BASE+"DifficultResults.csv",
                                        DATASET_DIR_BASE+DATASET_DIR_DIFFICULT,
-                                       DSG_COMP_ALL ^ (DSG_COMP_TRNG));
+                                       GRAPHSTATS_USING_ALL ^ (GRAPHSTATS_USING_TRNG));
         dsg.compute(true);
         dsg.print();
         return 0;
@@ -109,8 +109,8 @@ private:
         // Don't calculate PMCs or triangulations
         DatasetStatisticsGenerator dsg(RESULT_DIR_BASE+"QuickResults.csv",
                                        with_pmcs ?
-                                           DSG_COMP_ALL ^ DSG_COMP_TRNG :
-                                           DSG_COMP_ALL ^ (DSG_COMP_TRNG | DSG_COMP_PMC));
+                                           GRAPHSTATS_USING_ALL ^ GRAPHSTATS_USING_TRNG :
+                                           GRAPHSTATS_USING_ALL ^ (GRAPHSTATS_USING_TRNG | GRAPHSTATS_USING_PMC));
         dsg.add_graphs_dir(DATASET_DIR_BASE+DATASET_DIR_DIFFICULT_BN, {"Grid"});
         dsg.add_graphs_dir(DATASET_DIR_BASE+DATASET_DIR_DEADEASY);
         dsg.add_graphs(DATASET_DIR_BASE+DATASET_DIR_EASY);
@@ -127,7 +127,7 @@ private:
      */
     int fine_grained_probability() const {
         DatasetStatisticsGenerator dsg(RESULT_DIR_BASE+"FineGrainedRandom.csv",
-                        DSG_COMP_ALL ^ (DSG_COMP_TRNG | DSG_COMP_PMC));
+                        GRAPHSTATS_USING_ALL ^ (GRAPHSTATS_USING_TRNG | GRAPHSTATS_USING_PMC));
         dsg.add_random_graphs_pstep({20,30,50,70}, 0.5, 3);
         dsg.add_random_graphs({20,30,40,50},{0.3,0.5,0.7},true);
         dsg.compute(true);
@@ -140,7 +140,7 @@ private:
      */
     int fine_grained_and_quick() const {
         DatasetStatisticsGenerator dsg(RESULT_DIR_BASE+"FineGrainedAndQuick.csv",
-                        DSG_COMP_ALL ^ (DSG_COMP_TRNG | DSG_COMP_PMC));
+                        GRAPHSTATS_USING_ALL ^ (GRAPHSTATS_USING_TRNG | GRAPHSTATS_USING_PMC));
         dsg.add_random_graphs_pstep({20,30,50,70}, 0.5, 3);
         dsg.add_graphs_dir(DATASET_DIR_BASE+DATASET_DIR_DEADEASY);
         dsg.add_graphs(DATASET_DIR_BASE+DATASET_DIR_EASY);
@@ -154,7 +154,7 @@ private:
      */
     int all_bayesian() const {
         DatasetStatisticsGenerator dsg(RESULT_DIR_BASE+"AllBayesian.csv",
-                                       DSG_COMP_ALL ^ (DSG_COMP_TRNG));
+                                       GRAPHSTATS_USING_ALL ^ (GRAPHSTATS_USING_TRNG));
         dsg.add_graphs_dir(DATASET_NEW_DIR_BASE, {"evid"});
         dsg.compute(true);
         dsg.print();

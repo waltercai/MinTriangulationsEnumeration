@@ -53,36 +53,10 @@ namespace tdenum {
  */
 
 #define DEFAULT_OUTPUT_DIR "./"
-#define DSG_COMP_N 1
-#define DSG_COMP_M 2
-#define DSG_COMP_MS 4
-#define DSG_COMP_PMC 8
-#define DSG_COMP_TRNG 16
-#define DSG_COMP_ALL (-1) // All bits are 1
+
 
 /**
- * If calculations take too long, limit the number of
- * minimal separators / triangulations calculated (PMCs
- * are calculated all-or-nothing anyway), and / or the amount
- * of time (in seconds) required.
- *
- * To run with no limit, set DSG_<MS|TRNG|PMC>_<COUNT|TIME>_LIMIT
- * to DSG_NO_LIMIT.
- *
- * The output statistic will contain a "t" for out-of-time, or
- * a "+" for hitting DSG_COUNT limits.
- *
- * The CSV file WILL NOT reflect
- */
-#define DSG_NO_LIMIT (-1)
-#define DSG_MS_COUNT_LIMIT (500000)
-#define DSG_TRNG_COUNT_LIMIT DSG_MS_COUNT_LIMIT
-#define DSG_MS_TIME_LIMIT (20*60) // Ten minutes
-#define DSG_TRNG_TIME_LIMIT DSG_MS_TIME_LIMIT
-#define DSG_PMC_TIME_LIMIT (5*60)
-
-/**
- *
+ * Text to be displayed in the CSV file header.
  */
 #define DSG_COL_TXT "Graph text"
 #define DSG_COL_NODES "Nodes "
@@ -194,10 +168,12 @@ public:
     // Creates a new instance of the generator.
     // By ORing different flags the user may decide which fields to compute.
     // Optionally send a directory iterator to input graphs from.
-    DatasetStatisticsGenerator(const string& outputfile = "DSG_OUT.csv", int flds = DSG_COMP_ALL);
+    // If no file name is sent, no output is dumped.
+    DatasetStatisticsGenerator(const string& outputfile, int flds = GRAPHSTATS_USING_ALL);
     DatasetStatisticsGenerator(const string& outputfile,
                                DirectoryIterator di,
-                               int flds = DSG_COMP_ALL);
+                               int flds = GRAPHSTATS_USING_ALL);
+    DatasetStatisticsGenerator(int flds = GRAPHSTATS_USING_ALL);
     ~DatasetStatisticsGenerator();
 
     // If set to true, whenever a graph is added - print the text.
@@ -206,7 +182,7 @@ public:
 
     // Resets the DSG (doesn't change output filename, allows change
     // of fields to be calculated).
-    void reset(int flds = DSG_COMP_ALL);
+    void reset(int flds = GRAPHSTATS_USING_ALL);
 
     // Sets time/count limits or disables them
     void disable_all_limits();
@@ -226,7 +202,7 @@ public:
     // altogether.
     void change_outfile(const string&);
     void suppress_dump();
-    void allow_dump();
+    void allow_dump(const string& filename);
 
     // Enables / disables parallel computation of graphs.
     void suppress_async();

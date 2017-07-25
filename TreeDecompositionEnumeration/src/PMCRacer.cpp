@@ -79,11 +79,10 @@ void PMCRacer::go(bool verbose) {
 
         // Use all algorithms on the graph
         for (int alg = PMCEnumerator::ALG_NORMAL; alg<PMCEnumerator::ALG_LAST; ++alg) {
-            DatasetStatisticsGenerator dsg("DUMMY_FILE", DSG_COMP_N | DSG_COMP_M | DSG_COMP_PMC);
+            DatasetStatisticsGenerator dsg(GRAPHSTATS_USING_N | GRAPHSTATS_USING_M | GRAPHSTATS_USING_PMC);
+            dsg.set_pmc_alg(PMCEnumerator::Alg(alg));
             dsg.dont_show_added_graphs();
             dsg.add_graph(gs[i].g,gs[i].text);
-            dsg.suppress_dump();
-            dsg.set_pmc_alg(PMCEnumerator::Alg(alg));
             dsg.disable_all_limits();
             if (has_time_limit) {
                 dsg.set_pmc_time_limit(time_limit);
@@ -104,7 +103,7 @@ void PMCRacer::go(bool verbose) {
         // Output the result to file
         dump_string_to_file(outfilename, stringify_result(i), true);
         if (verbose) {
-            cout << "Dumped the following string:" << endl << stringify_result(i);
+            cout << "Dumped string #" << i+1 << "/" << gs.size() << ":" << endl << stringify_result(i);
         }
     }
 

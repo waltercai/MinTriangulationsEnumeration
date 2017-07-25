@@ -1,5 +1,5 @@
 CC=g++
-CPPFLAGS=-std=c++11 -fopenmp
+CPPFLAGS=-std=c++11 -fopenmp -g
 LDFLAGS=-fopenmp
 OBJS=ChordalGraph.o Converter.o DatasetStatisticsGenerator.o \
  DataStructures.o DirectoryIterator.o Graph.o GraphReader.o \
