@@ -3,7 +3,7 @@ CPPFLAGS=-std=c++11 -fopenmp -g
 LDFLAGS=-fopenmp
 OBJS=ChordalGraph.o Converter.o DatasetStatisticsGenerator.o \
  DataStructures.o DirectoryIterator.o Graph.o GraphProducer.o GraphReader.o \
- GraphStats.o IndSetExtBySeparators.o IndSetExtByTriangulation.o \
+ GraphStats.o GraphTester.o IndSetExtBySeparators.o IndSetExtByTriangulation.o \
  IndSetScorerByTriangulation.o MinimalSeparatorsEnumerator.o \
  MinimalTriangulationsEnumerator.o MinimalTriangulator.o \
  PMCEnumerator.o PMCEnumeratorTester.o \
@@ -39,6 +39,7 @@ GraphProducer.o: GraphProducer.cpp GraphProducer.h Graph.h GraphReader.h \
  GraphStats.h DirectoryIterator.h Utils.h
 GraphReader.o: GraphReader.cpp GraphReader.h Graph.h
 GraphStats.o: GraphStats.cpp GraphStats.h Graph.h
+GraphTester.o: GraphTester.cpp GraphTester.h Graph.h TestUtils.h Utils.h
 IndSetExtBySeparators.o: IndSetExtBySeparators.cpp \
  IndSetExtBySeparators.h IndependentSetExtender.h Graph.h SubGraph.h
 IndSetExtByTriangulation.o: IndSetExtByTriangulation.cpp \
@@ -51,9 +52,10 @@ main.o: main.cpp DatasetStatisticsGenerator.h Graph.h GraphReader.h \
  GraphStats.h MinimalSeparatorsEnumerator.h SeparatorsScorer.h \
  DataStructures.h PMCEnumerator.h SubGraph.h IndependentSetExtender.h \
  DirectoryIterator.h GraphProducer.h Utils.h TestUtils.h \
- PMCEnumeratorTester.h ChordalGraph.h MinimalTriangulationsEnumerator.h \
- SeparatorGraph.h SuccinctGraphRepresentation.h \
- IndSetExtByTriangulation.h MinimalTriangulator.h IndSetExtBySeparators.h \
+ PMCEnumeratorTester.h GraphTester.h ChordalGraph.h \
+ MinimalTriangulationsEnumerator.h SeparatorGraph.h \
+ SuccinctGraphRepresentation.h IndSetExtByTriangulation.h \
+ MinimalTriangulator.h IndSetExtBySeparators.h \
  MaximalIndependentSetsEnumerator.h IndependentSetScorer.h \
  IndSetScorerByTriangulation.h MinTriangulationsEnumeration.h \
  ResultsHandler.h PMCRacer.h
@@ -112,4 +114,3 @@ TriangulationEvaluator.o: TriangulationEvaluator.cpp \
  TriangulationEvaluator.h Graph.h SubGraph.h IndependentSetExtender.h \
  DataStructures.h
 Utils.o: Utils.cpp Utils.h
-
