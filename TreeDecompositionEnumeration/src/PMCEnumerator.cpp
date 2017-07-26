@@ -73,6 +73,10 @@ NodeSetSet PMCEnumerator::get_ms() {
     return ms;
 }
 
+Graph PMCEnumerator::get_graph() const {
+    return graph;
+}
+
 /**
  * Returns all PMCs.
  * Iteratively finds all PMCs in subgraphs of sequentially increasing size.
@@ -89,7 +93,14 @@ NodeSetSet PMCEnumerator::get() {
         // Cleanup
         pmcs.clear();
 
-        TRACE(TRACE_LVL__NOISE, "In with G=\n" << graph << "Fetching nodes vector...");
+        // If the algorithm requires sorting, do so:
+        if (alg == ALG_ASCENDING_DEG_REVERSE_MS) {
+            graph.sortNodesByDegree(true);
+        }
+        else if (alg == ALG_DESCENDING_DEG_REVERSE_MS) {
+            graph.sortNodesByDegree(false);
+        }
+
         vector<Node> nodes = graph.getNodesVector();
         int n = graph.getNumberOfNodes();
 
@@ -112,7 +123,7 @@ NodeSetSet PMCEnumerator::get() {
         // Optionally use the (memory-inefficient) algorithm, which
         // calculates the minimal separators in advance:
         vector<NodeSetSet> sub_ms(n);
-        if (alg == ALG_REVERSE_MS_PRECALC) {
+        if (ALG_IS_REVERSE_MS_STRAIN(alg)) {
 
             // Calculate the first set of minimal separators
             sub_ms[n-1] = get_ms();
@@ -199,7 +210,7 @@ NodeSetSet PMCEnumerator::get() {
                     pmcs = one_more_vertex(subg[i], subg[i-1], a, MSip1, MSi, PMCi);
                 }
             }
-            else if (alg == ALG_REVERSE_MS_PRECALC) {
+            else if (ALG_IS_REVERSE_MS_STRAIN(alg)) {
                 pmcs = one_more_vertex(subg[i], subg[i-1], a, sub_ms[i], sub_ms[i-1], PMCi);
             }
         }

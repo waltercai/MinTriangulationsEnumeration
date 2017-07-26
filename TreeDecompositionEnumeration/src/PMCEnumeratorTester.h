@@ -9,7 +9,7 @@
 // Graphs with more nodes may cause slow tests
 #define FAST_GRAPH_SIZE 10
 
-#define TEST_TABLE \
+#define PMC_TEST_TABLE \
     /* Make sure we don't have runtime errors... */ \
     X(sanity) \
     /* Graphs with no more than one vertex */ \
@@ -39,7 +39,7 @@
 
 #define X(func) PMCENUM_TEST_NAME__##func,
 typedef enum {
-    TEST_TABLE
+    PMC_TEST_TABLE
     PMCENUM_TEST_NAME__LAST
 } PMCEnumeratorTesterFunctions;
 #undef X
@@ -56,14 +56,14 @@ public:
     #define X(_func) \
         bool _func() const; \
         bool flag_##_func;
-    TEST_TABLE
+    PMC_TEST_TABLE
     #undef X
 
     // Calls all test functions, unless start=false.
     PMCEnumeratorTester(bool start);
 
     // Calls all tests with flag_ values set to true.
-    void go() const;
+    void go(PMCEnumerator::Alg first_alg = PMCEnumerator::ALG_NORMAL) const;
 
     // Sets / clears all flags
     void setAll();

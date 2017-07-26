@@ -1,9 +1,12 @@
 #include "PMCEnumeratorTester.h"
+#include "PMCEnumerator.h"
 #include "DataStructures.h"
 #include "GraphReader.h"
 #include "ChordalGraph.h"
 #include "MinimalTriangulationsEnumerator.h"
 #include "Utils.h"
+
+namespace tdenum {
 
 /**
  * Generic test initialization.
@@ -12,12 +15,14 @@
  */
 #define SETUP(_n) \
     Graph g(_n); \
-    PMCEnumerator pmce(g)
+    PMCEnumerator pmce(g); \
+    pmce.set_algorithm(pmc_alg)
 #define RESET(_n) \
     g.reset(_n); \
-    pmce.reset(g)
+    pmce.reset(g); \
+    pmce.set_algorithm(pmc_alg)
 
-namespace tdenum {
+PMCEnumerator::Alg pmc_alg = PMCEnumerator::ALG_NORMAL;
 
 bool PMCEnumeratorTester::sanity() const {
     SETUP(0);
@@ -42,13 +47,13 @@ bool PMCEnumeratorTester::trivialgraphs() const {
 
 bool PMCEnumeratorTester::randomgraphs() const {
     SETUP(0);
-    TRACE(TRACE_LVL__NOISE, ""); // Newline
+    TRACE(TRACE_LVL__TEST, ""); // Newline
     for (int i=2; i<FAST_GRAPH_SIZE; ++i) {
         RESET(i);
         g.randomize(0.5);
-        TRACE(TRACE_LVL__NOISE, "Random graph #" << i-1 << "/" << FAST_GRAPH_SIZE-2 << ":");
-        TRACE(TRACE_LVL__NOISE, g.str());
-        TRACE(TRACE_LVL__NOISE, "Resulting PMCs:\n" << pmce.get());
+        TRACE(TRACE_LVL__TEST, "Random graph #" << i-1 << "/" << FAST_GRAPH_SIZE-2 << ":");
+        TRACE(TRACE_LVL__TEST, g.str());
+        TRACE(TRACE_LVL__TEST, "Resulting PMCs:\n" << pmce.get());
     }
     return true;
 }
@@ -72,16 +77,16 @@ bool PMCEnumeratorTester::smallknowngraphs() const {
     abc.push_back(1);
     abc.push_back(2);
 
-    TRACE(TRACE_LVL__DEBUG, "2-Graphs...");
+    TRACE(TRACE_LVL__TEST, "2-Graphs...");
     G1_0_PMCs = pmce.get();
-    TRACE(TRACE_LVL__DEBUG, "Got PMCs: " << G1_0_PMCs);
+    TRACE(TRACE_LVL__TEST, "Got PMCs " << G1_0_PMCs << " for graph " << pmce.get_graph());
     ASSERT_EQUAL(G1_0_PMCs.size(), 2);
     ASSERT(G1_0_PMCs.isMember(a));
     ASSERT(G1_0_PMCs.isMember(b));
     g.addEdge(0,1);
     pmce.reset(g);
     G1_1_PMCs = pmce.get();
-    TRACE(TRACE_LVL__DEBUG, "With Got PMCs: " << G1_1_PMCs);
+    TRACE(TRACE_LVL__TEST, "With Got PMCs: " << G1_1_PMCs);
     ASSERT_EQUAL(G1_1_PMCs.size(), 1);
     ASSERT(G1_1_PMCs.isMember(ab));
 
@@ -93,10 +98,10 @@ bool PMCEnumeratorTester::smallknowngraphs() const {
     // m=1: {a,b}, {c}
     // m=2: {a,b}, {a,c}
     // m=3: {a,b,c}
-    TRACE(TRACE_LVL__DEBUG, "3-Graphs...");
+    TRACE(TRACE_LVL__TEST, "3-Graphs...");
     RESET(3);
     G2_0_PMCs = pmce.get();
-    TRACE(TRACE_LVL__DEBUG, "Got PMCs: " << G2_0_PMCs);
+    TRACE(TRACE_LVL__TEST, "Got PMCs: " << G2_0_PMCs);
     ASSERT_EQUAL(G2_0_PMCs.size(), 3);
     ASSERT(G2_0_PMCs.isMember(a));
     ASSERT(G2_0_PMCs.isMember(b));
@@ -104,23 +109,23 @@ bool PMCEnumeratorTester::smallknowngraphs() const {
     g.addEdge(0, 1);
     pmce.reset(g);
     G2_1_PMCs = pmce.get();
-    TRACE(TRACE_LVL__DEBUG, "Got PMCs: " << G2_1_PMCs);
+    TRACE(TRACE_LVL__TEST, "Got PMCs: " << G2_1_PMCs);
     ASSERT_EQUAL(G2_1_PMCs.size(), 2);
     ASSERT(G2_1_PMCs.isMember(ab));
     ASSERT(G2_1_PMCs.isMember(c));
-    TRACE(TRACE_LVL__DEBUG, "Adding (0,2) to G which is now:\n" << g);
+    TRACE(TRACE_LVL__TEST, "Adding (0,2) to G which is now:\n" << g);
     g.addEdge(0, 2);
     pmce.reset(g);
-    TRACE(TRACE_LVL__DEBUG, "Added. G=\n" << g);
+    TRACE(TRACE_LVL__TEST, "Added. G=\n" << g);
     G2_2_PMCs = pmce.get();
-    TRACE(TRACE_LVL__DEBUG, "Got PMCs: " << G2_2_PMCs);
+    TRACE(TRACE_LVL__TEST, "Got PMCs: " << G2_2_PMCs);
     ASSERT_EQUAL(G2_2_PMCs.size(), 2);
     ASSERT(G2_2_PMCs.isMember(ab));
     ASSERT(G2_2_PMCs.isMember(ac));
     g.addEdge(1, 2);
     pmce.reset(g);
     G2_3_PMCs = pmce.get();
-    TRACE(TRACE_LVL__DEBUG, "Got PMCs: " << G2_3_PMCs);
+    TRACE(TRACE_LVL__TEST, "Got PMCs: " << G2_3_PMCs);
     ASSERT_EQUAL(G2_3_PMCs.size(), 1);
     ASSERT(G2_3_PMCs.isMember(abc));
 
@@ -494,29 +499,33 @@ bool PMCEnumeratorTester::noamsgraphs() const {
 
 PMCEnumeratorTester::PMCEnumeratorTester(bool start = true) {
     #define X(_func) flag_##_func = true;
-    TEST_TABLE
+    PMC_TEST_TABLE
     #undef X
     if (start) {
         go();
     }
 }
-void PMCEnumeratorTester::go() const {
+void PMCEnumeratorTester::go(PMCEnumerator::Alg first_alg) const {
     // Hacky, but it works
     START_TESTS();
-    #define X(_func) if (flag_##_func) DO_TEST(_func);
-    TEST_TABLE
-    #undef X
+    for (int alg = first_alg; alg < PMCEnumerator::ALG_LAST; ++alg) {
+        pmc_alg = PMCEnumerator::Alg(alg);
+        cout << "TESTING USING ALGORITHM '" << PMCEnumerator::get_alg_name(pmc_alg) << "'" << endl;
+        #define X(_func) if (flag_##_func) DO_TEST(_func);
+        PMC_TEST_TABLE
+        #undef X
+    }
     END_TESTS();
 }
 void PMCEnumeratorTester::setAll() {
     // Note to self: no good code comes after 1:00am
     #define X(_func) flag_##_func = true;
-    TEST_TABLE
+    PMC_TEST_TABLE
     #undef X
 }
 void PMCEnumeratorTester::clearAll() {
     #define X(_func) flag_##_func = false;
-    TEST_TABLE
+    PMC_TEST_TABLE
     #undef X
 }
 

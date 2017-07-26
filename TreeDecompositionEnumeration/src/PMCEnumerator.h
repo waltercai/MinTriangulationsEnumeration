@@ -17,7 +17,15 @@ namespace tdenum {
  */
 #define PMC_ALG_TABLE \
     X(NORMAL) \
-    X(REVERSE_MS_PRECALC)
+    X(REVERSE_MS_PRECALC) \
+    X(ASCENDING_DEG_REVERSE_MS) \
+    X(DESCENDING_DEG_REVERSE_MS)
+
+#define ALG_IS_REVERSE_MS_STRAIN(_alg) \
+    (_alg == ALG_REVERSE_MS_PRECALC || \
+     _alg == ALG_ASCENDING_DEG_REVERSE_MS || \
+     _alg == ALG_DESCENDING_DEG_REVERSE_MS)
+
 class PMCEnumerator {
 public:
     typedef enum {
@@ -98,6 +106,9 @@ public:
 
     // Return the set of minimal separators.
     NodeSetSet get_ms();
+
+    // Returns the underlying graph
+    Graph get_graph() const;
 
     // If true, the calculation couldn't be completed in the allowed time.
     bool is_out_of_time() const;

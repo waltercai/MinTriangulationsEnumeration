@@ -37,6 +37,10 @@ void print(const NodeSet&);
 
 
 class Graph {
+
+    // Allow the tester access
+    friend class GraphTester;
+
 	int numberOfNodes;
 	int numberOfEdges;
 	vector< set<Node> > neighborSets;
@@ -48,6 +52,18 @@ class Graph {
 	bool isValidNode(Node v) const;
 	vector< vector<Node> > getComponentsAux(vector<int> visitedList, int numberOfUnhandeledNodes) const;
 	BlockVec getBlocksAux(vector<int> visitedList, int numberOfUnhandeledNodes) const;
+
+	// Used by node renaming / sorting methods.
+	// nodeRenameAux returns a mapping from old names to new.
+	vector<Node> inverse_map(const vector<Node>&) const;
+	vector<Node> nodeRenameAux(const vector<Node>& mapping);
+    class NodeCompare {
+        vector< set<Node> > ns;
+        bool asc;
+    public:
+        NodeCompare(const vector< set<Node> >&, bool ascending);
+        bool operator()(Node a, Node b) const;
+    };
 
 public:
 	// Constructs an empty graph
@@ -62,8 +78,10 @@ public:
 	void randomize(double p);
 	// Removes all but the first k nodes from the graph/
 	void removeAllButFirstK(int k);
-	// Randomly renames all nodes (this only affects the neighbor sets)
-	void randomNodeRename();
+	// Used to rename nodes (sort them) randomly or by degree.
+	// Returns the mapping from old names to new.
+	vector<Node> randomNodeRename();
+	vector<Node> sortNodesByDegree(bool ascending);
 	// Connects the given two nodes by a edge
 	void addEdge(Node u, Node v);
 	// Adds edges that will make that given node set a clique
@@ -122,6 +140,8 @@ public:
 	void print() const;
 	friend ostream& operator<<(ostream&, const Graph&);
 };
+
+
 
 } /* namespace tdenum */
 

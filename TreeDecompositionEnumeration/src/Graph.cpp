@@ -59,6 +59,24 @@ double Graph::getP() const {
     return p;
 }
 
+// Assumes input map is 1-1 and onto {0,1,...,m.size()-1}
+vector<Node> Graph::inverse_map(const vector<Node>& m) const {
+    vector<Node> inv(m.size());
+    for (unsigned i=0; i<m.size(); ++i) {
+        inv[m[i]] = i;
+    }
+    return inv;
+}
+vector<Node> Graph::nodeRenameAux(const vector<Node>& mapping) {
+    vector< set<Node> > newNeighbors(numberOfNodes);
+    for (Node u=0; u<numberOfNodes; ++u) {
+        for (auto v: neighborSets[u]) {
+            newNeighbors[mapping[u]].insert(mapping[v]);
+        }
+    }
+    neighborSets = newNeighbors;
+    return mapping;
+}
 
 void Graph::removeAllButFirstK(int k) {
     // Remove respective edges from neighbor sets.
@@ -79,19 +97,21 @@ void Graph::removeAllButFirstK(int k) {
     numberOfEdges = E/2;
 }
 
-void Graph::randomNodeRename() {
+vector<Node> Graph::randomNodeRename() {
     // Shuffle node names:
     vector<Node> f = getNodesVector();
     std::random_shuffle(f.begin(), f.end());
     // Use f as a mapping between nodes to build the new
     // neighbor sets.
-    vector< set<Node> > newNeighbors(numberOfNodes);
-    for (Node u=0; u<numberOfNodes; ++u) {
-        for (auto v=neighborSets[u].begin(); v!=neighborSets[u].end(); ++v) {
-            newNeighbors[f[u]].insert(f[*v]);
-        }
-    }
-    neighborSets = newNeighbors;
+    return nodeRenameAux(inverse_map(f));
+}
+
+vector<Node> Graph::sortNodesByDegree(bool ascending) {
+    vector<Node> f = getNodesVector();
+    TRACE(TRACE_LVL__TEST, "Nodes vector before sort: " << f);
+    std::sort(f.begin(), f.end(), NodeCompare(neighborSets, ascending));
+    TRACE(TRACE_LVL__TEST, "Nodes vector after sort: " << f);
+    return nodeRenameAux(inverse_map(f));
 }
 
 void Graph::addClique(const set<Node>& newClique) {
@@ -524,6 +544,18 @@ bool Block::includesNodes(const NodeSet& toCheck) const {
 			return false;
 	return true;
 }
+
+
+
+Graph::NodeCompare::NodeCompare(const vector< set<Node> >& neighborSets, bool ascending) :
+        ns(neighborSets),
+        asc(ascending) {}
+bool Graph::NodeCompare::operator()(Node a, Node b) const {
+    return asc ?
+        ns[a].size() < ns[b].size() :
+        ns[a].size() > ns[b].size();
+}
+
 
 } /* namespace tdenum */
 

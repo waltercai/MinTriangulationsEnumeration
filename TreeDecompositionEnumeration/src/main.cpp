@@ -1,10 +1,12 @@
 #include "DatasetStatisticsGenerator.h"
 #include "DataStructures.h"
+#include "Graph.h"
 #include "GraphProducer.h"
 #include "DirectoryIterator.h"
 #include "Utils.h"
 #include "TestUtils.h"
 #include "PMCEnumeratorTester.h"
+#include "GraphTester.h"
 #include "GraphReader.h"
 #include "ChordalGraph.h"
 #include "MinimalTriangulationsEnumerator.h"
@@ -26,7 +28,9 @@ using std::cin;
 namespace tdenum {
 
 typedef enum {
+    MAIN_TMP,
     MAIN_PMC_TEST,
+    MAIN_GRAPH_TEST,
     MAIN_STATISTIC_GEN,
     MAIN_RANDOM_STATS,
     MAIN_DIFFICULT_STATS,
@@ -48,6 +52,21 @@ class Main {
 public:
 
 private:
+
+    /**
+     * Placeholder for temporary stuff
+     */
+    int tmp() const {
+        Graph g(2);
+        cout << "Started with graph:" << endl << g;
+        g.randomNodeRename();
+        cout << "After randomization:" << endl << g;
+        g.sortNodesByDegree(true);
+        cout << "Ascending sort:" << endl << g;
+        g.sortNodesByDegree(true);
+        cout << "Descending sort:" << endl << g;
+        return 0;
+    }
 
     /**
      * Run the DatasetStatisticsGenerator and output files given the datasets NOT in
@@ -72,8 +91,20 @@ private:
         Logger::start("log.txt", false);
         PMCEnumeratorTester p(false);
 //        p.clearAll();
-//        p.flag_triangleonstilts = true;
-        p.go();
+//        p.flag_cliqueswithtails = true;
+        p.go(PMCEnumerator::ALG_ASCENDING_DEG_REVERSE_MS);
+        return 0;
+    }
+
+    /**
+     * Test new graph features.
+     * Not comprehensive, only created this class after Graph.h was
+     * already done.
+     */
+    int graph_test() const {
+        Logger::start("log.txt", false);
+        GraphTester gt(false);
+        gt.go();
         return 0;
     }
 
@@ -182,12 +213,18 @@ private:
 public:
 
     // Go!
-    Main(MainType mt = MAIN_PMC_RACE, int argc = 1, char* argv[] = NULL) :
+    Main(MainType mt = MAIN_PMC_TEST, int argc = 1, char* argv[] = NULL) :
                                         return_val(-1), main_type(mt) {
         try {
             switch(main_type) {
+            case MAIN_TMP:
+                return_val = tmp();
+                break;
             case MAIN_PMC_TEST:
                 return_val = pmc_test();
+                break;
+            case MAIN_GRAPH_TEST:
+                return_val = graph_test();
                 break;
             case MAIN_STATISTIC_GEN:
                 return_val = stat_gen();
