@@ -9,6 +9,14 @@ using std::ostringstream;
 
 namespace tdenum {
 
+
+PMCRacer::PMCRacer(const string& out, time_t limit) :
+    outfilename(out),
+    has_time_limit(limit > 0),
+    time_limit(limit),
+    alg_gs(PMCEnumerator::ALG_LAST),
+    gs(0) {}
+
 string PMCRacer::stringify_header() const {
     ostringstream oss;
     oss << "Comparison of " << PMCEnumerator::ALG_LAST << " algorithms." << endl;
@@ -43,12 +51,6 @@ string PMCRacer::stringify_result(unsigned i) const {
     return oss.str();
 }
 
-PMCRacer::PMCRacer(const string& out, time_t limit) :
-    outfilename(out),
-    has_time_limit(limit > 0),
-    time_limit(limit),
-    gs(0) {}
-
 void PMCRacer::add(const Graph& g, const string& txt) {
     gs.push_back(GraphStats(g,txt));
 }
@@ -71,9 +73,13 @@ void PMCRacer::go(bool verbose) {
     // Open a new file, dump the header
     dump_string_to_file(outfilename, stringify_header());
 
+    TRACE(TRACE_LVL__OFF, "Current status of alg_gs: " << alg_gs);
+
     // For each graph:
     for (unsigned i=0; i<gs.size(); ++i) {
-        PRINT_IF(verbose,"Racing graph number " << i+1 << "/" << gs.size() << ":" << endl);
+        PRINT_IF(verbose, "=== Racing graph " << i+1 << "/" << gs.size()
+                       << ": '" << gs[i].text << "'" << endl);
+        PRINT_IF(verbose, "Start time: " << timestamp_to_hhmmss(time(NULL)) << endl);
 
         // Use all algorithms on the graph.
         // To save time, since all algorithms require the calculation of all minimal
@@ -82,7 +88,20 @@ void PMCRacer::go(bool verbose) {
         time_t ms_calc = time(NULL);
         NodeSetSet min_seps = MinimalSeparatorsEnumerator(gs[i].g, UNIFORM).getAll();
         ms_calc = time(NULL) - ms_calc;
-        for (int alg = PMCEnumerator::ALG_NORMAL; alg<PMCEnumerator::ALG_LAST; ++alg) {
+        PRINT_IF(verbose, "MS calc time: " << secs_to_hhmmss(ms_calc) << endl);
+
+        // Use a random order of the algorithms, in case
+        // cache hits affect results.
+        vector<int> algorithms(int(PMCEnumerator::ALG_LAST));
+        for (unsigned j=0; j<algorithms.size(); ++j) {
+            algorithms[j] = j;
+        }
+        std::random_shuffle(algorithms.begin(), algorithms.end());
+        PRINT_IF(verbose, "Iterating over algorithms in the following order: " << algorithms << endl);
+
+        for (unsigned alg_index=0; alg_index<algorithms.size(); ++alg_index) {
+            int alg = algorithms[alg_index];
+            PRINT_IF(verbose,"New iteration, alg = " << alg << endl);
             DatasetStatisticsGenerator dsg(GRAPHSTATS_N | GRAPHSTATS_M | GRAPHSTATS_PMC);
             dsg.set_pmc_alg(PMCEnumerator::Alg(alg));
             dsg.dont_show_added_graphs();
@@ -93,15 +112,17 @@ void PMCRacer::go(bool verbose) {
             }
             // Add the minimal separators
             dsg.set_ms(min_seps, ms_calc, 1);
-            PRINT_IF(verbose,"Algorithm " << PMCEnumerator::get_alg_name(PMCEnumerator::Alg(alg)) << ".. " << endl);
+            TRACE(TRACE_LVL__OFF,"Algorithm " << PMCEnumerator::get_alg_name(alg) << ".. " << endl);
             dsg.compute(verbose);
-            PRINT_IF(verbose,"done. ");
+            TRACE(TRACE_LVL__OFF,"done. Getting stats..." << endl);
             // Get stats, add the time
             GraphStats stats = dsg.get_stats()[0];
             stats.pmc_calc_time += ms_calc;
+            TRACE(TRACE_LVL__OFF, "Got stats, pushing into alg_gs[" << alg
+                            << "], which currently contains " << alg_gs << endl);
+            TRACE(TRACE_LVL__OFF, "alg_gs[" << alg << "] is " << alg_gs[alg] << endl);
             alg_gs[alg].push_back(stats);
         }
-        PRINT_IF(verbose,endl);
 
         // Output the result to file
         dump_string_to_file(outfilename, stringify_result(i), true);

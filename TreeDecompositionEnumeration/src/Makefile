@@ -38,7 +38,7 @@ Graph.o: Graph.cpp Graph.h DataStructures.h Utils.h
 GraphProducer.o: GraphProducer.cpp GraphProducer.h Graph.h GraphReader.h \
  GraphStats.h DirectoryIterator.h Utils.h
 GraphReader.o: GraphReader.cpp GraphReader.h Graph.h
-GraphStats.o: GraphStats.cpp GraphStats.h Graph.h
+GraphStats.o: GraphStats.cpp GraphStats.h Graph.h Utils.h
 GraphTester.o: GraphTester.cpp GraphTester.h Graph.h TestUtils.h Utils.h
 IndSetExtBySeparators.o: IndSetExtBySeparators.cpp \
  IndSetExtBySeparators.h IndependentSetExtender.h Graph.h SubGraph.h

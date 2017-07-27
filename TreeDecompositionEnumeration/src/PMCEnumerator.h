@@ -19,12 +19,19 @@ namespace tdenum {
     X(NORMAL) \
     X(REVERSE_MS_PRECALC) \
     X(ASCENDING_DEG_REVERSE_MS) \
-    X(DESCENDING_DEG_REVERSE_MS)
+    X(DESCENDING_DEG_REVERSE_MS) \
+    X(RANDOM_RENAME_NORMAL) \
+    X(RANDOM_RENAME_REVERSE_MS)
+
+#define ALG_IS_RANDOM_RENAME_STRAIN(_alg) \
+    (_alg == ALG_RANDOM_RENAME_NORMAL || \
+     _alg == ALG_RANDOM_RENAME_REVERSE_MS)
 
 #define ALG_IS_REVERSE_MS_STRAIN(_alg) \
     (_alg == ALG_REVERSE_MS_PRECALC || \
      _alg == ALG_ASCENDING_DEG_REVERSE_MS || \
-     _alg == ALG_DESCENDING_DEG_REVERSE_MS)
+     _alg == ALG_DESCENDING_DEG_REVERSE_MS || \
+     _alg == ALG_RANDOM_RENAME_REVERSE_MS)
 
 class PMCEnumerator {
 public:
@@ -46,7 +53,7 @@ private:
 
     // The algorithm to be used (defaults to default_alg)
     Alg alg;
-    static const Alg default_alg = ALG_REVERSE_MS_PRECALC;
+    static const Alg default_alg = ALG_NORMAL;
 
     // The minimal separators of the graph.
     // They are required for the algorithm to run correctly; if they

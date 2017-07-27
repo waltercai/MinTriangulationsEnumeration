@@ -198,10 +198,10 @@ private:
     int pmc_race() const {
         // Allow 20 minutes per graph
         PMCRacer pmcr(RESULT_DIR_BASE+"PMCRace.csv", 20*60);
-        pmcr.add(GraphProducer().add_random({20,30,40,50},{0.7},true).get());
+        pmcr.add(GraphProducer().add_random({20,30,40},{0.3,0.5,0.7},true, 3).get());
         pmcr.add(GraphProducer().add_by_dir(DATASET_DIR_BASE+DATASET_DIR_DEADEASY).get());
         pmcr.add(GraphProducer().add_by_dir(DATASET_DIR_BASE+DATASET_DIR_EASY).get());
-        pmcr.add(GraphProducer().add_by_dir(DATASET_DIR_BASE+DATASET_DIR_DIFFICULT_BN, {"Grid"}).get());
+//        pmcr.add(GraphProducer().add_by_dir(DATASET_DIR_BASE+DATASET_DIR_DIFFICULT_BN, {"Grid"}).get());
         pmcr.go(true);
         return 0;
     }
@@ -213,7 +213,7 @@ private:
 public:
 
     // Go!
-    Main(MainType mt = MAIN_PMC_TEST, int argc = 1, char* argv[] = NULL) :
+    Main(MainType mt = MAIN_PMC_RACE, int argc = 1, char* argv[] = NULL) :
                                         return_val(-1), main_type(mt) {
         try {
             switch(main_type) {

@@ -499,7 +499,7 @@ void DatasetStatisticsGenerator::compute(unsigned int i) {
         t = time(NULL);
         while(mse.hasNext()) {
             min_seps.insert(mse.next());
-            ++gs[i].ms_count;
+            ++(gs[i].ms_count);
             print_progress();
             if (has_ms_count_limit && gs[i].ms_count > ms_count_limit) {
                 gs[i].ms_count_limit = true;
@@ -513,6 +513,7 @@ void DatasetStatisticsGenerator::compute(unsigned int i) {
         }
         gs[i].ms_calc_time = time(NULL)-t;
         gs[i].ms_valid = !(gs[i].ms_time_limit || gs[i].ms_count_limit);
+        TRACE(TRACE_LVL__TEST,"SET MS COUNT TO " << gs[i].ms_count);
     }
 
     // PMCs.

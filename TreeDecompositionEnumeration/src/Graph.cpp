@@ -11,15 +11,15 @@
 namespace tdenum {
 
 Graph::Graph() :
+            numberOfNodes(0),
             numberOfEdges(0),
             isRandomGraph(false),
             newToOldNames(0)
-{
-    numberOfNodes = 0;
-}
+{}
 
 Graph::Graph(int numNodes) :
             numberOfNodes(numNodes),
+            numberOfEdges(0),
             neighborSets(numberOfNodes),
             isRandomGraph(false),
             newToOldNames(numNodes)
@@ -161,7 +161,6 @@ vector<Node> Graph::getNamesAux(const vector<Node>& nodes, bool get_new) const {
         original.push_back(nameMap[u]);
     }
     std::sort(original.begin(), original.end());
-    TRACE(TRACE_LVL__TEST, "Input nodes: " << nodes << ", nameMap:" << nameMap << ", output: " << original);
     return original;
 }
 vector<Node> Graph::getOriginalNames(const vector<Node>& nodes) const {

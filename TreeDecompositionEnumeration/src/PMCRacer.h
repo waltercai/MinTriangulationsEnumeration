@@ -32,7 +32,9 @@ private:
     time_t time_limit;
 
     // The graph statistics for each algorithm.
-    vector<GraphStats> alg_gs[PMCEnumerator::ALG_LAST];
+    // alg_gs[alg][i] the GraphStats object of graph i, after calculation
+    // using alg.
+    vector<vector<GraphStats> > alg_gs;
 
     // Input graph statistics objects.
     // May have redundant data, but nothing too bad... we need graphs

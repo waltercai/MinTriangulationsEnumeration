@@ -66,7 +66,8 @@ GraphProducer& GraphProducer::add_random(unsigned n, double p, int instances) {
 }
 GraphProducer& GraphProducer::add_random(const vector<unsigned int>& n,
                                const vector<double>& p,
-                               bool mix_match)
+                               bool mix_match,
+                               unsigned instances)
 {
     if (!mix_match) {
         if (n.size() != p.size()) {
@@ -75,13 +76,13 @@ GraphProducer& GraphProducer::add_random(const vector<unsigned int>& n,
             return *this;
         }
         for (unsigned i=0; i<n.size(); ++i) {
-            add_random(n[i],p[i]);
+            add_random(n[i], p[i], instances);
         }
     }
     else {
         for (unsigned i=0; i<n.size(); ++i) {
             for (unsigned j=0; j<p.size(); ++j) {
-                add_random(n[i],p[j]);
+                add_random(n[i], p[j], instances);
             }
         }
     }

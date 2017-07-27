@@ -36,7 +36,12 @@ namespace tdenum {
  *
  * To fork-output all ASSERT_PRINTS to file, call Logger::start(filename).
  */
+
+// strlen() and std::to_string cause problems
 #define STRLEN(_x) (std::char_traits<char>::length(_x))
+// TO_STRING expects a stream, or something that can be output via a stream
+#define TO_STRING(_x) static_cast< std::ostringstream & >( \
+        ( std::ostringstream()/* << std::dec*/ << _x ) ).str()
 
 #define __FILENAME__ (strrchr(__FILE__, SLASH) ? strrchr(__FILE__, SLASH) + 1 : __FILE__)
 
@@ -76,6 +81,9 @@ public:
 // Convert time in seconds to hh:mm:ss
 string secs_to_hhmmss(time_t t);
 
+// Convert time stamp (in seconds) to hh::mm::ss of today
+string timestamp_to_hhmmss(time_t t);
+
 // Writes / appends a string of output to a file (doesn't append, by default)
 void dump_string_to_file(const string& filename, const string& str, bool append = false);
 
@@ -111,6 +119,9 @@ AUTOPRINT_CONTAINER(vector)
  * All TRACE commands with trace levels at most TRACE_LVL will
  * print: if TRACE_LVL is defined as TRACE_LVL__WARNING, then
  * all traces of level NONE, ERROR or WARNING will be printed.
+ *
+ * Never define TRACE_LVL as TRACE_LVL__OFF... kind of defeats
+ * the purpose.
  */
 typedef enum _TRACE_LVL_CODES {
     TRACE_LVL__NONE,
@@ -118,7 +129,8 @@ typedef enum _TRACE_LVL_CODES {
     TRACE_LVL__WARNING,
     TRACE_LVL__TEST,
     TRACE_LVL__DEBUG,
-    TRACE_LVL__NOISE
+    TRACE_LVL__NOISE,
+    TRACE_LVL__OFF
 } TRACE_LVL__CODES;
 #define TRACE_LVL TRACE_LVL__WARNING
 #define TRACE(_lvl, _stream) do { \

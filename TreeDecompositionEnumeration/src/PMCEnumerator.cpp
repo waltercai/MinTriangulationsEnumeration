@@ -115,8 +115,11 @@ NodeSetSet PMCEnumerator::get() {
         }
 
         // If the algorithm requires sorting, do so:
-        if (alg == ALG_ASCENDING_DEG_REVERSE_MS || alg == ALG_DESCENDING_DEG_REVERSE_MS) {
-            tmp_graph.sortNodesByDegree(alg == ALG_ASCENDING_DEG_REVERSE_MS);
+        if (ALG_IS_SORTING_STRAIN(alg)) {
+            tmp_graph.sortNodesByDegree(ALG_IS_SORTING_ASCENDING_STRAIN(alg));
+        }
+        else if (ALG_IS_RANDOM_RENAME_STRAIN(alg)) {
+            tmp_graph.randomNodeRename();
         }
         vector<Node> nodes = tmp_graph.getNodesVector();
 
@@ -192,9 +195,6 @@ NodeSetSet PMCEnumerator::get() {
         NodeSetSet prev_pmcs, MSi, MSip1;
 
         // If the nodes of G are {a_1,...,a_n} then P1 = {{a1}}
-//        NodeSet firstSet(1);
-//        firstSet[0] = nodes[0];
-//        pmcs.insert(firstSet); // Later, PMCi=PMCip1
         pmcs.insert(NodeSet({nodes[0]})); // Later, PMCi=PMCip1
 
         // MS1 should remain empty, so MSi=MSip1 is OK
@@ -211,7 +211,7 @@ NodeSetSet PMCEnumerator::get() {
             // If there's no need, just run the next function.
 
             // The NORMAL algorithm requires calculation of separators
-            if (alg == ALG_NORMAL) {
+            if (!ALG_IS_REVERSE_MS_STRAIN(alg)) {
                 if (i == n-1) {
                     pmcs = one_more_vertex(subg[i], subg[i-1], a, tmp_graph.getNewNames(get_ms()), MSi, prev_pmcs);
                 }
@@ -221,9 +221,9 @@ NodeSetSet PMCEnumerator::get() {
                     pmcs = one_more_vertex(subg[i], subg[i-1], a, MSip1, MSi, prev_pmcs);
                 }
             }
-            else if (ALG_IS_REVERSE_MS_STRAIN(alg)) {
+            else {
                 pmcs = one_more_vertex(subg[i], subg[i-1], a, sub_ms[i], sub_ms[i-1], prev_pmcs);
-                TRACE(TRACE_LVL__TEST, "With i=" << i << ", where the parent graph is:" << endl
+                TRACE(TRACE_LVL__OFF, "With i=" << i << ", where the parent graph is:" << endl
                       << subg[i] << "and the subgraph is:" << endl << subg[i-1]
                       << "We have minimal separators " << sub_ms[i] << " and " << sub_ms[i-1]
                       << ", main graph / subgraph respectively. As a result, we got PMCs " << pmcs);
@@ -232,7 +232,7 @@ NodeSetSet PMCEnumerator::get() {
 
         // Update the minimal separators
         if (!has_ms) {
-            ms = tmp_graph.getOriginalNames((alg == ALG_NORMAL) ? MSip1 : sub_ms[n-1]);
+            ms = tmp_graph.getOriginalNames(ALG_IS_REVERSE_MS_STRAIN(alg) ? sub_ms[n-1] : MSip1);
             has_ms = true;
         }
 

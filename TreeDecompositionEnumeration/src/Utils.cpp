@@ -31,15 +31,26 @@ string secs_to_hhmmss(time_t t) {
     return oss.str();
 }
 
+string timestamp_to_hhmmss(time_t t) {
+    char buff[20];
+    strftime(buff, 20, "%H:%M:%S", localtime(&t));
+    return buff;
+}
+
 void dump_string_to_file(const string& filename, const string& str, bool append) {
     ofstream outfile;
-    outfile.open(filename, ios::out | (append ? ios::app : ios::trunc));
-    if (!outfile.good()) {
-        TRACE(TRACE_LVL__ERROR, "Couldn't open file '" << filename << "'");
-        return;
+    try {
+        outfile.open(filename, ios::out | (append ? ios::app : ios::trunc));
+        if (!outfile.good()) {
+            TRACE(TRACE_LVL__ERROR, "Couldn't open file '" << filename << "'");
+            return;
+        }
+        outfile << str;
+        outfile.close();
     }
-    outfile << str;
-    outfile.close();
+    catch(...) {
+        TRACE(TRACE_LVL__ERROR, "Caught unknown exception");
+    }
 }
 
 string Logger::filename;

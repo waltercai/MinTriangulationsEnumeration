@@ -127,6 +127,9 @@ public:
     // return true iff all requested metrics are valid.
     bool valid(int fields = GRAPHSTATS_ALL) const;
 
+    // Print to stream
+    friend ostream& operator<<(ostream&, const GraphStats&);
+
 };
 
 }

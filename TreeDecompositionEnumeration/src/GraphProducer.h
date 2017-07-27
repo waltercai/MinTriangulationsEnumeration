@@ -49,7 +49,8 @@ public:
     GraphProducer& add_random(unsigned n, double p, int instances = 1);
     GraphProducer& add_random(const vector<unsigned int>& n,
                     const vector<double>& p,
-                    bool mix_match = false);
+                    bool mix_match = false,
+                    unsigned instances = 1);
 
     // Adds random graphs. For each graph size (number of nodes) n,
     // samples a graph from G(n,k*step) for all k from k=1 to 1/step
