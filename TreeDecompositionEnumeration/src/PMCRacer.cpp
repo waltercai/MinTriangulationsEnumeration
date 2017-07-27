@@ -101,7 +101,7 @@ void PMCRacer::go(bool verbose) {
 
         for (unsigned alg_index=0; alg_index<algorithms.size(); ++alg_index) {
             int alg = algorithms[alg_index];
-            PRINT_IF(verbose,"New iteration, alg = " << alg << endl);
+            PRINT_IF(verbose,"New iteration, alg = " << PMCEnumerator::get_alg_name(alg) << endl);
             DatasetStatisticsGenerator dsg(GRAPHSTATS_N | GRAPHSTATS_M | GRAPHSTATS_PMC);
             dsg.set_pmc_alg(PMCEnumerator::Alg(alg));
             dsg.dont_show_added_graphs();
