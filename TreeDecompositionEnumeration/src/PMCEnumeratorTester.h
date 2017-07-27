@@ -31,11 +31,13 @@
     /* This fails for some reason... special graph, see implementation \
        for details */ \
     X(triangleonstilts) \
+    /* Two specific graphs Noam wanted to test. */ \
+    X(noamsgraphs) \
+    /* Run with random graphs, make sure the same PMC sets are returned. */ \
+    X(algorithmconsistency) \
     /* Uses existing datasets and Nofar's code to cross-check the PMC \
        algorithm with Nofar's version */ \
-    X(crosscheck) \
-    /* Two specific graphs Noam wanted to test. */ \
-    X(noamsgraphs)
+    X(crosscheck)
 
 #define X(func) PMCENUM_TEST_NAME__##func,
 typedef enum {
@@ -63,7 +65,7 @@ public:
     PMCEnumeratorTester(bool start);
 
     // Calls all tests with flag_ values set to true.
-    void go(PMCEnumerator::Alg first_alg = PMCEnumerator::ALG_NORMAL) const;
+    void go() const;
 
     // Sets / clears all flags
     void setAll();

@@ -47,6 +47,12 @@ namespace tdenum {
         Logger::out(_oss); \
     } while(0)
 
+#define PRINT_IF(_bool, _stream) do { \
+        if (_bool) { \
+            cout << _stream; \
+        } \
+    } while(0)
+
 class Logger {
 private:
     static string filename;
@@ -100,7 +106,11 @@ AUTOPRINT_CONTAINER(vector)
 
 
 /**
- * For use in live code
+ * For use in live code.
+ *
+ * All TRACE commands with trace levels at most TRACE_LVL will
+ * print: if TRACE_LVL is defined as TRACE_LVL__WARNING, then
+ * all traces of level NONE, ERROR or WARNING will be printed.
  */
 typedef enum _TRACE_LVL_CODES {
     TRACE_LVL__NONE,

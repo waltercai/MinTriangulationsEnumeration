@@ -7,7 +7,8 @@
 namespace tdenum {
 
 #define GRAPH_TEST_TABLE \
-    X(sort_nodes_by_deg)
+    X(sort_nodes_by_deg) \
+    X(map_back_to_original)
 
 #define X(func) GRAPH_TEST_NAME__##func,
 typedef enum {

@@ -2,6 +2,7 @@
 #define GRAPHSTATS_H_INCLUDED
 
 #include "Graph.h"
+#include "DataStructures.h"
 #include <string>
 
 using std::string;
@@ -11,32 +12,32 @@ using std::string;
  * The DatasetStatisticsGenerator uses these flags, the GraphStats
  * class uses them to report to the user which values are valid.
  */
-#define GRAPHSTATS_USING_N 1
-#define GRAPHSTATS_USING_M 2
-#define GRAPHSTATS_USING_MS 4
-#define GRAPHSTATS_USING_PMC 8
-#define GRAPHSTATS_USING_TRNG 16
-#define GRAPHSTATS_USING_ALL (-1) // All bits are 1
+#define GRAPHSTATS_N 1
+#define GRAPHSTATS_M 2
+#define GRAPHSTATS_MS 4
+#define GRAPHSTATS_PMC 8
+#define GRAPHSTATS_TRNG 16
+#define GRAPHSTATS_ALL (-1) // All bits are 1
 
 // Use these macros to test if the bit is on or not in the argument
-#define GRAPHSTATS_TEST_N(_flds) (_flds & GRAPHSTATS_USING_N)
-#define GRAPHSTATS_TEST_M(_flds) (_flds & GRAPHSTATS_USING_M)
-#define GRAPHSTATS_TEST_MS(_flds) (_flds & GRAPHSTATS_USING_MS)
-#define GRAPHSTATS_TEST_PMC(_flds) (_flds & GRAPHSTATS_USING_PMC)
-#define GRAPHSTATS_TEST_TRNG(_flds) (_flds & GRAPHSTATS_USING_TRNG)
+#define GRAPHSTATS_TEST_N(_flds) (_flds & GRAPHSTATS_N)
+#define GRAPHSTATS_TEST_M(_flds) (_flds & GRAPHSTATS_M)
+#define GRAPHSTATS_TEST_MS(_flds) (_flds & GRAPHSTATS_MS)
+#define GRAPHSTATS_TEST_PMC(_flds) (_flds & GRAPHSTATS_PMC)
+#define GRAPHSTATS_TEST_TRNG(_flds) (_flds & GRAPHSTATS_TRNG)
 
 // Use these macros to turn bits on and / or off
-#define GRAPHSTATS_SET_N(_flds) (_flds |= GRAPHSTATS_USING_N)
-#define GRAPHSTATS_SET_M(_flds) (_flds |= GRAPHSTATS_USING_M)
-#define GRAPHSTATS_SET_MS(_flds) (_flds |= GRAPHSTATS_USING_MS)
-#define GRAPHSTATS_SET_PMC(_flds) (_flds |= GRAPHSTATS_USING_PMC)
-#define GRAPHSTATS_SET_TRNG(_flds) (_flds |= GRAPHSTATS_USING_TRNG)
+#define GRAPHSTATS_SET_N(_flds) (_flds |= GRAPHSTATS_N)
+#define GRAPHSTATS_SET_M(_flds) (_flds |= GRAPHSTATS_M)
+#define GRAPHSTATS_SET_MS(_flds) (_flds |= GRAPHSTATS_MS)
+#define GRAPHSTATS_SET_PMC(_flds) (_flds |= GRAPHSTATS_PMC)
+#define GRAPHSTATS_SET_TRNG(_flds) (_flds |= GRAPHSTATS_TRNG)
 
-#define GRAPHSTATS_UNSET_N(_flds) (_flds &= (GRAPHSTATS_USING_ALL ^ GRAPHSTATS_USING_N))
-#define GRAPHSTATS_UNSET_M(_flds) (_flds &= (GRAPHSTATS_USING_ALL ^ GRAPHSTATS_USING_M))
-#define GRAPHSTATS_UNSET_MS(_flds) (_flds &= (GRAPHSTATS_USING_ALL ^ GRAPHSTATS_USING_MS))
-#define GRAPHSTATS_UNSET_PMC(_flds) (_flds &= (GRAPHSTATS_USING_ALL ^ GRAPHSTATS_USING_PMC))
-#define GRAPHSTATS_UNSET_TRNG(_flds) (_flds &= (GRAPHSTATS_USING_ALL ^ GRAPHSTATS_USING_TRNG))
+#define GRAPHSTATS_UNSET_N(_flds) (_flds &= (GRAPHSTATS_ALL ^ GRAPHSTATS_N))
+#define GRAPHSTATS_UNSET_M(_flds) (_flds &= (GRAPHSTATS_ALL ^ GRAPHSTATS_M))
+#define GRAPHSTATS_UNSET_MS(_flds) (_flds &= (GRAPHSTATS_ALL ^ GRAPHSTATS_MS))
+#define GRAPHSTATS_UNSET_PMC(_flds) (_flds &= (GRAPHSTATS_ALL ^ GRAPHSTATS_PMC))
+#define GRAPHSTATS_UNSET_TRNG(_flds) (_flds &= (GRAPHSTATS_ALL ^ GRAPHSTATS_TRNG))
 
 /**
  * If calculations take too long, limit the number of
@@ -75,9 +76,9 @@ public:
     string text;
     int n;
     int m;
-    long ms;
-    long pmcs;
-    long triangs;
+    long ms_count;
+    long pmc_count;
+    long trng_count;
     // Are the (n,m,ms,pmcs,triangs) fields valid for graph i?
     // Note: if the DSG didn't request PMCs, then even if valid
     // is true the PMCs should be zero.
@@ -97,6 +98,10 @@ public:
     time_t pmc_calc_time;
     time_t trng_calc_time;
 
+    // Data
+    NodeSetSet ms;  // Minimal separators
+    NodeSetSet pmc; // PMCs
+
     // Basic constructors.
     // We need a default constructor for containers
     GraphStats();
@@ -114,13 +119,13 @@ public:
     // calculated (may be invalid!)
     int get_n() const;
     int get_m() const;
-    long get_ms(bool get_if_limit = true) const;
-    long get_pmc(bool get_if_limit = true) const;
-    long get_trng(bool get_if_limit = true) const;
+    long get_ms_count(bool get_if_limit = true) const;
+    long get_pmc_count(bool get_if_limit = true) const;
+    long get_trng_count(bool get_if_limit = true) const;
 
     // Given a bit mask of active metrics (see the defined GRAPHSTATS_USING_X),
     // return true iff all requested metrics are valid.
-    bool valid(int fields = GRAPHSTATS_USING_ALL) const;
+    bool valid(int fields = GRAPHSTATS_ALL) const;
 
 };
 

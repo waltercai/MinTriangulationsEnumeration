@@ -10,16 +10,27 @@
 
 namespace tdenum {
 
-Graph::Graph() : numberOfNodes(0), numberOfEdges(0), isRandomGraph(false) {}
+Graph::Graph() :
+            numberOfEdges(0),
+            isRandomGraph(false),
+            newToOldNames(0)
+{
+    numberOfNodes = 0;
+}
 
-Graph::Graph(int numberOfNodes) : numberOfNodes(numberOfNodes), numberOfEdges(0),
-		neighborSets(numberOfNodes), isRandomGraph(false) {}
+Graph::Graph(int numNodes) :
+            numberOfNodes(numNodes),
+            neighborSets(numberOfNodes),
+            isRandomGraph(false),
+            newToOldNames(numNodes)
+{
+    for (int i=0; i<numNodes; ++i) {
+        newToOldNames[i] = i;
+    }
+}
 
 void Graph::reset(int n) {
-    numberOfNodes = n;
-    numberOfEdges = 0;
-    neighborSets.clear();
-    neighborSets.resize(n);
+    *this = Graph(n);
 }
 
 void Graph::randomize(double pr) {
@@ -59,25 +70,6 @@ double Graph::getP() const {
     return p;
 }
 
-// Assumes input map is 1-1 and onto {0,1,...,m.size()-1}
-vector<Node> Graph::inverse_map(const vector<Node>& m) const {
-    vector<Node> inv(m.size());
-    for (unsigned i=0; i<m.size(); ++i) {
-        inv[m[i]] = i;
-    }
-    return inv;
-}
-vector<Node> Graph::nodeRenameAux(const vector<Node>& mapping) {
-    vector< set<Node> > newNeighbors(numberOfNodes);
-    for (Node u=0; u<numberOfNodes; ++u) {
-        for (auto v: neighborSets[u]) {
-            newNeighbors[mapping[u]].insert(mapping[v]);
-        }
-    }
-    neighborSets = newNeighbors;
-    return mapping;
-}
-
 void Graph::removeAllButFirstK(int k) {
     // Remove respective edges from neighbor sets.
     // While doing so, recalculate the number of edges using the formula:
@@ -97,21 +89,97 @@ void Graph::removeAllButFirstK(int k) {
     numberOfEdges = E/2;
 }
 
-vector<Node> Graph::randomNodeRename() {
-    // Shuffle node names:
-    vector<Node> f = getNodesVector();
-    std::random_shuffle(f.begin(), f.end());
-    // Use f as a mapping between nodes to build the new
-    // neighbor sets.
-    return nodeRenameAux(inverse_map(f));
+void Graph::composeNewToOld(vector<Node> oldToNew) {
+    // newToOldNames now maps from the old names j(i) to i,
+    // we want to map them from  oldToNew[j(i)] to i.
+    if (oldToNew.size() != newToOldNames.size()) {
+        TRACE(TRACE_LVL__ERROR, "ERROR: cannot map " << newToOldNames << " using " << oldToNew << ", size mismatch");
+        return;
+    }
+    TRACE(TRACE_LVL__TEST, "Composing. newToOldNames is " << newToOldNames
+                        << ", and the oldToNew vector is " << oldToNew);
+    vector<Node> newMap(newToOldNames.size());
+    for (unsigned i=0; i<newMap.size(); ++i) {
+        newMap[oldToNew[i]] = newToOldNames[i]; // Tested by GraphTester, I swear to god
+    }
+    newToOldNames = newMap;
+    TRACE(TRACE_LVL__TEST, "Result of the composition: " << newToOldNames);
 }
 
+// Assumes input map is 1-1 and onto {0,1,...,m.size()-1}
+vector<Node> Graph::inverse_map(const vector<Node>& m) const {
+    vector<Node> inv(m.size());
+    for (unsigned i=0; i<m.size(); ++i) {
+        inv[m[i]] = i;
+    }
+    return inv;
+}
+vector<Node> Graph::nodeRenameAux(const vector<Node>& oldToNew) {
+    vector< set<Node> > newNeighbors(numberOfNodes);
+    for (Node u=0; u<numberOfNodes; ++u) {
+        for (auto v: neighborSets[u]) {
+            newNeighbors[oldToNew[u]].insert(oldToNew[v]);
+        }
+    }
+    neighborSets = newNeighbors;
+    composeNewToOld(oldToNew);
+    return oldToNew;
+}
+vector<Node> Graph::randomNodeRename() {
+    // Shuffle node names:
+    vector<Node> newToOld = getNodesVector();
+    std::random_shuffle(newToOld.begin(), newToOld.end());
+    // Use f as a mapping between nodes to build the new
+    // neighbor sets.
+    return nodeRenameAux(inverse_map(newToOld)); // oldToNew
+}
 vector<Node> Graph::sortNodesByDegree(bool ascending) {
-    vector<Node> f = getNodesVector();
-    TRACE(TRACE_LVL__TEST, "Nodes vector before sort: " << f);
-    std::sort(f.begin(), f.end(), NodeCompare(neighborSets, ascending));
-    TRACE(TRACE_LVL__TEST, "Nodes vector after sort: " << f);
-    return nodeRenameAux(inverse_map(f));
+    vector<Node> newToOld = getNodesVector();
+    TRACE(TRACE_LVL__DEBUG, "Nodes vector before sort: " << newToOld);
+    std::sort(newToOld.begin(), newToOld.end(), NodeCompare(neighborSets, ascending));
+    TRACE(TRACE_LVL__DEBUG, "Nodes vector after sort: " << newToOld);
+    return nodeRenameAux(inverse_map(newToOld));
+}
+
+Node Graph::getOriginalName(Node v) const {
+    return getOriginalNames(NodeSet({v}))[0];
+}
+Node Graph::getNewName(Node v) const {
+    return getNewNames(NodeSet({v}))[0];
+}
+NodeSetSet Graph::getNamesAux(const NodeSetSet& nss, bool get_new) const {
+    NodeSetSet original;
+    for (auto ns: nss) {
+        original.insert(get_new ? getNewNames(ns) : getOriginalNames(ns));
+    }
+    return original;
+}
+vector<Node> Graph::getNamesAux(const vector<Node>& nodes, bool get_new) const {
+    vector<Node> original;
+    vector<Node> nameMap = get_new ? inverse_map(newToOldNames) : newToOldNames;
+    for (auto u: nodes) {
+        original.push_back(nameMap[u]);
+    }
+    std::sort(original.begin(), original.end());
+    TRACE(TRACE_LVL__TEST, "Input nodes: " << nodes << ", nameMap:" << nameMap << ", output: " << original);
+    return original;
+}
+vector<Node> Graph::getOriginalNames(const vector<Node>& nodes) const {
+    return getNamesAux(nodes, false);
+}
+NodeSetSet Graph::getOriginalNames(const NodeSetSet& nss) const {
+    return getNamesAux(nss, false);
+}
+vector<Node> Graph::getNewNames(const vector<Node>& nodes) const {
+    return getNamesAux(nodes, true);
+}
+NodeSetSet Graph::getNewNames(const NodeSetSet& nss) const {
+    return getNamesAux(nss, true);
+}
+void Graph::forgetOriginalNames() {
+    for(unsigned i=0; i<newToOldNames.size(); ++i) {
+        newToOldNames[i] = i;
+    }
 }
 
 void Graph::addClique(const set<Node>& newClique) {

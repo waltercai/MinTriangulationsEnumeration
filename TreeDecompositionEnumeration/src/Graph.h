@@ -1,6 +1,7 @@
 #ifndef GRAPH_H_
 #define GRAPH_H_
 
+#include "DataStructures.h"
 #include <set>
 #include <vector>
 #include <iostream>
@@ -10,30 +11,6 @@
 using namespace std;
 
 namespace tdenum {
-
-typedef int Node;
-typedef vector<Node> NodeSet; // sorted vector of node names
-typedef NodeSet MinimalSeparator;
-
-
-
-struct Block {
-	const MinimalSeparator S;
-	const NodeSet C;
-	const NodeSet nodes;
-	const vector<bool> fullNodes;
-	Block(const MinimalSeparator& sep, const NodeSet& comp, int numNodes) :
-		S(sep), C(comp), nodes(getNodeSetUnion(sep,comp)), fullNodes(getFullNodeVector(nodes, numNodes)) {}
-	static const NodeSet getNodeSetUnion(const NodeSet&, const NodeSet&);
-	static const vector<bool> getFullNodeVector(const NodeSet&, int);
-	bool includesNodes(const NodeSet&) const;
-};
-
-typedef shared_ptr<Block> BlockPtr;
-typedef vector<BlockPtr> BlockVec;
-
-string str(const NodeSet&);
-void print(const NodeSet&);
 
 
 class Graph {
@@ -49,6 +26,13 @@ class Graph {
 	bool isRandomGraph;
 	double p;
 
+	// If node names were permuted, keep a mapping from new node
+	// names to old ones.
+	// Useful when taking node sets processed after node rename, when we want
+	// the names of the nodes in the original graph.
+	vector<Node> newToOldNames;
+	void composeNewToOld(vector<Node> oldToNew);
+
 	bool isValidNode(Node v) const;
 	vector< vector<Node> > getComponentsAux(vector<int> visitedList, int numberOfUnhandeledNodes) const;
 	BlockVec getBlocksAux(vector<int> visitedList, int numberOfUnhandeledNodes) const;
@@ -57,6 +41,8 @@ class Graph {
 	// nodeRenameAux returns a mapping from old names to new.
 	vector<Node> inverse_map(const vector<Node>&) const;
 	vector<Node> nodeRenameAux(const vector<Node>& mapping);
+	vector<Node> getNamesAux(const vector<Node>&, bool get_new) const;
+	NodeSetSet getNamesAux(const NodeSetSet&, bool get_new) const;
     class NodeCompare {
         vector< set<Node> > ns;
         bool asc;
@@ -72,16 +58,29 @@ public:
 	Graph(int numberOfNodes);
 	// Resets the graph (call constructor again)
 	void reset(int numberOfNodes = 0);
+	// Removes all but the first k nodes from the graph/
+	void removeAllButFirstK(int k);
+
 	// Given a graph with n vertices and no edges, creates a random graph
 	// from G(p,n).
 	// Assumes the user has called srand()
 	void randomize(double p);
-	// Removes all but the first k nodes from the graph/
-	void removeAllButFirstK(int k);
 	// Used to rename nodes (sort them) randomly or by degree.
 	// Returns the mapping from old names to new.
 	vector<Node> randomNodeRename();
 	vector<Node> sortNodesByDegree(bool ascending);
+	// Returns the original node names (in a sorted vector) given the new names,
+	// or the new names (sorted) given the old.
+	Node getOriginalName(Node v) const;
+	Node getNewName(Node v) const;
+	vector<Node> getOriginalNames(const vector<Node>&) const;
+	NodeSetSet getOriginalNames(const NodeSetSet&) const;
+	vector<Node> getNewNames(const vector<Node>&) const;
+	NodeSetSet getNewNames(const NodeSetSet&) const;
+	// If this is called, the current node names are treated as
+	// the original node names
+	void forgetOriginalNames();
+
 	// Connects the given two nodes by a edge
 	void addEdge(Node u, Node v);
 	// Adds edges that will make that given node set a clique

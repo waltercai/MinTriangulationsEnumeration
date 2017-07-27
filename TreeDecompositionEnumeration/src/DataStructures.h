@@ -8,15 +8,46 @@
 #ifndef DATASTRUCTURES_H_
 #define DATASTRUCTURES_H_
 
-#include "Graph.h"
 #include <vector>
 #include <set>
 #include <algorithm>
 #include <string>
+#include <memory>
 
 using namespace std;
 
 namespace tdenum {
+
+/**
+ * Basics
+ */
+typedef int Node;
+typedef vector<Node> NodeSet; // sorted vector of node names
+typedef NodeSet MinimalSeparator;
+
+/**
+ * Noam's structure
+ */
+struct Block {
+	const MinimalSeparator S;
+	const NodeSet C;
+	const NodeSet nodes;
+	const vector<bool> fullNodes;
+	Block(const MinimalSeparator& sep, const NodeSet& comp, int numNodes) :
+		S(sep), C(comp), nodes(getNodeSetUnion(sep,comp)), fullNodes(getFullNodeVector(nodes, numNodes)) {}
+	static const NodeSet getNodeSetUnion(const NodeSet&, const NodeSet&);
+	static const vector<bool> getFullNodeVector(const NodeSet&, int);
+	bool includesNodes(const NodeSet&) const;
+};
+
+typedef shared_ptr<Block> BlockPtr;
+typedef vector<BlockPtr> BlockVec;
+
+/**
+ * Utility functions
+ */
+string str(const NodeSet&);
+void print(const NodeSet&);
 
 /*
  * A maximum heap. Can be used for Maximum Cardinality Search.

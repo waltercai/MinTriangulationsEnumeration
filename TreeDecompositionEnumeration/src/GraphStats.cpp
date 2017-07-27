@@ -11,9 +11,9 @@ GraphStats::GraphStats(const Graph& graph, const string& s) :
                        text(s),
                        n(g.getNumberOfNodes()),
                        m(g.getNumberOfEdges()),
-                       ms(0),
-                       pmcs(0),
-                       triangs(0),
+                       ms_count(0),
+                       pmc_count(0),
+                       trng_count(0),
                        ms_valid(false),
                        pmc_valid(false),
                        trng_valid(false),
@@ -42,17 +42,17 @@ int GraphStats::get_n() const {
 int GraphStats::get_m() const {
     return m;
 }
-long GraphStats::get_ms(bool get_if_limit) const {
+long GraphStats::get_ms_count(bool get_if_limit) const {
     return (ms_valid || (get_if_limit && (ms_count_limit || ms_time_limit)))
-        ? ms : GraphStats::invalid_value;
+        ? ms_count : GraphStats::invalid_value;
 }
-long GraphStats::get_pmc(bool get_if_limit) const {
+long GraphStats::get_pmc_count(bool get_if_limit) const {
     return (pmc_valid || (get_if_limit && pmc_time_limit))
-        ? pmcs : GraphStats::invalid_value;
+        ? pmc_count : GraphStats::invalid_value;
 }
-long GraphStats::get_trng(bool get_if_limit) const {
+long GraphStats::get_trng_count(bool get_if_limit) const {
     return (trng_valid || (get_if_limit && (trng_count_limit || trng_time_limit)))
-        ? triangs : GraphStats::invalid_value;
+        ? trng_count : GraphStats::invalid_value;
 }
 
 bool GraphStats::valid(int fields) const {

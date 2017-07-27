@@ -169,11 +169,11 @@ public:
     // By ORing different flags the user may decide which fields to compute.
     // Optionally send a directory iterator to input graphs from.
     // If no file name is sent, no output is dumped.
-    DatasetStatisticsGenerator(const string& outputfile, int flds = GRAPHSTATS_USING_ALL);
+    DatasetStatisticsGenerator(const string& outputfile, int flds = GRAPHSTATS_ALL);
     DatasetStatisticsGenerator(const string& outputfile,
                                DirectoryIterator di,
-                               int flds = GRAPHSTATS_USING_ALL);
-    DatasetStatisticsGenerator(int flds = GRAPHSTATS_USING_ALL);
+                               int flds = GRAPHSTATS_ALL);
+    DatasetStatisticsGenerator(int flds = GRAPHSTATS_ALL);
     ~DatasetStatisticsGenerator();
 
     // If set to true, whenever a graph is added - print the text.
@@ -182,7 +182,7 @@ public:
 
     // Resets the DSG (doesn't change output filename, allows change
     // of fields to be calculated).
-    void reset(int flds = GRAPHSTATS_USING_ALL);
+    void reset(int flds = GRAPHSTATS_ALL);
 
     // Sets time/count limits or disables them
     void disable_all_limits();
@@ -210,6 +210,14 @@ public:
 
     // Choose the PMC algorithm
     void set_pmc_alg(PMCEnumerator::Alg);
+
+    // If the minimal separators were already calculated, the user may
+    // set them.
+    // This will not be validated internally!
+    // The index is 1-based (as opposed to zero based) because the numbers
+    // printed to screen are 1-indexed.
+    void set_ms(const NodeSetSet& ms, time_t calc_time, unsigned index);
+    NodeSetSet get_ms(unsigned index) const;
 
     // Add graphs.
     // The user may either send an input filename to read the data

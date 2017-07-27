@@ -5,6 +5,8 @@
 #include "ChordalGraph.h"
 #include "MinimalTriangulationsEnumerator.h"
 #include "Utils.h"
+#include "GraphStats.h"
+#include "GraphProducer.h"
 
 namespace tdenum {
 
@@ -44,6 +46,69 @@ bool PMCEnumeratorTester::trivialgraphs() const {
     ASSERT_EQUAL(pmce.get(), nss);
     return true;
 }
+
+/*bool PMCEnumeratorTester::sortednodes() const {
+    / **
+     * Start with the following graph:
+     *
+     *    0   4
+     *   / \
+     *  1---2--3
+     *
+     * The PMCs should be {{0,1,2},{2,3},{4}}.
+     * After sorting by ascending degree, we'll get:
+     *
+     *    2   0           3   0
+     *   / \        OR   / \
+     *  3---4--1        2---4--1
+     *
+     * with PMCs {{2,3,4},{1,4},{0}}, and by descending order:
+     *
+     *    2   4           1   4
+     *   / \        OR   / \
+     *  1---0--3        2---0--3
+     *
+     * with PMCs {{0,1,2},{0,3},{4}}
+     * /
+    SETUP(5);
+
+    // Ignore the algorithm used, for now.
+    PMCEnumerator::Alg prev_alg = pmce.get_alg();
+    pmce.set_algorithm(PMCEnumerator::ALG_NORMAL);
+    g.addClique(vector<Node>({0,1,2}));
+    g.addEdge(2,3);
+    pmce.reset(g);
+    NodeSetSet pmcs = pmce.get();
+    TRACE(TRACE_LVL__TEST, "With graph:" << endl << g << "got PMCs " << pmcs);
+    ASSERT_EQUAL(pmcs.size(), 3);
+    ASSERT(pmce.is_pmc({0,1,2}, g));
+    ASSERT(pmce.is_pmc({2,3}, g));
+    ASSERT(pmce.is_pmc({4}, g));
+
+    // Sort
+    g.sortNodesByDegree(true);
+    pmce.reset(g);
+    pmcs = pmce.get();
+    TRACE(TRACE_LVL__TEST, "With graph:" << endl << g << "got PMCs " << pmcs);
+    ASSERT_EQUAL(pmcs.size(), 3);
+    ASSERT(pmce.is_pmc({2,3,4}, g));
+    ASSERT(pmce.is_pmc({1,4}, g));
+    ASSERT(pmce.is_pmc({0}, g));
+    g.sortNodesByDegree(false);
+    pmce.reset(g);
+    pmcs = pmce.get();
+    TRACE(TRACE_LVL__TEST, "With graph:" << endl << g << "got PMCs " << pmcs);
+    ASSERT_EQUAL(pmcs.size(), 3);
+    ASSERT(pmce.is_pmc({0,1,2}, g));
+    ASSERT(pmce.is_pmc({0,3}, g));
+    ASSERT(pmce.is_pmc({4}, g));
+
+    // Revert to the original algorithm
+    pmce.set_algorithm(prev_alg);
+
+    return true;
+}
+*/
 
 bool PMCEnumeratorTester::randomgraphs() const {
     SETUP(0);
@@ -411,50 +476,6 @@ bool PMCEnumeratorTester::triangleonstilts() const {
     return true;
 }
 
-bool crosscheck_aux(const string& dataset_filename) {
-    // Iterate over all maximal cliques in all triangulations.
-    // Make sure each one is in the NodeSetSet returned by the
-    // PMCEnumerator, and vice-versa.
-    cout << " - Cross-checking graph '" << dataset_filename << "'... ";
-    NodeSetSet found;
-    Graph g = GraphReader::read(dataset_filename);
-    PMCEnumerator pmce(g);
-    NodeSetSet pmcs = pmce.get();
-    MinimalTriangulationsEnumerator enumerator(g, NONE, UNIFORM, SEPARATORS);
-    while (enumerator.hasNext()) {
-        ChordalGraph triangulation = enumerator.next();
-        set<NodeSet> cliques = triangulation.getMaximalCliques();
-        for (auto it=cliques.begin(); it != cliques.end(); ++it) {
-            found.insert(*it);
-        }
-    }
-    if (found != pmcs) {
-        cout << "FAILED" << endl;
-        ASSERT_PRINT("The PMCs calculated are incorrect:" << endl
-                     << "Found:" << endl
-                     << found << endl
-                     << "Returned by the PMC enumerator:" << endl
-                     << pmcs);
-    }
-    cout << "PASSED" << endl;
-    return true;
-}
-bool PMCEnumeratorTester::crosscheck() const {
-    // Print each failure on a separate line
-    cout << endl;
-    bool all_passed = true;
-    DirectoryIterator deadeasy_files(DATASET_DIR_BASE+DATASET_DIR_DEADEASY);
-    DirectoryIterator easy_files(DATASET_DIR_BASE+DATASET_DIR_EASY);
-    string dataset_filename;
-    while(deadeasy_files.next_file(&dataset_filename)) {
-        all_passed &= crosscheck_aux(dataset_filename);
-    }
-    while(easy_files.next_file(&dataset_filename)) {
-        all_passed &= crosscheck_aux(dataset_filename);
-    }
-    return all_passed;
-}
-
 bool PMCEnumeratorTester::noamsgraphs() const {
     /**
      * Two graphs:
@@ -496,6 +517,78 @@ bool PMCEnumeratorTester::noamsgraphs() const {
     return true;
 }
 
+bool PMCEnumeratorTester::algorithmconsistency() const {
+    GraphProducer gp;
+    gp.add_random({2,4,6,8,10,12,14,16,18,20},{0.3,0.5,0.7}, true);
+    vector<GraphStats> gs = gp.get();
+    for (unsigned i=0; i<gs.size(); ++i) {
+        Graph& g = gs[i].g;
+        NodeSetSet pmcs;
+        bool found_pmcs = false;
+        for (int alg = PMCEnumerator::ALG_NORMAL; alg<PMCEnumerator::ALG_LAST; ++alg) {
+            TRACE(TRACE_LVL__TEST, "Running " << PMCEnumerator::get_alg_name(alg)
+                                    << " with the following graph:" << endl << g);
+            PMCEnumerator pmce(g);
+            pmce.set_algorithm(PMCEnumerator::Alg(alg));
+            NodeSetSet these_pmcs = pmce.get();
+            if (found_pmcs && these_pmcs != pmcs) {
+                ASSERT_PRINT("WRONG! Calculated pmcs:" << these_pmcs << endl <<
+                             "The PMCs first calculated are:" << pmcs << endl);
+                return false;
+            }
+            else {
+                pmcs = these_pmcs;
+                found_pmcs = true;
+            }
+        }
+    }
+    return true;
+}
+
+bool crosscheck_aux(const GraphStats& gs) {
+    // Iterate over all maximal cliques in all triangulations.
+    // Make sure each one is in the NodeSetSet returned by the
+    // PMCEnumerator, and vice-versa.
+    cout << endl << " - Cross-checking graph '" << gs.text << "'... ";
+    NodeSetSet found;
+    const Graph& g = gs.g;
+    PMCEnumerator pmce(g);
+    NodeSetSet pmcs = pmce.get();
+    MinimalTriangulationsEnumerator enumerator(g, NONE, UNIFORM, SEPARATORS);
+    while (enumerator.hasNext()) {
+        ChordalGraph triangulation = enumerator.next();
+        set<NodeSet> cliques = triangulation.getMaximalCliques();
+        for (auto it=cliques.begin(); it != cliques.end(); ++it) {
+            found.insert(*it);
+        }
+    }
+    TRACE(TRACE_LVL__TEST, "===PMCs found===:" << endl << found);
+    TRACE(TRACE_LVL__TEST, "===Actual PMCs===:" << endl << pmcs);
+    if (found != pmcs) {
+        cout << "FAILED   ";
+        ASSERT_PRINT("The PMCs calculated are incorrect:" << endl
+                     << "Found:" << endl
+                     << found << endl
+                     << "Returned by the PMC enumerator:" << endl
+                     << pmcs);
+        return false;
+    }
+    cout << "PASSED   ";
+    return true;
+}
+bool PMCEnumeratorTester::crosscheck() const {
+    // Print each failure on a separate line
+    bool all_passed = true;
+    GraphProducer gp;
+    gp.add_by_dir(DATASET_DIR_BASE+DATASET_DIR_DEADEASY);
+    gp.add_by_dir(DATASET_DIR_BASE+DATASET_DIR_EASY);
+//    gp.add_by_dir(DATASET_DIR_BASE+DATASET_DIR_DIFFICULT_BN);
+    for (auto gs: gp.get()) {
+        all_passed = (all_passed && crosscheck_aux(gs));
+    }
+    return all_passed;
+}
+
 
 PMCEnumeratorTester::PMCEnumeratorTester(bool start = true) {
     #define X(_func) flag_##_func = true;
@@ -505,16 +598,12 @@ PMCEnumeratorTester::PMCEnumeratorTester(bool start = true) {
         go();
     }
 }
-void PMCEnumeratorTester::go(PMCEnumerator::Alg first_alg) const {
+void PMCEnumeratorTester::go() const {
     // Hacky, but it works
     START_TESTS();
-    for (int alg = first_alg; alg < PMCEnumerator::ALG_LAST; ++alg) {
-        pmc_alg = PMCEnumerator::Alg(alg);
-        cout << "TESTING USING ALGORITHM '" << PMCEnumerator::get_alg_name(pmc_alg) << "'" << endl;
-        #define X(_func) if (flag_##_func) DO_TEST(_func);
-        PMC_TEST_TABLE
-        #undef X
-    }
+    #define X(_func) if (flag_##_func) DO_TEST(_func);
+    PMC_TEST_TABLE
+    #undef X
     END_TESTS();
 }
 void PMCEnumeratorTester::setAll() {

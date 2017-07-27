@@ -18,6 +18,22 @@ using std::setw;
 
 namespace tdenum {
 
+#define TRACE_INVALID_INDEX_STRING(_i) \
+        TRACE(TRACE_LVL__ERROR, "Bad index " << _i << "! May be at most " << gs.size())
+#define VALIDATE_GRAPH_INDEX_VOID_RET(_i) do { \
+        if (_i > gs.size()) { \
+            TRACE_INVALID_INDEX_STRING(_i); \
+            return; \
+        } \
+    } while(0)
+#define VALIDATE_GRAPH_INDEX_WITH_RET(_i,_ret) do { \
+        if (_i > gs.size()) { \
+            TRACE_INVALID_INDEX_STRING(_i); \
+            return _ret; \
+        } \
+    } while(0)
+
+
 /**
  * Note that we're using locks, so they need to be created and destroyed.
  *
@@ -152,6 +168,24 @@ void DatasetStatisticsGenerator::set_pmc_alg(PMCEnumerator::Alg alg) {
     pmc_alg = alg;
 }
 
+void DatasetStatisticsGenerator::set_ms(const NodeSetSet& ms, time_t calc_time, unsigned index) {
+    VALIDATE_GRAPH_INDEX_VOID_RET(index);
+    --index;    // Zero-indexed now
+    gs[index].ms = ms;
+    gs[index].ms_count = ms.size();
+    gs[index].ms_calc_time = calc_time;
+    gs[index].ms_valid = true;
+}
+NodeSetSet DatasetStatisticsGenerator::get_ms(unsigned index) const {
+    VALIDATE_GRAPH_INDEX_WITH_RET(index, NodeSetSet());
+    --index;    // Zero-indexed now
+    if (gs[index].valid(GRAPHSTATS_MS)) {
+        return gs[index].ms;
+    }
+    TRACE(TRACE_LVL__WARNING, "Minimal separators are invalid, returning an empty container!");
+    return NodeSetSet();
+}
+
 /**
  * Useful for stringifying output, in CSV format or human readable.
  */
@@ -229,13 +263,13 @@ string DatasetStatisticsGenerator::str(unsigned int i, bool csv) const {
         oss << delim << setw(STRLEN(DSG_COL_EDGES)) << gs[i].m;
     }
     if (GRAPHSTATS_TEST_MS(fields)) {
-        oss << delim << setw(STRLEN(DSG_COL_MSS)) << gs[i].ms;
+        oss << delim << setw(STRLEN(DSG_COL_MSS)) << gs[i].ms_count;
     }
     if (GRAPHSTATS_TEST_PMC(fields)) {
-        oss << delim << setw(STRLEN(DSG_COL_PMCS)) << gs[i].pmcs;
+        oss << delim << setw(STRLEN(DSG_COL_PMCS)) << gs[i].pmc_count;
     }
     if (GRAPHSTATS_TEST_TRNG(fields)) {
-        oss << delim << setw(STRLEN(DSG_COL_TRNG)) << gs[i].triangs;
+        oss << delim << setw(STRLEN(DSG_COL_TRNG)) << gs[i].trng_count;
     }
     // Special columns
     if (has_random) {
@@ -354,11 +388,11 @@ void DatasetStatisticsGenerator::print_progress()  {
         unsigned int j = graphs_in_progress[i];
         oss << " | " << gs[j].n << "/" << gs[j].m;
         if (GRAPHSTATS_TEST_MS(fields)) {
-            oss << "/" << gs[j].ms << (gs[j].ms_count_limit ? "+" : "") << (gs[j].ms_time_limit ? "t" : "");
+            oss << "/" << gs[j].ms_count << (gs[j].ms_count_limit ? "+" : "") << (gs[j].ms_time_limit ? "t" : "");
         }
-        if (GRAPHSTATS_TEST_PMC(fields)) oss << "/" << gs[j].pmcs;
+        if (GRAPHSTATS_TEST_PMC(fields)) oss << "/" << gs[j].pmc_count;
         if (GRAPHSTATS_TEST_TRNG(fields)) {
-            oss << "/" << gs[j].triangs << (gs[j].trng_count_limit ? "+" : "") << (gs[j].trng_time_limit ? "t" : "");
+            oss << "/" << gs[j].trng_count << (gs[j].trng_count_limit ? "+" : "") << (gs[j].trng_time_limit ? "t" : "");
         }
     }
     cout << oss.str();
@@ -459,15 +493,15 @@ void DatasetStatisticsGenerator::compute(unsigned int i) {
     // Separators.
     // We may need the result for PMCs
     NodeSetSet min_seps;
-    if (GRAPHSTATS_TEST_MS(fields)) {
-        gs[i].ms = 0;
+    if (GRAPHSTATS_TEST_MS(fields) && !gs[i].ms_valid) {
+        gs[i].ms_count = 0;
         MinimalSeparatorsEnumerator mse(gs[i].g, UNIFORM);
         t = time(NULL);
         while(mse.hasNext()) {
             min_seps.insert(mse.next());
-            ++gs[i].ms;
+            ++gs[i].ms_count;
             print_progress();
-            if (has_ms_count_limit && gs[i].ms > ms_count_limit) {
+            if (has_ms_count_limit && gs[i].ms_count > ms_count_limit) {
                 gs[i].ms_count_limit = true;
                 break;
             }
@@ -484,7 +518,7 @@ void DatasetStatisticsGenerator::compute(unsigned int i) {
     // PMCs.
     // The minimal separators are free, so no need to calculate
     // them separately.
-    if (GRAPHSTATS_TEST_PMC(fields)) {
+    if (GRAPHSTATS_TEST_PMC(fields) && !gs[i].pmc_valid) {
         PMCEnumerator pmce(gs[i].g, has_pmc_time_limit ? pmc_time_limit : 0);
         pmce.set_algorithm(pmc_alg);
         // Re-use the calculated minimal separators, if relevant
@@ -494,8 +528,8 @@ void DatasetStatisticsGenerator::compute(unsigned int i) {
         t = time(NULL);
         pmce.get();
         gs[i].pmc_calc_time = time(NULL) - t;
-        gs[i].pmcs = pmce.get().size();
-        gs[i].ms = pmce.get_ms().size(); // Redundant? Not expensive, though..
+        gs[i].pmc_count = pmce.get().size();
+        gs[i].ms_count = pmce.get_ms().size(); // Redundant? Not expensive, though..
         if (pmce.is_out_of_time()) {
             gs[i].pmc_time_limit = true;
         }
@@ -504,14 +538,14 @@ void DatasetStatisticsGenerator::compute(unsigned int i) {
     }
 
     // Triangulations
-    if (GRAPHSTATS_TEST_TRNG(fields)) {
-        gs[i].triangs = 0;
+    if (GRAPHSTATS_TEST_TRNG(fields) && !gs[i].trng_valid) {
+        gs[i].trng_count = 0;
         MinimalTriangulationsEnumerator enumerator(gs[i].g, NONE, UNIFORM, SEPARATORS);
         t = time(NULL);
         while (enumerator.hasNext()) {
-            ++gs[i].triangs;
+            ++gs[i].trng_count;
             print_progress();
-            if (has_trng_count_limit && gs[i].triangs > trng_count_limit) {
+            if (has_trng_count_limit && gs[i].trng_count > trng_count_limit) {
                 gs[i].trng_count_limit = true;
                 break;
             }

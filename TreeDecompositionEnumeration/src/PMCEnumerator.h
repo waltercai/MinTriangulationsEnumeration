@@ -13,7 +13,7 @@ namespace tdenum {
  *
  * Implements the algorithm described in the paper:
  * Listing all potential maximal cliques of a graph.
- * Vincent Bouchitte, Ioan Todinca, 2000
+ * Vincent Bouchitte, Ioan Todinca, 2000.
  */
 #define PMC_ALG_TABLE \
     X(NORMAL) \
@@ -41,7 +41,7 @@ private:
     // Test class
     friend class PMCEnumeratorTester;
 
-    // The graph in question
+    // The graph in question, and a copy of the original for output.
     Graph graph;
 
     // The algorithm to be used (defaults to default_alg)
@@ -50,7 +50,7 @@ private:
 
     // The minimal separators of the graph.
     // They are required for the algorithm to run correctly; if they
-    // aren't given as a parameter, they need to be calculated.
+    // are not given as a parameter, they need to be calculated.
     NodeSetSet ms;
     bool has_ms;
 
@@ -94,6 +94,7 @@ public:
     void set_algorithm(Alg a);
     PMCEnumerator::Alg get_alg() const;
     static string get_alg_name(Alg a);
+    static string get_alg_name(int a);
 
     // If the minimal separators for the original graph has already been
     // calculated, inform the enumerator.

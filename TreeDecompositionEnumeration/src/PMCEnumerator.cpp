@@ -36,6 +36,8 @@ PMCEnumerator::PMCEnumerator(const Graph& g, time_t time_limit) :
 {
     ms.clear();
     pmcs.clear();
+    // Use current names as originals
+    graph.forgetOriginalNames();
 }
 
 void PMCEnumerator::reset(const Graph& g, time_t time_limit) {
@@ -51,12 +53,16 @@ PMCEnumerator::Alg PMCEnumerator::get_alg() const {
 string PMCEnumerator::get_alg_name(Alg a) {
     return PMCEnumerator::alg_names[a];
 }
+string PMCEnumerator::get_alg_name(int a) {
+    return PMCEnumerator::get_alg_name(PMCEnumerator::Alg(a));
+}
 
 /**
  * Allows caller to report the minimal separators of the graph.
+ * Remember to map the sets to the new node names!
  */
 void PMCEnumerator::set_minimal_separators(const NodeSetSet& min_seps) {
-    ms = min_seps;
+    ms = graph.getNewNames(min_seps);
     has_ms = true;
 }
 
@@ -93,22 +99,26 @@ NodeSetSet PMCEnumerator::get() {
         // Cleanup
         pmcs.clear();
 
-        // If the algorithm requires sorting, do so:
-        if (alg == ALG_ASCENDING_DEG_REVERSE_MS) {
-            graph.sortNodesByDegree(true);
-        }
-        else if (alg == ALG_DESCENDING_DEG_REVERSE_MS) {
-            graph.sortNodesByDegree(false);
-        }
-
-        vector<Node> nodes = graph.getNodesVector();
-        int n = graph.getNumberOfNodes();
+        /**
+         * Make a temporary copy of the graph to work with.
+         * As we may be renaming nodes, simply use the temp graph and
+         * then convert the resulting ms and pmc values to the original
+         * node names.
+         */
+        Graph tmp_graph = graph;
+        int n = tmp_graph.getNumberOfNodes();
 
         // If the graph is empty..
         if (n <= 0) {
             done = true;
             return NodeSetSet();
         }
+
+        // If the algorithm requires sorting, do so:
+        if (alg == ALG_ASCENDING_DEG_REVERSE_MS || alg == ALG_DESCENDING_DEG_REVERSE_MS) {
+            tmp_graph.sortNodesByDegree(alg == ALG_ASCENDING_DEG_REVERSE_MS);
+        }
+        vector<Node> nodes = tmp_graph.getNodesVector();
 
         // Start by creating all subgraphs.
         // This should not constitute a memory bottleneck... if so,
@@ -117,7 +127,7 @@ NodeSetSet PMCEnumerator::get() {
         for (int i=1; i<=n; ++i) {
             vector<Node> subnodes = nodes;
             subnodes.resize(i);
-            subg.push_back(SubGraph(graph, subnodes));
+            subg.push_back(SubGraph(tmp_graph, subnodes));
         }
 
         // Optionally use the (memory-inefficient) algorithm, which
@@ -126,7 +136,7 @@ NodeSetSet PMCEnumerator::get() {
         if (ALG_IS_REVERSE_MS_STRAIN(alg)) {
 
             // Calculate the first set of minimal separators
-            sub_ms[n-1] = get_ms();
+            sub_ms[n-1] = tmp_graph.getNewNames(get_ms());
 
             // Use the algorithm described in the PDF
             for (int i=n-2; i>=0; --i) {
@@ -179,18 +189,19 @@ NodeSetSet PMCEnumerator::get() {
         // extra variables Msi and MSip1. Each iteration requires data on two
         // graphs: Gi and Gip1 (i plus 1).
         // Use pmcs instead of PMCip1 to save space and a copy at the end.
-        NodeSetSet PMCi, MSi, MSip1;
+        NodeSetSet prev_pmcs, MSi, MSip1;
 
         // If the nodes of G are {a_1,...,a_n} then P1 = {{a1}}
-        NodeSet firstSet(1);
-        firstSet[0] = nodes[0];
-        pmcs.insert(firstSet); // Later, PMCi=PMCip1
+//        NodeSet firstSet(1);
+//        firstSet[0] = nodes[0];
+//        pmcs.insert(firstSet); // Later, PMCi=PMCip1
+        pmcs.insert(NodeSet({nodes[0]})); // Later, PMCi=PMCip1
 
         // MS1 should remain empty, so MSi=MSip1 is OK
         for (int i=1; i<n; ++i) {
             // Calculate MSip1 and PMCip1, and use OneMoreVertex.
             // This is the main function described in the paper.
-            PMCi = pmcs;
+            prev_pmcs = pmcs;
             MSi = MSip1;
             pmcs.clear();
             MSip1.clear();
@@ -202,29 +213,35 @@ NodeSetSet PMCEnumerator::get() {
             // The NORMAL algorithm requires calculation of separators
             if (alg == ALG_NORMAL) {
                 if (i == n-1) {
-                    pmcs = one_more_vertex(subg[i], subg[i-1], a, get_ms(), MSi, PMCi);
+                    pmcs = one_more_vertex(subg[i], subg[i-1], a, tmp_graph.getNewNames(get_ms()), MSi, prev_pmcs);
                 }
                 else {
                     MinimalSeparatorsEnumerator DiEnumerator(subg[i], UNIFORM);
                     MSip1 = DiEnumerator.getAll();
-                    pmcs = one_more_vertex(subg[i], subg[i-1], a, MSip1, MSi, PMCi);
+                    pmcs = one_more_vertex(subg[i], subg[i-1], a, MSip1, MSi, prev_pmcs);
                 }
             }
             else if (ALG_IS_REVERSE_MS_STRAIN(alg)) {
-                pmcs = one_more_vertex(subg[i], subg[i-1], a, sub_ms[i], sub_ms[i-1], PMCi);
+                pmcs = one_more_vertex(subg[i], subg[i-1], a, sub_ms[i], sub_ms[i-1], prev_pmcs);
+                TRACE(TRACE_LVL__TEST, "With i=" << i << ", where the parent graph is:" << endl
+                      << subg[i] << "and the subgraph is:" << endl << subg[i-1]
+                      << "We have minimal separators " << sub_ms[i] << " and " << sub_ms[i-1]
+                      << ", main graph / subgraph respectively. As a result, we got PMCs " << pmcs);
             }
         }
 
         // Update the minimal separators
         if (!has_ms) {
-            ms = (alg == ALG_NORMAL) ? MSip1 : sub_ms[n-1];
+            ms = tmp_graph.getOriginalNames((alg == ALG_NORMAL) ? MSip1 : sub_ms[n-1]);
             has_ms = true;
         }
 
-        // That's it!
+        // That's it! Translate to user-friendly state
         // pmcs now contains the correct set of PMCs.
+        pmcs = tmp_graph.getOriginalNames(pmcs);
         done = true;
     }
+
     return pmcs;
 }
 

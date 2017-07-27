@@ -17,7 +17,7 @@ using std::cout;
 
 #define ASSERT_EQUAL(_x,_y) do { \
         if (!(_x == _y)) { \
-            TRACE(TRACE_LVL__TEST, "'" << #_x << "' isn't equal to '" << #_y << "'!"); \
+            TRACE(TRACE_LVL__TEST, "'" << _x << "' isn't equal to '" << _y << "'!"); \
             return false; \
         } \
     } while(0)

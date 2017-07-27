@@ -30,7 +30,7 @@ string PMCRacer::stringify_result(unsigned i) const {
     oss << alg_gs[0][i].text << ","
         << alg_gs[0][i].n << ","
         << alg_gs[0][i].m << ","
-        << alg_gs[0][i].pmcs;
+        << alg_gs[0][i].pmc_count;
     for (int alg = PMCEnumerator::ALG_NORMAL; alg<PMCEnumerator::ALG_LAST; ++alg) {
         if (alg_gs[alg][i].pmc_time_limit) {
             oss << ",OOT";
@@ -73,13 +73,17 @@ void PMCRacer::go(bool verbose) {
 
     // For each graph:
     for (unsigned i=0; i<gs.size(); ++i) {
-        if (verbose) {
-            cout << "Racing graph number " << i+1 << "/" << gs.size() << ":" << endl;
-        }
+        PRINT_IF(verbose,"Racing graph number " << i+1 << "/" << gs.size() << ":" << endl);
 
-        // Use all algorithms on the graph
+        // Use all algorithms on the graph.
+        // To save time, since all algorithms require the calculation of all minimal
+        // separators, start by calculating them in advance. Add the time required to
+        // the total time.
+        time_t ms_calc = time(NULL);
+        NodeSetSet min_seps = MinimalSeparatorsEnumerator(gs[i].g, UNIFORM).getAll();
+        ms_calc = time(NULL) - ms_calc;
         for (int alg = PMCEnumerator::ALG_NORMAL; alg<PMCEnumerator::ALG_LAST; ++alg) {
-            DatasetStatisticsGenerator dsg(GRAPHSTATS_USING_N | GRAPHSTATS_USING_M | GRAPHSTATS_USING_PMC);
+            DatasetStatisticsGenerator dsg(GRAPHSTATS_N | GRAPHSTATS_M | GRAPHSTATS_PMC);
             dsg.set_pmc_alg(PMCEnumerator::Alg(alg));
             dsg.dont_show_added_graphs();
             dsg.add_graph(gs[i].g,gs[i].text);
@@ -87,24 +91,21 @@ void PMCRacer::go(bool verbose) {
             if (has_time_limit) {
                 dsg.set_pmc_time_limit(time_limit);
             }
-            if (verbose) {
-                cout << "Algorithm " << PMCEnumerator::get_alg_name(PMCEnumerator::Alg(alg)) << ".. " << endl;
-            }
+            // Add the minimal separators
+            dsg.set_ms(min_seps, ms_calc, 1);
+            PRINT_IF(verbose,"Algorithm " << PMCEnumerator::get_alg_name(PMCEnumerator::Alg(alg)) << ".. " << endl);
             dsg.compute(verbose);
-            if (verbose) {
-                cout << "done. ";
-            }
-            alg_gs[alg].push_back(dsg.get_stats()[0]);
+            PRINT_IF(verbose,"done. ");
+            // Get stats, add the time
+            GraphStats stats = dsg.get_stats()[0];
+            stats.pmc_calc_time += ms_calc;
+            alg_gs[alg].push_back(stats);
         }
-        if (verbose) {
-            cout << endl;
-        }
+        PRINT_IF(verbose,endl);
 
         // Output the result to file
         dump_string_to_file(outfilename, stringify_result(i), true);
-        if (verbose) {
-            cout << "Dumped string #" << i+1 << "/" << gs.size() << ":" << endl << stringify_result(i);
-        }
+        PRINT_IF(verbose,"Dumped string #" << i+1 << "/" << gs.size() << ":" << endl << stringify_result(i));
     }
 
 
