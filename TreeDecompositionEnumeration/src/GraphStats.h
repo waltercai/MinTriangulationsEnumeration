@@ -86,11 +86,16 @@ public:
     bool pmc_valid;
     bool trng_valid;
     // If the limit was overreached, set the relevant flag.
-    bool ms_count_limit;
-    bool ms_time_limit;
-    bool trng_count_limit;
-    bool trng_time_limit;
-    bool pmc_time_limit;
+    time_t ms_time_limit;
+    time_t pmc_time_limit;
+    time_t trng_time_limit;
+    long ms_count_limit;
+    long trng_count_limit;
+    bool ms_reached_time_limit;
+    bool pmc_reached_time_limit;
+    bool trng_reached_time_limit;
+    bool ms_reached_count_limit;
+    bool trng_reached_count_limit;
     // The amount of time required for calculation the minimal separators.
     // Note: PMC calculation time may disregard the time required to calculate
     // the minimal separators of g (see actual_pmc_calc_time())
@@ -112,6 +117,28 @@ public:
 
     // Sets all validation flags
     void set_all_invalid();
+
+    // Set / unset limits
+    void set_ms_time_limit(time_t);
+    void set_pmc_time_limit(time_t);
+    void set_trng_time_limit(time_t);
+    void set_ms_count_limit(long);
+    void set_trng_count_limit(long);
+    void unset_ms_time_limit();
+    void unset_pmc_time_limit();
+    void unset_trng_time_limit();
+    void unset_ms_count_limit();
+    void unset_trng_count_limit();
+    time_t get_ms_time_limit() const;
+    time_t get_pmc_time_limit() const;
+    time_t get_trng_time_limit() const;
+    long get_ms_count_limit() const;
+    long get_trng_count_limit() const;
+    bool has_ms_time_limit() const;
+    bool has_pmc_time_limit() const;
+    bool has_trng_time_limit() const;
+    bool has_ms_count_limit() const;
+    bool has_trng_count_limit() const ;
 
     // If the value is invalid, returns a special value.
     // If the flag is set to 'true', if the value calculated

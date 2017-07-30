@@ -291,15 +291,15 @@ string DatasetStatisticsGenerator::str(unsigned int i, bool csv) const {
     }
     if (has_time_limit()) {
         string s;
-        if (gs[i].ms_time_limit || gs[i].trng_time_limit || gs[i].pmc_time_limit) {
-            if (gs[i].ms_time_limit) {
+        if (gs[i].ms_reached_time_limit || gs[i].trng_reached_time_limit || gs[i].pmc_reached_time_limit) {
+            if (gs[i].ms_reached_time_limit) {
                 s += string("MS");
             }
-            if (gs[i].trng_time_limit) {
-                s += (gs[i].ms_time_limit ? "," : "") + string("TRNG");
+            if (gs[i].trng_reached_time_limit) {
+                s += (gs[i].ms_reached_time_limit ? "," : "") + string("TRNG");
             }
-            if (gs[i].pmc_time_limit) {
-                s += (gs[i].ms_time_limit || gs[i].trng_time_limit ? "," : "") + string("PMC");
+            if (gs[i].pmc_reached_time_limit) {
+                s += (gs[i].ms_reached_time_limit || gs[i].trng_reached_time_limit ? "," : "") + string("PMC");
             }
         }
         else {
@@ -309,12 +309,12 @@ string DatasetStatisticsGenerator::str(unsigned int i, bool csv) const {
     }
     if (has_count_limit()) {
         string s;
-        if (gs[i].ms_count_limit || gs[i].trng_count_limit) {
-            if (gs[i].ms_count_limit) {
+        if (gs[i].ms_reached_count_limit || gs[i].trng_reached_count_limit) {
+            if (gs[i].ms_reached_count_limit) {
                 s += string("MS");
             }
-            if (gs[i].trng_count_limit) {
-                s += (gs[i].ms_count_limit ? "," : "") + string("TRNG");
+            if (gs[i].trng_reached_count_limit) {
+                s += (gs[i].ms_reached_count_limit ? "," : "") + string("TRNG");
             }
         }
         else {
@@ -388,11 +388,11 @@ void DatasetStatisticsGenerator::print_progress()  {
         unsigned int j = graphs_in_progress[i];
         oss << " | " << gs[j].n << "/" << gs[j].m;
         if (GRAPHSTATS_TEST_MS(fields)) {
-            oss << "/" << gs[j].ms_count << (gs[j].ms_count_limit ? "+" : "") << (gs[j].ms_time_limit ? "t" : "");
+            oss << "/" << gs[j].ms_count << (gs[j].ms_reached_count_limit ? "+" : "") << (gs[j].ms_reached_time_limit ? "t" : "");
         }
         if (GRAPHSTATS_TEST_PMC(fields)) oss << "/" << gs[j].pmc_count;
         if (GRAPHSTATS_TEST_TRNG(fields)) {
-            oss << "/" << gs[j].trng_count << (gs[j].trng_count_limit ? "+" : "") << (gs[j].trng_time_limit ? "t" : "");
+            oss << "/" << gs[j].trng_count << (gs[j].trng_reached_count_limit ? "+" : "") << (gs[j].trng_reached_time_limit ? "t" : "");
         }
     }
     cout << oss.str();
@@ -502,17 +502,17 @@ void DatasetStatisticsGenerator::compute(unsigned int i) {
             ++(gs[i].ms_count);
             print_progress();
             if (has_ms_count_limit && gs[i].ms_count > ms_count_limit) {
-                gs[i].ms_count_limit = true;
+                gs[i].ms_reached_count_limit = true;
                 break;
             }
             if (has_ms_time_limit && time(NULL)-t > ms_time_limit) {
-                gs[i].ms_time_limit = true;
+                gs[i].ms_reached_time_limit = true;
                 break;
             }
             mse.next();
         }
         gs[i].ms_calc_time = time(NULL)-t;
-        gs[i].ms_valid = !(gs[i].ms_time_limit || gs[i].ms_count_limit);
+        gs[i].ms_valid = !(gs[i].ms_reached_time_limit || gs[i].ms_reached_count_limit);
         TRACE(TRACE_LVL__TEST,"SET MS COUNT TO " << gs[i].ms_count);
     }
 
@@ -523,7 +523,7 @@ void DatasetStatisticsGenerator::compute(unsigned int i) {
         PMCEnumerator pmce(gs[i].g, has_pmc_time_limit ? pmc_time_limit : 0);
         pmce.set_algorithm(pmc_alg);
         // Re-use the calculated minimal separators, if relevant
-        if (!(gs[i].ms_count_limit || gs[i].ms_time_limit)) {
+        if (!(gs[i].ms_reached_count_limit || gs[i].ms_reached_time_limit)) {
             pmce.set_minimal_separators(min_seps);
         }
         t = time(NULL);
@@ -532,7 +532,7 @@ void DatasetStatisticsGenerator::compute(unsigned int i) {
         gs[i].pmc_count = pmce.get().size();
         gs[i].ms_count = pmce.get_ms().size(); // Redundant? Not expensive, though..
         if (pmce.is_out_of_time()) {
-            gs[i].pmc_time_limit = true;
+            gs[i].pmc_reached_time_limit = true;
         }
         print_progress();
         gs[i].pmc_valid = !pmce.is_out_of_time();
@@ -547,17 +547,17 @@ void DatasetStatisticsGenerator::compute(unsigned int i) {
             ++gs[i].trng_count;
             print_progress();
             if (has_trng_count_limit && gs[i].trng_count > trng_count_limit) {
-                gs[i].trng_count_limit = true;
+                gs[i].trng_reached_count_limit = true;
                 break;
             }
             if (has_trng_time_limit && time(NULL)-t > trng_time_limit) {
-                gs[i].trng_time_limit = true;
+                gs[i].trng_reached_time_limit = true;
                 break;
             }
             enumerator.next();
         }
         gs[i].trng_calc_time = time(NULL)-t;
-        gs[i].trng_valid = !(gs[i].trng_time_limit || gs[i].trng_count_limit);
+        gs[i].trng_valid = !(gs[i].trng_reached_time_limit || gs[i].trng_reached_count_limit);
     }
 
     // Printing and cleanup.
@@ -579,10 +579,10 @@ void DatasetStatisticsGenerator::compute(unsigned int i) {
         p = localtime(&t);
         strftime(s, 1000, "%c", p);
         cout << s << ": ";
-        if (gs[i].ms_time_limit || gs[i].trng_time_limit || gs[i].pmc_time_limit) {
+        if (gs[i].ms_reached_time_limit || gs[i].trng_reached_time_limit || gs[i].pmc_reached_time_limit) {
             cout << "OUT OF TIME on graph ";
         }
-        else if (gs[i].ms_count_limit || gs[i].trng_count_limit) {
+        else if (gs[i].ms_reached_count_limit || gs[i].trng_reached_count_limit) {
             cout << "HIT NUMERIC LIMIT on graph ";
         }
         else {

@@ -59,8 +59,10 @@ public:
     void set_time_limit(time_t);
     void remove_time_limit();
 
-    // Race! Optionally, print stuff to console
-    void go(bool verbose = false);
+    // Race! Optionally, print stuff to console.
+    // If append_results is set to true, results will be appended
+    // as new rows in the CSV file.
+    void go(bool verbose = false, bool append_results = false);
 
 };
 

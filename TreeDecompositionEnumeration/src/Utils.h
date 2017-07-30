@@ -81,8 +81,9 @@ public:
 // Convert time in seconds to hh:mm:ss
 string secs_to_hhmmss(time_t t);
 
-// Convert time stamp (in seconds) to hh::mm::ss of today
+// Convert time stamp (in seconds) to readable time
 string timestamp_to_hhmmss(time_t t);
+string timestamp_to_fulldate(time_t t);
 
 // Writes / appends a string of output to a file (doesn't append, by default)
 void dump_string_to_file(const string& filename, const string& str, bool append = false);

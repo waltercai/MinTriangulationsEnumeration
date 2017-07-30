@@ -12,7 +12,13 @@ using namespace std;
 
 namespace tdenum {
 
-
+/**
+ * When using node renaming methods (sorting, random rename..) note
+ * that graph structures (PMCs, separators) also have their names changed!
+ *
+ * To translate back / forth, use getOriginalName or getNewName methods
+ * provided.
+ */
 class Graph {
 
     // Allow the tester access

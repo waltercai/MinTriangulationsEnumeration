@@ -31,10 +31,16 @@ string secs_to_hhmmss(time_t t) {
     return oss.str();
 }
 
-string timestamp_to_hhmmss(time_t t) {
+string timestamp_aux(time_t t, bool fulldate) {
     char buff[20];
-    strftime(buff, 20, "%H:%M:%S", localtime(&t));
+    strftime(buff, 20, fulldate ? "%c" : "%H:%M:%S", localtime(&t));
     return buff;
+}
+string timestamp_to_hhmmss(time_t t) {
+    return timestamp_aux(t, false);
+}
+string timestamp_to_fulldate(time_t t) {
+    return timestamp_aux(t, true);
 }
 
 void dump_string_to_file(const string& filename, const string& str, bool append) {
