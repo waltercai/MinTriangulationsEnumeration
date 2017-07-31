@@ -157,6 +157,7 @@ private:
 
     // If verbose computation is enabled, use this to print progress
     // to the screen.
+    int previous_progress_print_line_id;
     void print_progress();
 
     // Used to compute a single graph.

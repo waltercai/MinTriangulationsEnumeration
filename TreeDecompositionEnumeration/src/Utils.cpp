@@ -2,6 +2,12 @@
 
 namespace tdenum {
 
+unsigned utils_strlen(const string& s) {
+    return s.length();
+}
+unsigned utils_strlen(const char* s) {
+    return std::char_traits<char>::length(s);
+}
 
 void Logger::stop() {
     if (state) {
@@ -21,6 +27,26 @@ void Logger::out(const ostringstream& os) {
     if (state) {
         file << os.str();
     }
+}
+
+int utils_replace_string__internal_id = UTILS__REPLACE_STRING_INVALID_ID;
+unsigned utils_replace_string__last_strlen = 0;
+string utils_replace_string(const string& s, int id) {
+    if (id != utils_replace_string__internal_id || id == UTILS__REPLACE_STRING_INVALID_ID) {
+        utils_replace_string__internal_id = id;
+        utils_replace_string__last_strlen = utils_strlen(s);
+        return s;
+    }
+    else {
+        string eraser(utils_replace_string__last_strlen, '\b');
+        utils_replace_string__last_strlen = utils_strlen(s);
+        return eraser+s;
+    }
+}
+string utils_replace_string() {
+    string eraser(utils_replace_string__last_strlen, '\b');
+    string spacer(utils_replace_string__last_strlen, ' ');
+    return eraser+spacer+eraser;
 }
 
 string secs_to_hhmmss(time_t t) {

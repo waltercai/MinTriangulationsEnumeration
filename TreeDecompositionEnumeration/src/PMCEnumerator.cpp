@@ -285,7 +285,7 @@ NodeSetSet PMCEnumerator::one_more_vertex(
         if (is_pmc(Sa, G1)) {
             P1.insert(Sa);
         }
-        if (std::find(S.begin(), S.end(), a) == S.end() && !D2.isMember(S)) {
+        if (UTILS__IS_IN_CONTAINER(a,S) && !D2.isMember(S)) {
             // For each separator S, iterate over all full components C of G
             // associated with S. In other words, all connected components C
             // of G\S so that the set P of all elements of S that are adjacent

@@ -213,7 +213,7 @@ private:
 public:
 
     // Go!
-    Main(MainType mt = MAIN_PMC_RACE, int argc = 1, char* argv[] = NULL) :
+    Main(MainType mt = MAIN_QUICK_STATS_WITH_PMCS, int argc = 1, char* argv[] = NULL) :
                                         return_val(-1), main_type(mt) {
         try {
             switch(main_type) {
@@ -256,11 +256,11 @@ public:
             default: break;
             }
         } catch (const std::exception& ex) {
-            ASSERT_PRINT("Caught exception:" << endl << ex.what());
+            UTILS__ASSERT_PRINT("Caught exception:" << endl << ex.what());
         } catch (const std::string& s) {
-            ASSERT_PRINT("Caught exception string:" << endl << s);
+            UTILS__ASSERT_PRINT("Caught exception string:" << endl << s);
         } catch(...) {
-            ASSERT_PRINT("Whoops... unknown exception" << endl);
+            UTILS__ASSERT_PRINT("Whoops... unknown exception" << endl);
         }
     }
 

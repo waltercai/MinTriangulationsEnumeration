@@ -59,7 +59,8 @@ DatasetStatisticsGenerator::DatasetStatisticsGenerator(const string& outputfile,
                             trng_count_limit(GRAPHSTATS_TRNG_COUNT_LIMIT),
                             pmc_alg(PMCEnumerator::ALG_NORMAL),
                             graphs_computed(0),
-                            max_text_len(STRLEN(DSG_COL_TXT))
+                            max_text_len(utils_strlen(DSG_COL_TXT)),
+                            previous_progress_print_line_id(UTILS__REPLACE_STRING_INVALID_ID+1)
 {
     // Locking mechanism
     omp_init_lock(&lock);
@@ -257,37 +258,37 @@ string DatasetStatisticsGenerator::str(unsigned int i, bool csv) const {
 
     // Fields
     if (GRAPHSTATS_TEST_N(fields)) {
-        oss << delim << setw(STRLEN(DSG_COL_NODES)) << gs[i].n;
+        oss << delim << setw(utils_strlen(DSG_COL_NODES)) << gs[i].n;
     }
     if (GRAPHSTATS_TEST_M(fields)) {
-        oss << delim << setw(STRLEN(DSG_COL_EDGES)) << gs[i].m;
+        oss << delim << setw(utils_strlen(DSG_COL_EDGES)) << gs[i].m;
     }
     if (GRAPHSTATS_TEST_MS(fields)) {
-        oss << delim << setw(STRLEN(DSG_COL_MSS)) << gs[i].ms_count;
+        oss << delim << setw(utils_strlen(DSG_COL_MSS)) << gs[i].ms_count;
     }
     if (GRAPHSTATS_TEST_PMC(fields)) {
-        oss << delim << setw(STRLEN(DSG_COL_PMCS)) << gs[i].pmc_count;
+        oss << delim << setw(utils_strlen(DSG_COL_PMCS)) << gs[i].pmc_count;
     }
     if (GRAPHSTATS_TEST_TRNG(fields)) {
-        oss << delim << setw(STRLEN(DSG_COL_TRNG)) << gs[i].trng_count;
+        oss << delim << setw(utils_strlen(DSG_COL_TRNG)) << gs[i].trng_count;
     }
     // Special columns
     if (has_random) {
         if (gs[i].g.isRandom()) {
-            oss << delim << setw(STRLEN(DSG_COL_P)) << gs[i].g.getP();
+            oss << delim << setw(utils_strlen(DSG_COL_P)) << gs[i].g.getP();
             int N = gs[i].g.getNumberOfNodes();
             int M = gs[i].g.getNumberOfEdges();
-            oss << delim << setw(STRLEN(DSG_COL_RATIO)) << 2*M / (double(N*(N-1))); // |E|/(|V| choose 2)
+            oss << delim << setw(utils_strlen(DSG_COL_RATIO)) << 2*M / (double(N*(N-1))); // |E|/(|V| choose 2)
         }
         else {
-            oss << delim << setw(STRLEN(DSG_COL_P)) << " ";
-            oss << delim << setw(STRLEN(DSG_COL_RATIO)) << " ";
+            oss << delim << setw(utils_strlen(DSG_COL_P)) << " ";
+            oss << delim << setw(utils_strlen(DSG_COL_RATIO)) << " ";
         }
     }
     // MS are calculated in one go if we're calculating PMCs,
     // no point in printing MS calculation time
     if (GRAPHSTATS_TEST_MS(fields) && !GRAPHSTATS_TEST_PMC(fields)) {
-        oss << delim << setw(STRLEN(DSG_COL_MS_TIME)) << gs[i].ms_calc_time;
+        oss << delim << setw(utils_strlen(DSG_COL_MS_TIME)) << gs[i].ms_calc_time;
     }
     if (has_time_limit()) {
         string s;
@@ -305,7 +306,7 @@ string DatasetStatisticsGenerator::str(unsigned int i, bool csv) const {
         else {
             s = " ";
         }
-        oss << delim << setw(STRLEN(DSG_COL_ERR_TIME)) << s;
+        oss << delim << setw(utils_strlen(DSG_COL_ERR_TIME)) << s;
     }
     if (has_count_limit()) {
         string s;
@@ -320,7 +321,7 @@ string DatasetStatisticsGenerator::str(unsigned int i, bool csv) const {
         else {
             s = " ";
         }
-        oss << delim << setw(STRLEN(DSG_COL_CNT_TIME)) << s;
+        oss << delim << setw(utils_strlen(DSG_COL_CNT_TIME)) << s;
     }
     oss << endl;
 
@@ -380,7 +381,7 @@ void DatasetStatisticsGenerator::print_progress()  {
 
     // Construct and print the string
     ostringstream oss;
-    oss << "\rN/M";
+    oss << "N/M";
     if (GRAPHSTATS_TEST_MS(fields)) oss << "/MS";
     if (GRAPHSTATS_TEST_PMC(fields)) oss << "/PMCS";
     if (GRAPHSTATS_TEST_TRNG(fields)) oss << "/TRNG";
@@ -395,7 +396,7 @@ void DatasetStatisticsGenerator::print_progress()  {
             oss << "/" << gs[j].trng_count << (gs[j].trng_reached_count_limit ? "+" : "") << (gs[j].trng_reached_time_limit ? "t" : "");
         }
     }
-    cout << oss.str();
+    cout << utils_replace_string(oss.str(), previous_progress_print_line_id);
 
     // Unlock
     omp_unset_lock(&lock);
@@ -565,13 +566,12 @@ void DatasetStatisticsGenerator::compute(unsigned int i) {
     if (verbose) {
         omp_set_lock(&lock);
 
-        // Update the graphs in progress (while locked)
-        REMOVE_FROM_VECTOR(graphs_in_progress, i);
+        // Update the graphs in progress (while locked) and do some cleanup
+        UTILS__REMOVE_FROM_VECTOR(graphs_in_progress, i);
         graphs_computed++;
-
-        // Print:
-        // We may need to clear the line (if progress was printed)..
-        cout << "\r" << string(50+max_text_len, ' ') << "\r";
+        cout << utils_replace_string();   // Clear output
+        previous_progress_print_line_id = // Always different from the previous ID
+            (2*UTILS__REPLACE_STRING_INVALID_ID + 3) - previous_progress_print_line_id;
 
         // Get the time and output.
         // If any limits were encountered, be verbose!

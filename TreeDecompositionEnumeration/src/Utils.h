@@ -38,21 +38,23 @@ namespace tdenum {
  */
 
 // strlen() and std::to_string cause problems
-#define STRLEN(_x) (std::char_traits<char>::length(_x))
+unsigned utils_strlen(const string&);
+unsigned utils_strlen(const char*);
+
 // TO_STRING expects a stream, or something that can be output via a stream
-#define TO_STRING(_x) static_cast< std::ostringstream & >( \
+#define UTILS__TO_STRING(_x) static_cast< std::ostringstream & >( \
         ( std::ostringstream()/* << std::dec*/ << _x ) ).str()
 
-#define __FILENAME__ (strrchr(__FILE__, SLASH) ? strrchr(__FILE__, SLASH) + 1 : __FILE__)
+#define UTILS__FILENAME (strrchr(__FILE__, SLASH) ? strrchr(__FILE__, SLASH) + 1 : __FILE__)
 
-#define ASSERT_PRINT(_stream) do { \
+#define UTILS__ASSERT_PRINT(_stream) do { \
         ostringstream _oss; \
-        _oss << __FILENAME__ << ":" << __FUNCTION__ << ":" << __LINE__ << ": " << _stream << "\n"; \
+        _oss << UTILS__FILENAME << ":" << __FUNCTION__ << ":" << __LINE__ << ": " << _stream << "\n"; \
         cout << _oss.str(); \
         Logger::out(_oss); \
     } while(0)
 
-#define PRINT_IF(_bool, _stream) do { \
+#define UTILS__PRINT_IF(_bool, _stream) do { \
         if (_bool) { \
             cout << _stream; \
         } \
@@ -70,13 +72,25 @@ public:
     static void out(const ostringstream& os);
 };
 
-#define SET_LOGGING(_filename) do { \
+#define UTILS__SET_LOGGING(_filename) do { \
         if (_LOG_FLAG) { \
             _LOG_FILE.close(); \
         } \
         _LOG_FLAG = true; \
         _LOG_FILE_NAME = _filename; \
 
+// Returns the input string (assumes no newline in the string), and
+// if the function is called with the same output ID (can be any
+// integer) prepends \b characters to erase the previous string.
+// If called with no arguments, outputs a string that erases the
+// previous output, returns the cursor to it's original location
+// and resets the internal ID.
+// Useful for printing progress.
+#define UTILS__REPLACE_STRING_INVALID_ID (-1)
+string utils_replace_string(const string&, int id);
+string utils_replace_string();
+#define UTILS__REPLACE_STREAM(_stream, _id) \
+        utils_replace_string(UTILS__TO_STRING(_stream), _id)
 
 // Convert time in seconds to hh:mm:ss
 string secs_to_hhmmss(time_t t);
@@ -92,12 +106,17 @@ void dump_string_to_file(const string& filename, const string& str, bool append 
  * Useful container wrappers
  */
 // Remove an element from a vector (by value).
-#define REMOVE_FROM_VECTOR(_v, _elmt) \
+#define UTILS__REMOVE_FROM_VECTOR(_v, _elmt) \
     _v.erase(std::remove(_v.begin(), _v.end(), _elmt), _v.end())
+
+// Boolean, true <==> _x is an element of the container.
+// Must be iterable and sorted!
+#define UTILS__IS_IN_CONTAINER(_x, _cont) \
+    (std::find(_cont.begin(), _cont.end(), _x) == _cont.end())
 
 
 // Output vectors / sets, in general
-#define AUTOPRINT_CONTAINER(_container_type) \
+#define UTILS__AUTOPRINT_CONTAINER(_container_type) \
 template<typename V> \
 ostream& operator<<(ostream& os, const _container_type<V>& v) { \
     os << "{"; \
@@ -110,8 +129,8 @@ ostream& operator<<(ostream& os, const _container_type<V>& v) { \
     os << "}"; \
     return os; \
 }
-AUTOPRINT_CONTAINER(set)
-AUTOPRINT_CONTAINER(vector)
+UTILS__AUTOPRINT_CONTAINER(set)
+UTILS__AUTOPRINT_CONTAINER(vector)
 
 
 /**
@@ -136,7 +155,7 @@ typedef enum _TRACE_LVL_CODES {
 #define TRACE_LVL TRACE_LVL__WARNING
 #define TRACE(_lvl, _stream) do { \
         if (_lvl <= TRACE_LVL) { \
-            ASSERT_PRINT(_stream); \
+            UTILS__ASSERT_PRINT(_stream); \
         } \
     } while(0)
 

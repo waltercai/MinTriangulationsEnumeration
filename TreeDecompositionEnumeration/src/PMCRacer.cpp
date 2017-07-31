@@ -79,9 +79,9 @@ void PMCRacer::go(bool verbose, bool append_results) {
 
     // For each graph:
     for (unsigned i=0; i<gs.size(); ++i) {
-        PRINT_IF(verbose, "=== Racing graph " << i+1 << "/" << gs.size()
+        UTILS__PRINT_IF(verbose, "=== Racing graph " << i+1 << "/" << gs.size()
                        << ": '" << gs[i].text << "'" << endl);
-        PRINT_IF(verbose, "Start time: " << timestamp_to_fulldate(time(NULL)) << endl);
+        UTILS__PRINT_IF(verbose, "Start time: " << timestamp_to_fulldate(time(NULL)) << endl);
 
         // Use all algorithms on the graph.
         // To save time, since all algorithms require the calculation of all minimal
@@ -103,7 +103,7 @@ void PMCRacer::go(bool verbose, bool append_results) {
         // too long.
         // Update the graph stats objects and continue on to the new graph.
         if (time_limit_exceeded) {
-            PRINT_IF(verbose, "Out of time in initial MS calculation, moving on to the next graph." << endl);
+            UTILS__PRINT_IF(verbose, "Out of time in initial MS calculation, moving on to the next graph." << endl);
             gs[i].set_pmc_time_limit(time_limit);
             gs[i].pmc_calc_time = time_limit+1;
             gs[i].ms = min_seps;
@@ -116,7 +116,7 @@ void PMCRacer::go(bool verbose, bool append_results) {
         // Keep calculating. Now, the remaining time can be used by each algorithm
         // separately.
         time_t ms_calc_time = time(NULL) - start_time;
-        PRINT_IF(verbose, "MS calc time: " << secs_to_hhmmss(ms_calc_time) << endl);
+        UTILS__PRINT_IF(verbose, "MS calc time: " << secs_to_hhmmss(ms_calc_time) << endl);
 
         // Use a random order of the algorithms, in case
         // cache hits affect results.
@@ -125,11 +125,11 @@ void PMCRacer::go(bool verbose, bool append_results) {
             algorithms[j] = j;
         }
         std::random_shuffle(algorithms.begin(), algorithms.end());
-        PRINT_IF(verbose, "Iterating over algorithms in the following order: " << algorithms << endl);
+        UTILS__PRINT_IF(verbose, "Iterating over algorithms in the following order: " << algorithms << endl);
 
         for (unsigned alg_index=0; alg_index<algorithms.size(); ++alg_index) {
             int alg = algorithms[alg_index];
-            PRINT_IF(verbose,"New iteration, alg = " << PMCEnumerator::get_alg_name(alg) << endl);
+            UTILS__PRINT_IF(verbose,"New iteration, alg = " << PMCEnumerator::get_alg_name(alg) << endl);
             DatasetStatisticsGenerator dsg(GRAPHSTATS_N | GRAPHSTATS_M | GRAPHSTATS_PMC);
             dsg.set_pmc_alg(PMCEnumerator::Alg(alg));
             dsg.dont_show_added_graphs();
@@ -155,7 +155,7 @@ void PMCRacer::go(bool verbose, bool append_results) {
 
         // Output the result to file
         dump_string_to_file(outfilename, stringify_result(i), append_results);
-        PRINT_IF(verbose,"Dumped string #" << i+1 << "/" << gs.size() << ":" << endl << stringify_result(i));
+        UTILS__PRINT_IF(verbose,"Dumped string #" << i+1 << "/" << gs.size() << ":" << endl << stringify_result(i));
     }
 
 

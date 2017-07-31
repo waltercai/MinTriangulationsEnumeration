@@ -145,7 +145,7 @@ ostream& operator<<(ostream& os, const GraphStats& gs) {
     }
     else if (gs.ms_reached_count_limit || gs.ms_reached_time_limit) {
         os << "Reached " << (gs.ms_reached_count_limit ? "count" : "time") << " limit "
-           << "at " << (gs.ms_reached_count_limit ? TO_STRING(gs.ms_count) : secs_to_hhmmss(gs.ms_calc_time))
+           << "at " << (gs.ms_reached_count_limit ? UTILS__TO_STRING(gs.ms_count) : secs_to_hhmmss(gs.ms_calc_time))
            << " for minimal separators." << endl;
     }
 
@@ -168,7 +168,7 @@ ostream& operator<<(ostream& os, const GraphStats& gs) {
     }
     else if (gs.trng_reached_count_limit || gs.trng_reached_time_limit) {
         os << "Reached " << (gs.trng_reached_count_limit ? "count" : "time") << " limit at "
-           << (gs.trng_reached_count_limit ? TO_STRING(gs.trng_count) : secs_to_hhmmss(gs.trng_calc_time))
+           << (gs.trng_reached_count_limit ? UTILS__TO_STRING(gs.trng_count) : secs_to_hhmmss(gs.trng_calc_time))
            << " for minimal triangulations." << endl;
     }
 

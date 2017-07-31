@@ -519,9 +519,10 @@ bool PMCEnumeratorTester::noamsgraphs() const {
 
 bool PMCEnumeratorTester::algorithmconsistency() const {
     GraphProducer gp;
-    gp.add_random({2,4,6,8,10,12,14,16,18,20},{0.3,0.5,0.7}, true);
+    gp.add_random({2,4,6,8,10,12,14,16,18,20,22,24,26},{0.3,0.5,0.7}, true);
     vector<GraphStats> gs = gp.get();
     for (unsigned i=0; i<gs.size(); ++i) {
+        cout << UTILS__REPLACE_STREAM(i+1 << "/" << gs.size(), UTILS__REPLACE_STRING_INVALID_ID + 1);
         Graph& g = gs[i].g;
         NodeSetSet pmcs;
         bool found_pmcs = false;
@@ -532,16 +533,18 @@ bool PMCEnumeratorTester::algorithmconsistency() const {
             pmce.set_algorithm(PMCEnumerator::Alg(alg));
             NodeSetSet these_pmcs = pmce.get();
             if (found_pmcs && these_pmcs != pmcs) {
-                ASSERT_PRINT("WRONG! Calculated pmcs:" << these_pmcs << endl <<
+                cout << utils_replace_string();
+                UTILS__ASSERT_PRINT("WRONG! Calculated pmcs:" << these_pmcs << endl <<
                              "The PMCs first calculated are:" << pmcs << endl);
                 return false;
             }
-            else {
+            else if (!found_pmcs) {
                 pmcs = these_pmcs;
                 found_pmcs = true;
             }
         }
     }
+    cout << utils_replace_string();
     return true;
 }
 
@@ -566,7 +569,7 @@ bool crosscheck_aux(const GraphStats& gs) {
     TRACE(TRACE_LVL__TEST, "===Actual PMCs===:" << endl << pmcs);
     if (found != pmcs) {
         cout << "FAILED   ";
-        ASSERT_PRINT("The PMCs calculated are incorrect:" << endl
+        UTILS__ASSERT_PRINT("The PMCs calculated are incorrect:" << endl
                      << "Found:" << endl
                      << found << endl
                      << "Returned by the PMC enumerator:" << endl
