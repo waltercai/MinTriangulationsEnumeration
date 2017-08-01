@@ -284,7 +284,7 @@ NodeSetSet PMCEnumerator::one_more_vertex(
     #pragma omp parallel if(allow_parallel)
     {
         for (auto pmc2it=P2.begin(); keep_running && pmc2it != P2.end(); ++pmc2it) {
-            #pragma omp single
+            #pragma omp single nowait
             {
                 auto potential = *pmc2it;
                 if (is_pmc(potential, G1)) {
@@ -309,7 +309,7 @@ NodeSetSet PMCEnumerator::one_more_vertex(
     #pragma omp parallel if(allow_parallel)
     {
         for (auto Sit = D1.begin(); keep_running && Sit != D1.end(); ++Sit) {
-            #pragma omp single
+            #pragma omp single nowait
             {
                 NodeSet S = *Sit;
                 NodeSet Sa = S;
