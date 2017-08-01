@@ -6,55 +6,61 @@
 
 namespace tdenum {
 
-#define CHECK_TIME_OR_RETURN(_x) do { \
-        if (limit == 0) { \
-            break; \
-        } \
-        time_t _t = time(NULL); \
-        if (_t - start_time >= limit) { \
-            out_of_time = true; \
-            return _x; \
+/**
+ * A macro used to stop everything and return if the time
+ * limit is reached.
+ *
+ * Parallelized code can't do that, so use workarounds..
+ */
+#define CHECK_TIME_OR_OP(_op) do { \
+        if (limit != 0) { \
+            time_t _t = time(NULL); \
+            if (_t - start_time >= limit) { \
+                out_of_time = true; \
+                TRACE(TRACE_LVL__TEST, "Out of time!"); \
+                _op; \
+            } \
         } \
     } while(0)
 
-
-const string PMCEnumerator::alg_names[PMCEnumerator::ALG_LAST+1] = {
-    #define X(name) #name,
-        PMC_ALG_TABLE
-        "Invalid algorithm"
-    #undef X
-    };
+const PMCAlg PMCEnumerator::default_alg = PMCAlg();
 
 PMCEnumerator::PMCEnumerator(const Graph& g, time_t time_limit) :
         graph(g),
         alg(default_alg),
         has_ms(false),
+        allow_parallel(false),
         done(false),
         limit(time_limit),
         start_time(time(NULL)),
         out_of_time(false)
 {
+    omp_init_lock(&lock);
     ms.clear();
     pmcs.clear();
     // Use current names as originals
     graph.forgetOriginalNames();
+}
+PMCEnumerator::~PMCEnumerator() {
+    omp_destroy_lock(&lock);
 }
 
 void PMCEnumerator::reset(const Graph& g, time_t time_limit) {
     *this = PMCEnumerator(g, time_limit);
 }
 
-void PMCEnumerator::set_algorithm(Alg a) {
+void PMCEnumerator::set_algorithm(PMCAlg a) {
     alg = a;
 }
-PMCEnumerator::Alg PMCEnumerator::get_alg() const {
+PMCAlg PMCEnumerator::get_alg() const {
     return alg;
 }
-string PMCEnumerator::get_alg_name(Alg a) {
-    return PMCEnumerator::alg_names[a];
+
+void PMCEnumerator::enable_parallel() {
+    allow_parallel = true;
 }
-string PMCEnumerator::get_alg_name(int a) {
-    return PMCEnumerator::get_alg_name(PMCEnumerator::Alg(a));
+void PMCEnumerator::suppress_parallel() {
+    allow_parallel = false;
 }
 
 /**
@@ -115,10 +121,10 @@ NodeSetSet PMCEnumerator::get() {
         }
 
         // If the algorithm requires sorting, do so:
-        if (ALG_IS_SORTING_STRAIN(alg)) {
-            tmp_graph.sortNodesByDegree(ALG_IS_SORTING_ASCENDING_STRAIN(alg));
+        if (alg.is_sorted()) {
+            tmp_graph.sortNodesByDegree(alg.is_ascending());
         }
-        else if (ALG_IS_RANDOM_RENAME_STRAIN(alg)) {
+        else if (alg.is_random_node_rename()) {
             tmp_graph.randomNodeRename();
         }
         vector<Node> nodes = tmp_graph.getNodesVector();
@@ -136,7 +142,7 @@ NodeSetSet PMCEnumerator::get() {
         // Optionally use the (memory-inefficient) algorithm, which
         // calculates the minimal separators in advance:
         vector<NodeSetSet> sub_ms(n);
-        if (ALG_IS_REVERSE_MS_STRAIN(alg)) {
+        if (alg.is_reverse()) {
 
             // Calculate the first set of minimal separators
             sub_ms[n-1] = tmp_graph.getNewNames(get_ms());
@@ -211,8 +217,12 @@ NodeSetSet PMCEnumerator::get() {
             // If there's no need, just run the next function.
 
             // The NORMAL algorithm requires calculation of separators
-            if (!ALG_IS_REVERSE_MS_STRAIN(alg)) {
+            if (!alg.is_reverse()) {
                 if (i == n-1) {
+                    TRACE(TRACE_LVL__TEST, "Last iteration, moving from:" << endl << subg[i-1] <<
+                                           "To (by adding node " << a << "):" << endl << subg[i] <<
+                                           "With minimal separators " << MSi << " and " <<
+                                           tmp_graph.getNewNames(get_ms()) << ", respectively.");
                     pmcs = one_more_vertex(subg[i], subg[i-1], a, tmp_graph.getNewNames(get_ms()), MSi, prev_pmcs);
                 }
                 else {
@@ -220,6 +230,7 @@ NodeSetSet PMCEnumerator::get() {
                     MSip1 = DiEnumerator.getAll();
                     pmcs = one_more_vertex(subg[i], subg[i-1], a, MSip1, MSi, prev_pmcs);
                 }
+                TRACE(TRACE_LVL__TEST, "Current pmcs: " << tmp_graph.getOriginalNames(pmcs));
             }
             else {
                 pmcs = one_more_vertex(subg[i], subg[i-1], a, sub_ms[i], sub_ms[i-1], prev_pmcs);
@@ -232,7 +243,7 @@ NodeSetSet PMCEnumerator::get() {
 
         // Update the minimal separators
         if (!has_ms) {
-            ms = tmp_graph.getOriginalNames(ALG_IS_REVERSE_MS_STRAIN(alg) ? sub_ms[n-1] : MSip1);
+            ms = tmp_graph.getOriginalNames(alg.is_reverse() ? sub_ms[n-1] : MSip1);
             has_ms = true;
         }
 
@@ -245,12 +256,20 @@ NodeSetSet PMCEnumerator::get() {
     return pmcs;
 }
 
-
+/**
+ * May use asynchronous code.
+ * Note that in such code, the only shared variables used by
+ * threads are P1 and G1. P1 is always wrapped by a locking method
+ * insert_critical, and G1 is always sent as a const argument to
+ * is_pmc, so it should be fine.
+ * 'a' is only read.
+ */
 NodeSetSet PMCEnumerator::one_more_vertex(
                   const SubGraph& G1, const SubGraph& G2, Node a,
                   const NodeSetSet& D1, const NodeSetSet& D2,
                   const NodeSetSet& P2) {
     NodeSetSet P1;
+    bool keep_running = true;   // For async code
 
     // If a supports d(a)=0, then the regular algorithm won't add
     // {a} as a PMC, even though it should.
@@ -262,60 +281,86 @@ NodeSetSet PMCEnumerator::one_more_vertex(
         return P1;
     }
 
-    for (auto pmc2it = P2.begin(); pmc2it != P2.end(); ++pmc2it) {
-        if (is_pmc(*pmc2it, G1)) {
-            P1.insert(*pmc2it);
-        }
-        else {
-            NodeSet pmc2a = *pmc2it;
-            pmc2a.insert(pmc2a.end(), a); // should already be sorted as a is bigger than previous nodes
-            if (is_pmc(pmc2a, G1)) {
-                P1.insert(pmc2a);
-            }
-        }
-        CHECK_TIME_OR_RETURN(P1);
-    }
-    for (auto Sit = D1.begin(); Sit != D1.end(); ++Sit) {
-        NodeSet S = *Sit;
-        NodeSet Sa = S;
-        // Add a, if not already in:
-        if (!std::binary_search(Sa.begin(), Sa.end(), a)) {
-            Sa.insert(Sa.end(), a);
-        }
-        if (is_pmc(Sa, G1)) {
-            P1.insert(Sa);
-        }
-        if (UTILS__IS_IN_CONTAINER(a,S) && !D2.isMember(S)) {
-            // For each separator S, iterate over all full components C of G
-            // associated with S. In other words, all connected components C
-            // of G\S so that the set P of all elements of S that are adjacent
-            // to some vertex of C supports P=S.
-            // Sort S first so we can easily compare P=S later.
-            //std::sort(S.begin(), S.end());
-
-			BlockVec blocks = G1.getBlocks(S);
-			for (unsigned int i=0; i<blocks.size(); ++i) {
-                // We only want full components
-                if (S != blocks[i]->S) {
-                    continue;
+    #pragma omp parallel if(allow_parallel)
+    {
+        for (auto pmc2it=P2.begin(); keep_running && pmc2it != P2.end(); ++pmc2it) {
+            #pragma omp single
+            {
+                auto potential = *pmc2it;
+                if (is_pmc(potential, G1)) {
+                    insert_critical(potential, P1);
                 }
-                for (auto sep2 = D2.begin(); sep2 != D2.end(); ++sep2) {
-                    NodeSet TcapC;
-                    std::set_intersection(sep2->begin(), sep2->end(),
-                                          blocks[i]->C.begin(), blocks[i]->C.end(),
-                                          std::back_inserter(TcapC));
-                    NodeSet SuTcapC;
-                    std::set_union(TcapC.begin(), TcapC.end(),
-                                   S.begin(), S.end(),
-                                   std::back_inserter(SuTcapC));
-                    if (is_pmc(SuTcapC, G1)) {
-                        P1.insert(SuTcapC);
+                else {
+                    NodeSet pmc2a = potential;
+                    pmc2a.insert(pmc2a.end(), a); // should already be sorted as a is bigger than previous nodes
+                    if (is_pmc(pmc2a, G1)) {
+                        insert_critical(pmc2a, P1);
                     }
-                    CHECK_TIME_OR_RETURN(P1);
+                }
+                #pragma omp critical
+                {
+                    CHECK_TIME_OR_OP(keep_running = false);
                 }
             }
         }
-        CHECK_TIME_OR_RETURN(P1);
+    }
+    CHECK_TIME_OR_OP(return P1);
+
+    #pragma omp parallel if(allow_parallel)
+    {
+        for (auto Sit = D1.begin(); keep_running && Sit != D1.end(); ++Sit) {
+            #pragma omp single
+            {
+                NodeSet S = *Sit;
+                NodeSet Sa = S;
+                // Add a, if not already in:
+                TRACE(TRACE_LVL__TEST, "S=" << S << ", Sa=" << Sa);
+                if (!UTILS__IS_IN_CONTAINER(a,Sa)) {
+                    Sa.insert(Sa.end(), a);
+                }
+                TRACE(TRACE_LVL__TEST, "Sa is now " << Sa);
+                if (is_pmc(Sa, G1)) {
+                    TRACE(TRACE_LVL__TEST, "Inserting Sa");
+                    insert_critical(Sa, P1);
+                }
+                if (!UTILS__IS_IN_CONTAINER(a,S) && !D2.isMember(S)) {
+                    TRACE(TRACE_LVL__TEST, "Node a=" << a << " is in S=" << S);
+                    // For each separator S, iterate over all full components C of G
+                    // associated with S. In other words, all connected components C
+                    // of G\S so that the set P of all elements of S that are adjacent
+                    // to some vertex of C supports P=S.
+                    // Sort S first so we can easily compare P=S later.
+                    //std::sort(S.begin(), S.end());
+
+                    BlockVec blocks = G1.getBlocks(S);
+                    for (unsigned int i=0; i<blocks.size(); ++i) {
+                        // We only want full components
+                        if (S != blocks[i]->S) {
+                            continue;
+                        }
+                        for (auto sep2 = D2.begin(); sep2 != D2.end(); ++sep2) {
+                            NodeSet TcapC;
+                            UTILS__SET_INTERSECTION(sep2, blocks[i]->C, TcapC);
+                            NodeSet SuTcapC;
+                            UTILS__SET_UNION(TcapC, S, SuTcapC);
+                            TRACE(TRACE_LVL__TEST, "Constructed SuTcapC=" << SuTcapC);
+                            if (is_pmc(SuTcapC, G1)) {
+                                TRACE(TRACE_LVL__TEST, "..and inserting it");
+                                insert_critical(SuTcapC, P1);
+                            }
+                            #pragma omp critical
+                            {
+                                CHECK_TIME_OR_OP(keep_running = false);
+                            }
+                        }
+                    }
+                }
+                #pragma omp critical
+                {
+                    CHECK_TIME_OR_OP(keep_running = false);
+                }
+            }
+        }
     }
 
     return P1;
@@ -357,7 +402,7 @@ bool PMCEnumerator::is_pmc(NodeSet K, const SubGraph& G) {
             // Uh oh.. C[i] is a full component
             return false;
         }
-        CHECK_TIME_OR_RETURN(false);
+        CHECK_TIME_OR_OP(return false);
     }
 
     // For each x,y in K (that aren't equal) we need to check if
@@ -368,7 +413,7 @@ bool PMCEnumerator::is_pmc(NodeSet K, const SubGraph& G) {
         vector<NodeSet> Sx;
         for (j=0; j<B.size(); ++j) {
             // They're all sorted, so use binary search
-            if (std::binary_search(B[j]->S.begin(), B[j]->S.end(), x)) {
+            if (UTILS__IS_IN_CONTAINER(x, B[j]->S)) {
                 Sx.push_back(B[j]->S);
             }
         }
@@ -381,11 +426,11 @@ bool PMCEnumerator::is_pmc(NodeSet K, const SubGraph& G) {
             }
             bool foundSi = false;
             for (k=0; k<Sx.size(); ++k) {
-                if (std::binary_search(Sx[k].begin(), Sx[k].end(), y)) {
+                if (UTILS__IS_IN_CONTAINER(y, Sx[k])) {
                     foundSi = true;
                     break;
                 }
-                CHECK_TIME_OR_RETURN(false);
+                CHECK_TIME_OR_OP(return false);
             }
             if (!foundSi) {
                 // x and y aren't connected in F...

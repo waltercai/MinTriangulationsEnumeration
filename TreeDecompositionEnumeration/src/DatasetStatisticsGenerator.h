@@ -6,6 +6,7 @@
 #include "GraphStats.h"
 #include "MinimalSeparatorsEnumerator.h"
 #include "PMCEnumerator.h"
+#include "PMCAlg.h"
 #include "DirectoryIterator.h"
 #include <string>
 #include <vector>
@@ -96,8 +97,10 @@ private:
     bool allow_dump_flag;
 
     // If allow_parallel is set to true, parallelize the job.
-    // Per graph, the computation is never asynchronous.
-    bool allow_parallel;
+    // dsg_parallel computes different graphs asynchronously while
+    // pmc_parallel utilizes the parallel version of the PMC algorithm.
+    bool allow_dsg_parallel;
+    bool allow_pmc_parallel;
 
     // If true, every graph added will cause a line to be printed to
     // console (with graph text).
@@ -117,7 +120,7 @@ private:
     long trng_count_limit;
 
     // The algorithm to be used when calculating PMCs
-    PMCEnumerator::Alg pmc_alg;
+    PMCAlg pmc_alg;
 
     // For every i, the following vectors store the data of graph i.
     // Different threads access these at different indexes, so there
@@ -206,11 +209,15 @@ public:
     void allow_dump(const string& filename);
 
     // Enables / disables parallel computation of graphs.
-    void suppress_async();
-    void allow_async();
+    // Note: only one active parallelization level available at
+    // this time (allow_pmc_parallel() calls suppress_dsg_parallel())
+    void suppress_dsg_parallel();
+    void enable_dsg_parallel();
+    void suppress_pmc_parallel();
+    void enable_pmc_parallel();
 
     // Choose the PMC algorithm
-    void set_pmc_alg(PMCEnumerator::Alg);
+    void set_pmc_alg(const PMCAlg&);
 
     // If the minimal separators were already calculated, the user may
     // set them.

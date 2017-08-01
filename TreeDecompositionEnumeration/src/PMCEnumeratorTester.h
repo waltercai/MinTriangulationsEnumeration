@@ -33,8 +33,10 @@
     X(triangleonstilts) \
     /* Two specific graphs Noam wanted to test. */ \
     X(noamsgraphs) \
-    /* Run with random graphs, make sure the same PMC sets are returned. */ \
-    X(algorithmconsistency) \
+    /* Run with random graphs, make sure the same PMC sets are returned. \
+       Test both synchronous and asynchronous modes in the PMC enumerator. */ \
+    X(algorithmconsistencysync) \
+    X(algorithmconsistencyparallel) \
     /* Uses existing datasets and Nofar's code to cross-check the PMC \
        algorithm with Nofar's version */ \
     X(crosscheck)

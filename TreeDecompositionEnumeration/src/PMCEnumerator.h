@@ -4,6 +4,8 @@
 #include "Graph.h"
 #include "SubGraph.h"
 #include "DataStructures.h"
+#include "PMCAlg.h"
+#include <omp.h>
 #include <vector>
 
 namespace tdenum {
@@ -15,49 +17,9 @@ namespace tdenum {
  * Listing all potential maximal cliques of a graph.
  * Vincent Bouchitte, Ioan Todinca, 2000.
  */
-#define PMC_ALG_TABLE \
-    X(NORMAL) \
-    X(REVERSE_MS_PRECALC) \
-    X(ASCENDING_DEG_NORMAL) \
-    X(ASCENDING_DEG_REVERSE_MS) \
-    X(DESCENDING_DEG_NORMAL) \
-    X(DESCENDING_DEG_REVERSE_MS) \
-    X(RANDOM_RENAME_NORMAL) \
-    X(RANDOM_RENAME_REVERSE_MS)
-
-#define ALG_IS_SORTING_ASCENDING_STRAIN(_alg) \
-    (_alg == ALG_ASCENDING_DEG_NORMAL || \
-     _alg == ALG_ASCENDING_DEG_REVERSE_MS)
-
-#define ALG_IS_SORTING_DESCENDING_STRAIN(_alg) \
-    (_alg == ALG_DESCENDING_DEG_NORMAL || \
-     _alg == ALG_DESCENDING_DEG_REVERSE_MS)
-
-#define ALG_IS_SORTING_STRAIN(_alg) \
-    (ALG_IS_SORTING_ASCENDING_STRAIN(_alg) || \
-     ALG_IS_SORTING_DESCENDING_STRAIN(_alg))
-
-#define ALG_IS_RANDOM_RENAME_STRAIN(_alg) \
-    (_alg == ALG_RANDOM_RENAME_NORMAL || \
-     _alg == ALG_RANDOM_RENAME_REVERSE_MS)
-
-#define ALG_IS_REVERSE_MS_STRAIN(_alg) \
-    (_alg == ALG_REVERSE_MS_PRECALC || \
-     _alg == ALG_ASCENDING_DEG_REVERSE_MS || \
-     _alg == ALG_DESCENDING_DEG_REVERSE_MS || \
-     _alg == ALG_RANDOM_RENAME_REVERSE_MS)
 
 class PMCEnumerator {
-public:
-    typedef enum {
-    #define X(name) ALG_##name,
-        PMC_ALG_TABLE
-        ALG_LAST
-    #undef X
-    } Alg;
 private:
-
-    static const string alg_names[PMCEnumerator::ALG_LAST+1];
 
     // Test class
     friend class PMCEnumeratorTester;
@@ -66,8 +28,8 @@ private:
     Graph graph;
 
     // The algorithm to be used (defaults to default_alg)
-    Alg alg;
-    static const Alg default_alg = ALG_NORMAL;
+    PMCAlg alg;
+    static const PMCAlg default_alg;
 
     // The minimal separators of the graph.
     // They are required for the algorithm to run correctly; if they
@@ -77,6 +39,10 @@ private:
 
     // The PMCs (after calculation)
     NodeSetSet pmcs;
+
+    // If this is set to true, OMP #pragmas will be activated.
+    bool allow_parallel;
+    omp_lock_t lock;
 
     // If the calculation is complete, set this to true.
     bool done;
@@ -98,24 +64,30 @@ private:
     // seperators D1, D2 of G1 and G2 respectively and the potential
     // maximal cliques P2 of G2, calculates the set of potential maximal
     // cliques of G1 in polynomial time.
-    NodeSetSet one_more_vertex(const SubGraph& G1, const SubGraph& G2, Node a,
-                  const NodeSetSet& D1, const NodeSetSet& D2,
-                  const NodeSetSet& P2);
+    NodeSetSet one_more_vertex(const SubGraph& G1,
+                               const SubGraph& G2,
+                               Node a,
+                               const NodeSetSet& D1,
+                               const NodeSetSet& D2,
+                               const NodeSetSet& P2);
 
 public:
 
     // Construct the enumerator with the given graph.
     // Optionally, enforce a time limit.
     PMCEnumerator(const Graph& g, time_t time_limit = 0);
+    ~PMCEnumerator();
 
     // Resets the instance to use a new graph (allows re-use of variable name).
     void reset(const Graph& g, time_t time_limit = 0);
 
     // Sets / gets the algorithm to be used.
-    void set_algorithm(Alg a);
-    PMCEnumerator::Alg get_alg() const;
-    static string get_alg_name(Alg a);
-    static string get_alg_name(int a);
+    void set_algorithm(PMCAlg a);
+    PMCAlg get_alg() const;
+
+    // Toggle parallelization
+    void enable_parallel();
+    void suppress_parallel();
 
     // If the minimal separators for the original graph has already been
     // calculated, inform the enumerator.

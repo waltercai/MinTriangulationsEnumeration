@@ -24,7 +24,7 @@ namespace tdenum {
     pmce.reset(g); \
     pmce.set_algorithm(pmc_alg)
 
-PMCEnumerator::Alg pmc_alg = PMCEnumerator::ALG_NORMAL;
+PMCAlg pmc_alg = PMCAlg();
 
 bool PMCEnumeratorTester::sanity() const {
     SETUP(0);
@@ -236,13 +236,13 @@ bool PMCEnumeratorTester::fourgraphs() const {
      * ============================================================
      *
      */
-
     SETUP(4);
     NodeSetSet pmcs;
     NodeSet a={0},b={1},c={2},d={3};
     NodeSet ab={0,1},ac={0,2},ad={0,3},bc={1,2},bd={1,3},cd={2,3};
     NodeSet abc={0,1,2},abd={0,1,3},acd={0,2,3},bcd={1,2,3};
     NodeSet abcd={0,1,2,3};
+
 
     // G0 Has one variation - an independent set.
     pmcs=pmce.get();
@@ -330,7 +330,7 @@ bool PMCEnumeratorTester::fourgraphs() const {
     pmce.reset(g);
     pmcs=pmce.get();
     TRACE(TRACE_LVL__TEST, "Got pmcs:" << pmcs);
-    TRACE(TRACE_LVL__TEST, "alg=" << PMCEnumerator::get_alg_name(pmce.get_alg()));
+    TRACE(TRACE_LVL__TEST, "alg=" << pmce.get_alg().str());
     ASSERT_EQUAL(pmcs.size(), 4);
     ASSERT(pmcs.isMember(abc));
     ASSERT(pmcs.isMember(abd));
@@ -517,25 +517,29 @@ bool PMCEnumeratorTester::noamsgraphs() const {
     return true;
 }
 
-bool PMCEnumeratorTester::algorithmconsistency() const {
-    GraphProducer gp;
-    gp.add_random({2,4,6,8,10,12,14,16,18,20,22,24,26},{0.3,0.5,0.7}, true);
-    vector<GraphStats> gs = gp.get();
+bool algorithmconsistency_aux(bool pmc_parallel = false) {
+    auto gs = GraphProducer()
+                .add_random({2,4,6,8,10,12,14,16,18,20},{0.3,0.5,0.7}, true)
+                .get();
     for (unsigned i=0; i<gs.size(); ++i) {
         cout << UTILS__REPLACE_STREAM(i+1 << "/" << gs.size(), UTILS__REPLACE_STRING_INVALID_ID + 1);
         Graph& g = gs[i].g;
         NodeSetSet pmcs;
         bool found_pmcs = false;
-        for (int alg = PMCEnumerator::ALG_NORMAL; alg<PMCEnumerator::ALG_LAST; ++alg) {
-            TRACE(TRACE_LVL__TEST, "Running " << PMCEnumerator::get_alg_name(alg)
+        for (int alg = PMCAlg::first(); alg<PMCAlg::last(); ++alg) {
+            TRACE(TRACE_LVL__TEST, "Running " << PMCAlg(alg).str()
                                     << " with the following graph:" << endl << g);
             PMCEnumerator pmce(g);
-            pmce.set_algorithm(PMCEnumerator::Alg(alg));
+            pmce.set_algorithm(PMCAlg(alg));
+            if (pmc_parallel) {
+                pmce.enable_parallel();
+            }
             NodeSetSet these_pmcs = pmce.get();
             if (found_pmcs && these_pmcs != pmcs) {
                 cout << utils_replace_string();
-                UTILS__ASSERT_PRINT("WRONG! Calculated pmcs:" << these_pmcs << endl <<
-                             "The PMCs first calculated are:" << pmcs << endl);
+                UTILS__ASSERT_PRINT("WRONG! Algorithm " << PMCAlg(alg).str() <<
+                                    " got it wrong. Calculated pmcs:" << these_pmcs << endl <<
+                                    "The PMCs first calculated were:" << pmcs << endl);
                 return false;
             }
             else if (!found_pmcs) {
@@ -546,6 +550,12 @@ bool PMCEnumeratorTester::algorithmconsistency() const {
     }
     cout << utils_replace_string();
     return true;
+}
+bool PMCEnumeratorTester::algorithmconsistencysync() const {
+    return algorithmconsistency_aux(false);
+}
+bool PMCEnumeratorTester::algorithmconsistencyparallel() const {
+    return algorithmconsistency_aux(true);
 }
 
 bool crosscheck_aux(const GraphStats& gs) {
@@ -591,7 +601,6 @@ bool PMCEnumeratorTester::crosscheck() const {
     }
     return all_passed;
 }
-
 
 PMCEnumeratorTester::PMCEnumeratorTester(bool start = true) {
     #define X(_func) flag_##_func = true;

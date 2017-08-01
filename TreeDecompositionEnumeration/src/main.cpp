@@ -91,7 +91,7 @@ private:
         Logger::start("log.txt", false);
         PMCEnumeratorTester p(false);
 //        p.clearAll();
-//        p.flag_triangleonstilts = true;
+//        p.flag_fourgraphs = true;
         p.go();
         return 0;
     }
@@ -199,9 +199,9 @@ private:
         // Allow 20 minutes per graph
         PMCRacer pmcr(RESULT_DIR_BASE+"PMCRace.csv", 20*60);
         pmcr.add(GraphProducer().add_random_pstep({26,27,28,29,30,31,32,33,34,36,37},0.1,1).get());
-//        pmcr.add(GraphProducer().add_by_dir(DATASET_DIR_BASE+DATASET_DIR_DEADEASY).get());
-//        pmcr.add(GraphProducer().add_by_dir(DATASET_DIR_BASE+DATASET_DIR_EASY).get());
-//        pmcr.add(GraphProducer().add_by_dir(DATASET_DIR_BASE+DATASET_DIR_DIFFICULT_BN, {"Grid"}).get());
+        pmcr.add(GraphProducer().add_by_dir(DATASET_DIR_BASE+DATASET_DIR_DEADEASY).get());
+        pmcr.add(GraphProducer().add_by_dir(DATASET_DIR_BASE+DATASET_DIR_EASY).get());
+        pmcr.add(GraphProducer().add_by_dir(DATASET_DIR_BASE+DATASET_DIR_DIFFICULT_BN, {"Grid"}).get());
         pmcr.go(true, true);
         return 0;
     }
@@ -213,7 +213,7 @@ private:
 public:
 
     // Go!
-    Main(MainType mt = MAIN_QUICK_STATS_WITH_PMCS, int argc = 1, char* argv[] = NULL) :
+    Main(MainType mt = MAIN_PMC_RACE, int argc = 1, char* argv[] = NULL) :
                                         return_val(-1), main_type(mt) {
         try {
             switch(main_type) {

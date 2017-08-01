@@ -46,6 +46,7 @@ string utils_replace_string(const string& s, int id) {
 string utils_replace_string() {
     string eraser(utils_replace_string__last_strlen, '\b');
     string spacer(utils_replace_string__last_strlen, ' ');
+    utils_replace_string__internal_id = UTILS__REPLACE_STRING_INVALID_ID;
     return eraser+spacer+eraser;
 }
 

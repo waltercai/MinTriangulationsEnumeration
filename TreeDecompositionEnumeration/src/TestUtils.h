@@ -33,7 +33,7 @@ using std::cout;
     cout << "DONE. " << _passcounter << "/" << _totalcounter << " passed\n"
 
 #define DO_TEST(_testfunc) do { \
-        cout << "Running '" << #_testfunc << "'... "; \
+        cout << timestamp_to_fulldate(time(NULL)) <<  ": Running '" << #_testfunc << "'... "; \
         if (!(_testfunc())) { \
             cout << "'" << #_testfunc << "' FAILED\n"; \
         } \

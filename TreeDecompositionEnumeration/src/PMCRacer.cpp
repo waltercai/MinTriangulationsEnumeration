@@ -14,16 +14,16 @@ PMCRacer::PMCRacer(const string& out, time_t limit) :
     outfilename(out),
     has_time_limit(limit > 0),
     time_limit(limit),
-    alg_gs(PMCEnumerator::ALG_LAST),
+    alg_gs(PMCAlg::last()),
     gs(0) {}
 
 string PMCRacer::stringify_header() const {
     ostringstream oss;
-    oss << "Comparison of " << PMCEnumerator::ALG_LAST << " algorithms." << endl;
+    oss << "Comparison of " << PMCAlg::last() << " algorithms." << endl;
     oss << "Time limit set per graph: " << secs_to_hhmmss(time_limit) << endl;
     oss << "Graph,N,M,PMCs";
-    for (int alg = PMCEnumerator::ALG_NORMAL; alg<PMCEnumerator::ALG_LAST; ++alg) {
-        oss << "," << PMCEnumerator::get_alg_name(PMCEnumerator::Alg(alg));
+    for (int alg = PMCAlg::first(); alg<PMCAlg::last(); ++alg) {
+        oss << "," << PMCAlg(alg).str();
     }
     oss << endl;
     return oss.str();
@@ -39,7 +39,7 @@ string PMCRacer::stringify_result(unsigned i) const {
         << alg_gs[0][i].n << ","
         << alg_gs[0][i].m << ","
         << alg_gs[0][i].pmc_count;
-    for (int alg = PMCEnumerator::ALG_NORMAL; alg<PMCEnumerator::ALG_LAST; ++alg) {
+    for (int alg = PMCAlg::first(); alg<PMCAlg::last(); ++alg) {
         if (alg_gs[alg][i].pmc_calc_time > alg_gs[alg][i].pmc_time_limit) {
             oss << "," << secs_to_hhmmss(alg_gs[alg][i].get_pmc_time_limit());
         }
@@ -107,7 +107,7 @@ void PMCRacer::go(bool verbose, bool append_results) {
             gs[i].set_pmc_time_limit(time_limit);
             gs[i].pmc_calc_time = time_limit+1;
             gs[i].ms = min_seps;
-            for (int alg=0; alg<PMCEnumerator::ALG_LAST; ++alg) {
+            for (int alg=PMCAlg::first(); alg<PMCAlg::last(); ++alg) {
                 alg_gs[alg].push_back(gs[i]);
             }
             continue;
@@ -120,7 +120,7 @@ void PMCRacer::go(bool verbose, bool append_results) {
 
         // Use a random order of the algorithms, in case
         // cache hits affect results.
-        vector<int> algorithms(int(PMCEnumerator::ALG_LAST));
+        vector<int> algorithms(PMCAlg::last());
         for (unsigned j=0; j<algorithms.size(); ++j) {
             algorithms[j] = j;
         }
@@ -129,9 +129,9 @@ void PMCRacer::go(bool verbose, bool append_results) {
 
         for (unsigned alg_index=0; alg_index<algorithms.size(); ++alg_index) {
             int alg = algorithms[alg_index];
-            UTILS__PRINT_IF(verbose,"New iteration, alg = " << PMCEnumerator::get_alg_name(alg) << endl);
+            UTILS__PRINT_IF(verbose,"New iteration, alg = " << PMCAlg(alg).str() << endl);
             DatasetStatisticsGenerator dsg(GRAPHSTATS_N | GRAPHSTATS_M | GRAPHSTATS_PMC);
-            dsg.set_pmc_alg(PMCEnumerator::Alg(alg));
+            dsg.set_pmc_alg(PMCAlg(alg));
             dsg.dont_show_added_graphs();
             dsg.add_graph(gs[i].g,gs[i].text);
             dsg.disable_all_limits();
@@ -140,7 +140,7 @@ void PMCRacer::go(bool verbose, bool append_results) {
             }
             // Add the minimal separators
             dsg.set_ms(min_seps, ms_calc_time, 1);
-            TRACE(TRACE_LVL__OFF,"Algorithm " << PMCEnumerator::get_alg_name(alg) << ".. " << endl);
+            TRACE(TRACE_LVL__OFF,"Algorithm " << PMCAlg(alg).str() << ".. " << endl);
             dsg.compute(verbose);
             TRACE(TRACE_LVL__OFF,"done. Getting stats..." << endl);
             // Get stats, add the time

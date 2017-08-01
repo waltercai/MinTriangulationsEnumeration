@@ -32,6 +32,44 @@ namespace tdenum {
 #endif
 
 /**
+ * Logger class.
+ *
+ * Chops wood in Canada
+ */
+class Logger {
+private:
+    static string filename;
+    static ofstream file;
+    static bool state;
+public:
+    static void stop();
+    // Add an option to append to file, or truncate it.
+    static void start(const string& f, bool append = true);
+    static void out(const ostringstream& os);
+};
+
+#define UTILS__SET_LOGGING(_filename) do { \
+        if (_LOG_FLAG) { \
+            _LOG_FILE.close(); \
+        } \
+        _LOG_FLAG = true; \
+        _LOG_FILE_NAME = _filename; \
+
+/**
+ * Synchronization tools
+ */
+
+// Insert the item into the container, where the container
+// itself may be a shared OMP resource.
+template<typename T, typename V>
+void insert_critical(const V& val, T& container) {
+    #pragma omp critical
+    {
+        container.insert(val);
+    }
+}
+
+/**
  * String manipulation, printing and logging.
  *
  * To fork-output all ASSERT_PRINTS to file, call Logger::start(filename).
@@ -60,24 +98,6 @@ unsigned utils_strlen(const char*);
         } \
     } while(0)
 
-class Logger {
-private:
-    static string filename;
-    static ofstream file;
-    static bool state;
-public:
-    static void stop();
-    // Add an option to append to file, or truncate it.
-    static void start(const string& f, bool append = true);
-    static void out(const ostringstream& os);
-};
-
-#define UTILS__SET_LOGGING(_filename) do { \
-        if (_LOG_FLAG) { \
-            _LOG_FILE.close(); \
-        } \
-        _LOG_FLAG = true; \
-        _LOG_FILE_NAME = _filename; \
 
 // Returns the input string (assumes no newline in the string), and
 // if the function is called with the same output ID (can be any
@@ -103,7 +123,9 @@ string timestamp_to_fulldate(time_t t);
 void dump_string_to_file(const string& filename, const string& str, bool append = false);
 
 /**
- * Useful container wrappers
+ * Useful container wrappers.
+ *
+ * Removal, search, printing, set operations..
  */
 // Remove an element from a vector (by value).
 #define UTILS__REMOVE_FROM_VECTOR(_v, _elmt) \
@@ -112,7 +134,8 @@ void dump_string_to_file(const string& filename, const string& str, bool append 
 // Boolean, true <==> _x is an element of the container.
 // Must be iterable and sorted!
 #define UTILS__IS_IN_CONTAINER(_x, _cont) \
-    (std::find(_cont.begin(), _cont.end(), _x) == _cont.end())
+        std::binary_search(_cont.begin(), _cont.end(), _x)
+//    (std::find(_cont.begin(), _cont.end(), _x) == _cont.end())
 
 
 // Output vectors / sets, in general
@@ -131,6 +154,19 @@ ostream& operator<<(ostream& os, const _container_type<V>& v) { \
 }
 UTILS__AUTOPRINT_CONTAINER(set)
 UTILS__AUTOPRINT_CONTAINER(vector)
+
+// Set intersection and union.
+#define UTILS__SET_INTERSECTION(_A,_B,_res) do { \
+        std::set_intersection(_A->begin(), _A->end(), \
+                              _B.begin(), _B.end(), \
+                              std::back_inserter(_res)); \
+    } while(0)
+
+#define UTILS__SET_UNION(_A,_B,_res) do { \
+        std::set_union(_A.begin(), _A.end(), \
+                       _B.begin(), _B.end(), \
+                       std::back_inserter(_res)); \
+    } while(0)
 
 
 /**

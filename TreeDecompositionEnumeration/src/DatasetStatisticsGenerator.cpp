@@ -45,7 +45,8 @@ DatasetStatisticsGenerator::DatasetStatisticsGenerator(const string& outputfile,
                             has_random(false),
                             verbose(false),
                             allow_dump_flag(true),
-                            allow_parallel(true),
+                            allow_dsg_parallel(false),
+                            allow_pmc_parallel(true),
                             show_graphs(true),
                             has_ms_time_limit(false),
                             has_pmc_time_limit(false),
@@ -57,7 +58,7 @@ DatasetStatisticsGenerator::DatasetStatisticsGenerator(const string& outputfile,
                             trng_time_limit(GRAPHSTATS_TRNG_TIME_LIMIT),
                             ms_count_limit(GRAPHSTATS_MS_COUNT_LIMIT),
                             trng_count_limit(GRAPHSTATS_TRNG_COUNT_LIMIT),
-                            pmc_alg(PMCEnumerator::ALG_NORMAL),
+                            pmc_alg(PMCAlg()),
                             graphs_computed(0),
                             max_text_len(utils_strlen(DSG_COL_TXT)),
                             previous_progress_print_line_id(UTILS__REPLACE_STRING_INVALID_ID+1)
@@ -84,7 +85,6 @@ DatasetStatisticsGenerator::DatasetStatisticsGenerator(int flds) :
 {
     suppress_dump();
 }
-
 DatasetStatisticsGenerator::~DatasetStatisticsGenerator() {
     omp_destroy_lock(&lock);
 }
@@ -158,15 +158,32 @@ void DatasetStatisticsGenerator::allow_dump(const string& name) {
     allow_dump_flag = true;
 }
 
-void DatasetStatisticsGenerator::suppress_async() {
-    allow_parallel = false;
+/**
+ * Parallelization methods.
+ *
+ * Allowing both levels of parallelization may cause unwanted results
+ * (e.g. I haven't tested it).
+ */
+void DatasetStatisticsGenerator::suppress_dsg_parallel() {
+    allow_dsg_parallel = false;
 }
-void DatasetStatisticsGenerator::allow_async() {
-    allow_parallel = true;
+void DatasetStatisticsGenerator::enable_dsg_parallel() {
+    suppress_pmc_parallel();
+    allow_dsg_parallel = true;
+}
+void DatasetStatisticsGenerator::suppress_pmc_parallel() {
+    allow_pmc_parallel = false;
+}
+void DatasetStatisticsGenerator::enable_pmc_parallel() {
+    suppress_dsg_parallel();
+    allow_pmc_parallel = true;
 }
 
-void DatasetStatisticsGenerator::set_pmc_alg(PMCEnumerator::Alg alg) {
+void DatasetStatisticsGenerator::set_pmc_alg(const PMCAlg& alg) {
     pmc_alg = alg;
+    if (alg.is_parallel()) {
+        enable_pmc_parallel();
+    }
 }
 
 void DatasetStatisticsGenerator::set_ms(const NodeSetSet& ms, time_t calc_time, unsigned index) {
@@ -522,6 +539,9 @@ void DatasetStatisticsGenerator::compute(unsigned int i) {
     // them separately.
     if (GRAPHSTATS_TEST_PMC(fields) && !gs[i].pmc_valid) {
         PMCEnumerator pmce(gs[i].g, has_pmc_time_limit ? pmc_time_limit : 0);
+        if (!allow_pmc_parallel) {
+            pmc_alg.unset_parallel();
+        }
         pmce.set_algorithm(pmc_alg);
         // Re-use the calculated minimal separators, if relevant
         if (!(gs[i].ms_reached_count_limit || gs[i].ms_reached_time_limit)) {
@@ -614,7 +634,7 @@ void DatasetStatisticsGenerator::compute_by_graph_number_range(unsigned int firs
 
     // Dump all data, calculate the missing data.
     // If possible, parallelize this
-#pragma omp parallel for if(allow_parallel)
+#pragma omp parallel for if(allow_dsg_parallel)
     for (unsigned int i=first-1; i<last; ++i) {
         if (!gs[i].valid(fields)) {
             compute(i);
