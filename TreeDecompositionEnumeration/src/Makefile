@@ -5,7 +5,7 @@ OBJS=ChordalGraph.o Converter.o DatasetStatisticsGenerator.o \
  DataStructures.o DirectoryIterator.o Graph.o GraphProducer.o GraphReader.o \
  GraphStats.o GraphTester.o IndSetExtBySeparators.o IndSetExtByTriangulation.o \
  IndSetScorerByTriangulation.o MinimalSeparatorsEnumerator.o \
- MinimalTriangulationsEnumerator.o MinimalTriangulator.o \
+ MinimalTriangulationsEnumerator.o MinimalTriangulator.o PMCAlg.o \
  PMCEnumerator.o PMCEnumeratorTester.o \
  PMCRacer.o SeparatorGraph.o SeparatorsScorer.o SubGraph.o Utils.o
 OBJS_TRNG_ENUM=$(OBJS) MinTriangulationsEnumeration.o
@@ -25,8 +25,8 @@ Converter.o: Converter.cpp Converter.h Graph.h DataStructures.h \
 DatasetStatisticsGenerator.o: DatasetStatisticsGenerator.cpp \
  DatasetStatisticsGenerator.h Graph.h DataStructures.h GraphReader.h \
  GraphStats.h MinimalSeparatorsEnumerator.h SeparatorsScorer.h \
- PMCEnumerator.h SubGraph.h IndependentSetExtender.h DirectoryIterator.h \
- MinimalTriangulationsEnumerator.h SeparatorGraph.h \
+ PMCEnumerator.h SubGraph.h IndependentSetExtender.h PMCAlg.h \
+ DirectoryIterator.h MinimalTriangulationsEnumerator.h SeparatorGraph.h \
  SuccinctGraphRepresentation.h IndSetExtByTriangulation.h \
  MinimalTriangulator.h ChordalGraph.h IndSetExtBySeparators.h \
  MaximalIndependentSetsEnumerator.h IndependentSetScorer.h \
@@ -38,7 +38,8 @@ Graph.o: Graph.cpp Graph.h DataStructures.h Utils.h
 GraphProducer.o: GraphProducer.cpp GraphProducer.h Graph.h \
  DataStructures.h GraphReader.h GraphStats.h DirectoryIterator.h Utils.h
 GraphReader.o: GraphReader.cpp GraphReader.h Graph.h DataStructures.h
-GraphStats.o: GraphStats.cpp GraphStats.h Graph.h DataStructures.h Utils.h
+GraphStats.o: GraphStats.cpp GraphStats.h Graph.h DataStructures.h \
+ Utils.h
 GraphTester.o: GraphTester.cpp GraphTester.h Graph.h DataStructures.h \
  TestUtils.h Utils.h
 IndSetExtBySeparators.o: IndSetExtBySeparators.cpp \
@@ -54,7 +55,7 @@ IndSetScorerByTriangulation.o: IndSetScorerByTriangulation.cpp \
 main.o: main.cpp DatasetStatisticsGenerator.h Graph.h DataStructures.h \
  GraphReader.h GraphStats.h MinimalSeparatorsEnumerator.h \
  SeparatorsScorer.h PMCEnumerator.h SubGraph.h IndependentSetExtender.h \
- DirectoryIterator.h GraphProducer.h Utils.h TestUtils.h \
+ PMCAlg.h DirectoryIterator.h GraphProducer.h Utils.h TestUtils.h \
  PMCEnumeratorTester.h GraphTester.h ChordalGraph.h \
  MinimalTriangulationsEnumerator.h SeparatorGraph.h \
  SuccinctGraphRepresentation.h IndSetExtByTriangulation.h \
@@ -85,13 +86,14 @@ MinTriangulationsEnumeration.o: MinTriangulationsEnumeration.cpp \
 OptimalMinimalTriangulator.o: OptimalMinimalTriangulator.cpp \
  OptimalMinimalTriangulator.h Graph.h DataStructures.h ChordalGraph.h \
  BlockInfo.h SubGraph.h IndependentSetExtender.h TriangulationEvaluator.h \
- PMCEnumerator.h
+ PMCEnumerator.h PMCAlg.h
+PMCAlg.o: PMCAlg.cpp PMCAlg.h Utils.h
 PMCEnumerator.o: PMCEnumerator.cpp PMCEnumerator.h Graph.h \
- DataStructures.h SubGraph.h IndependentSetExtender.h \
+ DataStructures.h SubGraph.h IndependentSetExtender.h PMCAlg.h \
  MinimalSeparatorsEnumerator.h SeparatorsScorer.h Utils.h
 PMCEnumeratorTester.o: PMCEnumeratorTester.cpp PMCEnumeratorTester.h \
  TestUtils.h Utils.h Graph.h DataStructures.h PMCEnumerator.h SubGraph.h \
- IndependentSetExtender.h DirectoryIterator.h GraphReader.h \
+ IndependentSetExtender.h PMCAlg.h DirectoryIterator.h GraphReader.h \
  ChordalGraph.h MinimalTriangulationsEnumerator.h SeparatorGraph.h \
  MinimalSeparatorsEnumerator.h SeparatorsScorer.h \
  SuccinctGraphRepresentation.h IndSetExtByTriangulation.h \
@@ -99,7 +101,7 @@ PMCEnumeratorTester.o: PMCEnumeratorTester.cpp PMCEnumeratorTester.h \
  MaximalIndependentSetsEnumerator.h IndependentSetScorer.h \
  IndSetScorerByTriangulation.h GraphStats.h GraphProducer.h
 PMCRacer.o: PMCRacer.cpp PMCEnumerator.h Graph.h DataStructures.h \
- SubGraph.h IndependentSetExtender.h PMCRacer.h \
+ SubGraph.h IndependentSetExtender.h PMCAlg.h PMCRacer.h \
  DatasetStatisticsGenerator.h GraphReader.h GraphStats.h \
  MinimalSeparatorsEnumerator.h SeparatorsScorer.h DirectoryIterator.h \
  Utils.h
