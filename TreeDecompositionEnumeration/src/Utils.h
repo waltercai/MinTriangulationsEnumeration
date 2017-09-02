@@ -135,8 +135,6 @@ void dump_string_to_file(const string& filename, const string& str, bool append 
 // Must be iterable and sorted!
 #define UTILS__IS_IN_CONTAINER(_x, _cont) \
         std::binary_search(_cont.begin(), _cont.end(), _x)
-//    (std::find(_cont.begin(), _cont.end(), _x) == _cont.end())
-
 
 // Output vectors / sets, in general
 #define UTILS__AUTOPRINT_CONTAINER(_container_type) \

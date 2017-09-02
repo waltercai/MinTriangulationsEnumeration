@@ -25,18 +25,28 @@ namespace tdenum {
 
 /**
  * Verify the given container is sorted (check the runmode first).
- * Should be used in the parallel context of one_more_vertex.
+ * Should be used in the parallel context of one_more_vertex or
+ * is_pmc, respectively.
  */
 #define VERIFY_SORT_OMV(_cont) do { \
         if (PMCE_RUNMODE == PMCE_RUNMODE_VERIFY_SORT) { \
             if (!std::is_sorted((_cont).begin(), (_cont).end())) { \
-                TRACE(TRACE_LVL__ERROR, "Unsorted NodeSet " #_cont ": " << (_cont) << ". Returning and empty set..."); \
+                TRACE(TRACE_LVL__ERROR, "Unsorted NodeSet " #_cont ": " << (_cont) << ". Returning an empty set"); \
                 keep_running = false; \
                 P1 = NodeSetSet(); \
+                continue; \
             } \
         } \
     } while(0)
 
+#define VERIFY_SORT_ISPMC(_cont) do { \
+        if (PMCE_RUNMODE == PMCE_RUNMODE_VERIFY_SORT) { \
+            if (!std::is_sorted((_cont).begin(), (_cont).end())) { \
+                TRACE(TRACE_LVL__ERROR, "Unsorted NodeSet " #_cont ": " << (_cont) << ". Returning FALSE"); \
+                return false; \
+            } \
+        } \
+    } while(0)
 
 
 const PMCAlg PMCEnumerator::default_alg = PMCAlg();
@@ -327,8 +337,11 @@ NodeSetSet PMCEnumerator::one_more_vertex(
         for (auto Sit = D1.begin(); keep_running && Sit != D1.end(); ++Sit) {
             #pragma omp single nowait
             {
+                // Sort S first so we can easily compare P=S later.
                 NodeSet S = *Sit;
                 NodeSet Sa = S;
+                VERIFY_SORT_OMV(S);
+
                 // Add a, if not already in:
                 TRACE(TRACE_LVL__TEST, "S=" << S << ", Sa=" << Sa);
                 if (!UTILS__IS_IN_CONTAINER(a,Sa)) {
@@ -341,12 +354,11 @@ NodeSetSet PMCEnumerator::one_more_vertex(
                 }
                 if (!UTILS__IS_IN_CONTAINER(a,S) && !D2.isMember(S)) {
                     TRACE(TRACE_LVL__TEST, "Node a=" << a << " is in S=" << S);
+
                     // For each separator S, iterate over all full components C of G
                     // associated with S. In other words, all connected components C
                     // of G\S so that the set P of all elements of S that are adjacent
                     // to some vertex of C supports P=S.
-                    // Sort S first so we can easily compare P=S later.
-                    VERIFY_SORT_OMV(S);
 
                     BlockVec blocks = G1.getBlocks(S);
                     for (unsigned int i=0; keep_running && i<blocks.size(); ++i) {
@@ -416,7 +428,7 @@ bool PMCEnumerator::is_pmc(NodeSet K, const SubGraph& G) {
     // Build the sets Si.
     // While doing so make sure we don't have any full components
     for (i=0; i<B.size(); ++i) {
-        //std::sort(S[i].begin(), S[i].end());
+        VERIFY_SORT_ISPMC(B[i]->S); // S must be sorted for the algorithm to work
         if (B[i]->S == K) {
             // Uh oh.. C[i] is a full component
             return false;
@@ -445,6 +457,8 @@ bool PMCEnumerator::is_pmc(NodeSet K, const SubGraph& G) {
             }
             bool foundSi = false;
             for (k=0; k<Sx.size(); ++k) {
+                // Sx is sorted by construction (otherwise, S is unsorted),
+                // so IS_IN_CONTAINER can be safely used.
                 if (UTILS__IS_IN_CONTAINER(y, Sx[k])) {
                     foundSi = true;
                     break;
