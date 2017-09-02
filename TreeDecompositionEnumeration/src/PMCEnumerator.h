@@ -10,6 +10,14 @@
 
 namespace tdenum {
 
+// Different run modes for the enumerator.
+// Some inner mechanisms are difficult to test via friend class
+typedef enum PMCERunMode {
+    PMCE_RUNMODE_FAST,
+    PMCE_RUNMODE_VERIFY_SORT
+} PMCERunMode;
+#define PMCE_RUNMODE PMCE_RUNMODE_VERIFY_SORT
+
 /**
  * Constructs a list of potential maximal cliques, given a graph.
  *

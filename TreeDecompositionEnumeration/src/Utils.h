@@ -156,15 +156,17 @@ UTILS__AUTOPRINT_CONTAINER(set)
 UTILS__AUTOPRINT_CONTAINER(vector)
 
 // Set intersection and union.
+// Expects pointer / iterator / something compatible with
+// the ->begin() / ->end() call.
 #define UTILS__SET_INTERSECTION(_A,_B,_res) do { \
-        std::set_intersection(_A->begin(), _A->end(), \
-                              _B.begin(), _B.end(), \
+        std::set_intersection((_A)->begin(), (_A)->end(), \
+                              (_B)->begin(), (_B)->end(), \
                               std::back_inserter(_res)); \
     } while(0)
 
 #define UTILS__SET_UNION(_A,_B,_res) do { \
-        std::set_union(_A.begin(), _A.end(), \
-                       _B.begin(), _B.end(), \
+        std::set_union((_A)->begin(), (_A)->end(), \
+                       (_B)->begin(), (_B)->end(), \
                        std::back_inserter(_res)); \
     } while(0)
 

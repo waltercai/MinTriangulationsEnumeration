@@ -23,6 +23,22 @@ namespace tdenum {
         } \
     } while(0)
 
+/**
+ * Verify the given container is sorted (check the runmode first).
+ * Should be used in the parallel context of one_more_vertex.
+ */
+#define VERIFY_SORT_OMV(_cont) do { \
+        if (PMCE_RUNMODE == PMCE_RUNMODE_VERIFY_SORT) { \
+            if (!std::is_sorted((_cont).begin(), (_cont).end())) { \
+                TRACE(TRACE_LVL__ERROR, "Unsorted NodeSet " #_cont ": " << (_cont) << ". Returning and empty set..."); \
+                keep_running = false; \
+                P1 = NodeSetSet(); \
+            } \
+        } \
+    } while(0)
+
+
+
 const PMCAlg PMCEnumerator::default_alg = PMCAlg();
 
 PMCEnumerator::PMCEnumerator(const Graph& g, time_t time_limit) :
@@ -330,19 +346,22 @@ NodeSetSet PMCEnumerator::one_more_vertex(
                     // of G\S so that the set P of all elements of S that are adjacent
                     // to some vertex of C supports P=S.
                     // Sort S first so we can easily compare P=S later.
-                    //std::sort(S.begin(), S.end());
+                    VERIFY_SORT_OMV(S);
 
                     BlockVec blocks = G1.getBlocks(S);
-                    for (unsigned int i=0; i<blocks.size(); ++i) {
+                    for (unsigned int i=0; keep_running && i<blocks.size(); ++i) {
                         // We only want full components
                         if (S != blocks[i]->S) {
                             continue;
                         }
-                        for (auto sep2 = D2.begin(); sep2 != D2.end(); ++sep2) {
+                        for (auto sep2 = D2.begin(); keep_running && sep2 != D2.end(); ++sep2) {
+                            VERIFY_SORT_OMV(*sep2);
                             NodeSet TcapC;
-                            UTILS__SET_INTERSECTION(sep2, blocks[i]->C, TcapC);
+                            UTILS__SET_INTERSECTION(sep2, &(blocks[i]->C), TcapC);
+                            VERIFY_SORT_OMV(TcapC);
                             NodeSet SuTcapC;
-                            UTILS__SET_UNION(TcapC, S, SuTcapC);
+                            UTILS__SET_UNION(&TcapC, &S, SuTcapC);
+                            VERIFY_SORT_OMV(SuTcapC);
                             TRACE(TRACE_LVL__TEST, "Constructed SuTcapC=" << SuTcapC);
                             if (is_pmc(SuTcapC, G1)) {
                                 TRACE(TRACE_LVL__TEST, "..and inserting it");
