@@ -522,7 +522,7 @@ bool algorithmconsistency_aux(bool pmc_parallel = false) {
                 .add_random({2,4,6,8,10,12,14,16,18,20},{0.3,0.5,0.7}, true)
                 .get();
     for (unsigned i=0; i<gs.size(); ++i) {
-        cout << UTILS__REPLACE_STREAM(i+1 << "/" << gs.size(), UTILS__REPLACE_STRING_INVALID_ID + 1);
+        cout << UTILS__REPLACE_STREAM(i+1 << "/" << gs.size());
         Graph& g = gs[i].g;
         NodeSetSet pmcs;
         bool found_pmcs = false;
@@ -536,7 +536,7 @@ bool algorithmconsistency_aux(bool pmc_parallel = false) {
             }
             NodeSetSet these_pmcs = pmce.get();
             if (found_pmcs && these_pmcs != pmcs) {
-                cout << utils_replace_string();
+                cout << utils__replace_string();
                 UTILS__ASSERT_PRINT("WRONG! Algorithm " << PMCAlg(alg).str() <<
                                     " got it wrong. Calculated pmcs:" << these_pmcs << endl <<
                                     "The PMCs first calculated were:" << pmcs << endl);
@@ -548,7 +548,7 @@ bool algorithmconsistency_aux(bool pmc_parallel = false) {
             }
         }
     }
-    cout << utils_replace_string();
+    cout << utils__replace_string();
     return true;
 }
 bool PMCEnumeratorTester::algorithmconsistencysync() const {

@@ -31,6 +31,8 @@ namespace tdenum {
 #define SLASH '/'
 #endif
 
+#define EPSILON ((double)0.0001)
+
 /**
  * Logger class.
  *
@@ -62,7 +64,7 @@ public:
 // Insert the item into the container, where the container
 // itself may be a shared OMP resource.
 template<typename T, typename V>
-void insert_critical(const V& val, T& container) {
+void utils__insert_critical(const V& val, T& container) {
     #pragma omp critical
     {
         container.insert(val);
@@ -76,8 +78,8 @@ void insert_critical(const V& val, T& container) {
  */
 
 // strlen() and std::to_string cause problems
-unsigned utils_strlen(const string&);
-unsigned utils_strlen(const char*);
+unsigned utils__strlen(const string&);
+unsigned utils__strlen(const char*);
 
 // TO_STRING expects a stream, or something that can be output via a stream
 #define UTILS__TO_STRING(_x) static_cast< std::ostringstream & >( \
@@ -103,33 +105,46 @@ unsigned utils_strlen(const char*);
 // if the function is called with the same output ID (can be any
 // integer) prepends \b characters to erase the previous string.
 // If called with no arguments, outputs a string that erases the
-// previous output, returns the cursor to it's original location
-// and resets the internal ID.
+// previous output, returns the cursor to it's original location.
 // Useful for printing progress.
-#define UTILS__REPLACE_STRING_INVALID_ID (-1)
-string utils_replace_string(const string&, int id);
-string utils_replace_string();
-#define UTILS__REPLACE_STREAM(_stream, _id) \
-        utils_replace_string(UTILS__TO_STRING(_stream), _id)
+#define UTILS__INVALID_STRING_LENGTH (-1)
+string utils__replace_string(const string&);
+string utils__replace_string();
+#define UTILS__REPLACE_STREAM(_stream) \
+        utils__replace_string(UTILS__TO_STRING(_stream))
 
 // Convert time in seconds to hh:mm:ss
-string secs_to_hhmmss(time_t t);
+string utils__secs_to_hhmmss(time_t t);
 
 // Convert time stamp (in seconds) to readable time
-string timestamp_to_hhmmss(time_t t);
-string timestamp_to_fulldate(time_t t);
+string utils__timestamp_to_hhmmss(time_t t);
+string utils__timestamp_to_fulldate(time_t t);
 
 // Writes / appends a string of output to a file (doesn't append, by default)
-void dump_string_to_file(const string& filename, const string& str, bool append = false);
+void utils__dump_string_to_file(const string& filename, const string& str, bool append = false);
 
 /**
- * Useful container wrappers.
+ * Useful container wrappers / utilities.
  *
- * Removal, search, printing, set operations..
+ * - Vector element removal
+ * - Vector range generation
+ * - Membership query
+ * - Printing
+ * - Set operations
  */
 // Remove an element from a vector (by value).
 #define UTILS__REMOVE_FROM_VECTOR(_v, _elmt) \
     _v.erase(std::remove(_v.begin(), _v.end(), _elmt), _v.end())
+
+// Assume an incremental type with a binary comparison operator
+template <typename T>
+vector<T> utils__vector_range(const T& first, const T& last) {
+    vector<T> v;
+    for(T element=first; element<=last; ++element) {
+        v.push_back(element);
+    }
+    return v;
+}
 
 // Boolean, true <==> _x is an element of the container.
 // Must be iterable and sorted!

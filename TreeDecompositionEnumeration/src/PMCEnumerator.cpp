@@ -314,13 +314,13 @@ NodeSetSet PMCEnumerator::one_more_vertex(
             {
                 auto potential = *pmc2it;
                 if (is_pmc(potential, G1)) {
-                    insert_critical(potential, P1);
+                    utils__insert_critical(potential, P1);
                 }
                 else {
                     NodeSet pmc2a = potential;
                     pmc2a.insert(pmc2a.end(), a); // should already be sorted as a is bigger than previous nodes
                     if (is_pmc(pmc2a, G1)) {
-                        insert_critical(pmc2a, P1);
+                        utils__insert_critical(pmc2a, P1);
                     }
                 }
                 #pragma omp critical
@@ -350,7 +350,7 @@ NodeSetSet PMCEnumerator::one_more_vertex(
                 TRACE(TRACE_LVL__TEST, "Sa is now " << Sa);
                 if (is_pmc(Sa, G1)) {
                     TRACE(TRACE_LVL__TEST, "Inserting Sa");
-                    insert_critical(Sa, P1);
+                    utils__insert_critical(Sa, P1);
                 }
                 if (!UTILS__IS_IN_CONTAINER(a,S) && !D2.isMember(S)) {
                     TRACE(TRACE_LVL__TEST, "Node a=" << a << " is in S=" << S);
@@ -377,7 +377,7 @@ NodeSetSet PMCEnumerator::one_more_vertex(
                             TRACE(TRACE_LVL__TEST, "Constructed SuTcapC=" << SuTcapC);
                             if (is_pmc(SuTcapC, G1)) {
                                 TRACE(TRACE_LVL__TEST, "..and inserting it");
-                                insert_critical(SuTcapC, P1);
+                                utils__insert_critical(SuTcapC, P1);
                             }
                             #pragma omp critical
                             {

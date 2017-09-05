@@ -2,10 +2,10 @@
 
 namespace tdenum {
 
-unsigned utils_strlen(const string& s) {
+unsigned utils__strlen(const string& s) {
     return s.length();
 }
-unsigned utils_strlen(const char* s) {
+unsigned utils__strlen(const char* s) {
     return std::char_traits<char>::length(s);
 }
 
@@ -29,28 +29,29 @@ void Logger::out(const ostringstream& os) {
     }
 }
 
-int utils_replace_string__internal_id = UTILS__REPLACE_STRING_INVALID_ID;
-unsigned utils_replace_string__last_strlen = 0;
-string utils_replace_string(const string& s, int id) {
-    if (id != utils_replace_string__internal_id || id == UTILS__REPLACE_STRING_INVALID_ID) {
-        utils_replace_string__internal_id = id;
-        utils_replace_string__last_strlen = utils_strlen(s);
+int utils_replace_string__last_strlen = UTILS__INVALID_STRING_LENGTH;
+string utils__replace_string(const string& s) {
+    if (utils_replace_string__last_strlen == UTILS__INVALID_STRING_LENGTH) {
+        utils_replace_string__last_strlen = utils__strlen(s);
         return s;
     }
     else {
         string eraser(utils_replace_string__last_strlen, '\b');
-        utils_replace_string__last_strlen = utils_strlen(s);
+        utils_replace_string__last_strlen = utils__strlen(s);
         return eraser+s;
     }
 }
-string utils_replace_string() {
+string utils__replace_string() {
+    if (utils_replace_string__last_strlen = UTILS__INVALID_STRING_LENGTH) {
+        return "";
+    }
     string eraser(utils_replace_string__last_strlen, '\b');
     string spacer(utils_replace_string__last_strlen, ' ');
-    utils_replace_string__internal_id = UTILS__REPLACE_STRING_INVALID_ID;
+    utils_replace_string__last_strlen = UTILS__INVALID_STRING_LENGTH;
     return eraser+spacer+eraser;
 }
 
-string secs_to_hhmmss(time_t t) {
+string utils__secs_to_hhmmss(time_t t) {
     ostringstream oss;
     oss << setfill('0') << setw(2) << t/(60*60);
     oss << ":" << setfill('0') << setw(2) << (t/60)%60;
@@ -63,14 +64,14 @@ string timestamp_aux(time_t t, bool fulldate) {
     strftime(buff, 20, fulldate ? "%c" : "%H:%M:%S", localtime(&t));
     return buff;
 }
-string timestamp_to_hhmmss(time_t t) {
+string utils__timestamp_to_hhmmss(time_t t) {
     return timestamp_aux(t, false);
 }
-string timestamp_to_fulldate(time_t t) {
+string utils__timestamp_to_fulldate(time_t t) {
     return timestamp_aux(t, true);
 }
 
-void dump_string_to_file(const string& filename, const string& str, bool append) {
+void utils__dump_string_to_file(const string& filename, const string& str, bool append) {
     ofstream outfile;
     try {
         outfile.open(filename, ios::out | (append ? ios::app : ios::trunc));

@@ -160,8 +160,8 @@ private:
 
     // If verbose computation is enabled, use this to print progress
     // to the screen.
-    int previous_progress_print_line_id;
     void print_progress();
+    void add_graph_to_progress(unsigned int i);
 
     // Used to compute a single graph.
     // Optionally print verbose output.
@@ -256,8 +256,8 @@ public:
     // G(n[i],p[i]).
     // If mix_match is true, for every i and j a graph will be sampled
     // from G(n[i],p[j])
-    void add_random_graph(unsigned int n, double p, int instances = 1);
-    void add_random_graphs(const vector<unsigned int>& n,
+    void add_random_graph(int n, double p, int instances = 1);
+    void add_random_graphs(const vector<int>& n,
                            const vector<double>& p,
                            bool mix_match = false);
 
@@ -266,7 +266,7 @@ public:
     // (not including 1/step).
     // Allow the user to control the number of sampled instances for
     // each graph.
-    void add_random_graphs_pstep(const vector<unsigned int>& n,
+    void add_random_graphs_pstep(const vector<int>& n,
                                  double step = 0.5,
                                  int instances = 3);
 

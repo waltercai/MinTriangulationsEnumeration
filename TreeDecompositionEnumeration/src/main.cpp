@@ -198,7 +198,7 @@ private:
     int pmc_race() const {
         // Allow 20 minutes per graph
         PMCRacer pmcr(RESULT_DIR_BASE+"PMCRace.csv", 20*60);
-        pmcr.add(GraphProducer().add_random_pstep({26,27,28,29,30,31,32,33,34,36,37},0.1,1).get());
+        pmcr.add(GraphProducer().add_random_pstep(utils__vector_range(26,37),0.1,1).get());
         pmcr.add(GraphProducer().add_by_dir(DATASET_DIR_BASE+DATASET_DIR_DEADEASY).get());
         pmcr.add(GraphProducer().add_by_dir(DATASET_DIR_BASE+DATASET_DIR_EASY).get());
         pmcr.add(GraphProducer().add_by_dir(DATASET_DIR_BASE+DATASET_DIR_DIFFICULT_BN, {"Grid"}).get());

@@ -20,7 +20,7 @@ PMCRacer::PMCRacer(const string& out, time_t limit) :
 string PMCRacer::stringify_header() const {
     ostringstream oss;
     oss << "Comparison of " << PMCAlg::last() << " algorithms." << endl;
-    oss << "Time limit set per graph: " << secs_to_hhmmss(time_limit) << endl;
+    oss << "Time limit set per graph: " << utils__secs_to_hhmmss(time_limit) << endl;
     oss << "Graph,N,M,PMCs";
     for (int alg = PMCAlg::first(); alg<PMCAlg::last(); ++alg) {
         oss << "," << PMCAlg(alg).str();
@@ -41,10 +41,10 @@ string PMCRacer::stringify_result(unsigned i) const {
         << alg_gs[0][i].pmc_count;
     for (int alg = PMCAlg::first(); alg<PMCAlg::last(); ++alg) {
         if (alg_gs[alg][i].pmc_calc_time > alg_gs[alg][i].pmc_time_limit) {
-            oss << "," << secs_to_hhmmss(alg_gs[alg][i].get_pmc_time_limit());
+            oss << "," << utils__secs_to_hhmmss(alg_gs[alg][i].get_pmc_time_limit());
         }
         else {
-            oss << "," << secs_to_hhmmss(alg_gs[alg][i].pmc_calc_time);
+            oss << "," << utils__secs_to_hhmmss(alg_gs[alg][i].pmc_calc_time);
         }
     }
     oss << endl;
@@ -72,7 +72,7 @@ void PMCRacer::go(bool verbose, bool append_results) {
 
     // Open a new file, dump the header
     if (!append_results) {
-        dump_string_to_file(outfilename, stringify_header());
+        utils__dump_string_to_file(outfilename, stringify_header());
     }
 
     TRACE(TRACE_LVL__OFF, "Current status of alg_gs: " << alg_gs);
@@ -81,7 +81,7 @@ void PMCRacer::go(bool verbose, bool append_results) {
     for (unsigned i=0; i<gs.size(); ++i) {
         UTILS__PRINT_IF(verbose, "=== Racing graph " << i+1 << "/" << gs.size()
                        << ": '" << gs[i].text << "'" << endl);
-        UTILS__PRINT_IF(verbose, "Start time: " << timestamp_to_fulldate(time(NULL)) << endl);
+        UTILS__PRINT_IF(verbose, "Start time: " << utils__timestamp_to_fulldate(time(NULL)) << endl);
 
         // Use all algorithms on the graph.
         // To save time, since all algorithms require the calculation of all minimal
@@ -116,7 +116,7 @@ void PMCRacer::go(bool verbose, bool append_results) {
         // Keep calculating. Now, the remaining time can be used by each algorithm
         // separately.
         time_t ms_calc_time = time(NULL) - start_time;
-        UTILS__PRINT_IF(verbose, "MS calc time: " << secs_to_hhmmss(ms_calc_time) << endl);
+        UTILS__PRINT_IF(verbose, "MS calc time: " << utils__secs_to_hhmmss(ms_calc_time) << endl);
 
         // Use a random order of the algorithms, in case
         // cache hits affect results.
@@ -154,7 +154,7 @@ void PMCRacer::go(bool verbose, bool append_results) {
         }
 
         // Output the result to file
-        dump_string_to_file(outfilename, stringify_result(i), append_results);
+        utils__dump_string_to_file(outfilename, stringify_result(i), append_results);
         UTILS__PRINT_IF(verbose,"Dumped string #" << i+1 << "/" << gs.size() << ":" << endl << stringify_result(i));
     }
 

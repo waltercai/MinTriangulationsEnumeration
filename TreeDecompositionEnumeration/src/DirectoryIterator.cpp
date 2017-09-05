@@ -29,8 +29,9 @@ DirectoryIterator::DirectoryIterator(const string& base_dir, bool v, unsigned in
 /**
  * Adds a string to the skip list.
  */
-void DirectoryIterator::skip(const string& s) {
+DirectoryIterator& DirectoryIterator::skip(const string& s) {
     skip_list.push_back(s);
+    return *this;
 }
 
 /**

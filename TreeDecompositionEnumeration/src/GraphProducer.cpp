@@ -15,6 +15,9 @@ string GraphProducer::rand_str(unsigned n, double p, int instance) const {
 // in batch by providing a directory iterator (text will be the filenames),
 // random graphs and batch random graphs (each with text defined by rand_txt()).
 GraphProducer& GraphProducer::add(const Graph& g, const string& text) {
+    if (verbose) {
+        cout << "Adding graph '" << text << "'..." << endl;
+    }
     graphs.push_back(GraphStats(g,text));
     return *this;
 }
@@ -56,7 +59,7 @@ GraphProducer& GraphProducer::add_by_dir(const string& dir,
 // G(n[i],p[i]).
 // If mix_match is true, for every i and j a graph will be sampled
 // from G(n[i],p[j])
-GraphProducer& GraphProducer::add_random(unsigned n, double p, int instances) {
+GraphProducer& GraphProducer::add_random(int n, double p, int instances) {
     for (int i=0; i<instances; ++i) {
         Graph g(n);
         g.randomize(p);
@@ -64,10 +67,10 @@ GraphProducer& GraphProducer::add_random(unsigned n, double p, int instances) {
     }
     return *this;
 }
-GraphProducer& GraphProducer::add_random(const vector<unsigned int>& n,
+GraphProducer& GraphProducer::add_random(const vector<int>& n,
                                const vector<double>& p,
                                bool mix_match,
-                               unsigned instances)
+                               int instances)
 {
     if (!mix_match) {
         if (n.size() != p.size()) {
@@ -95,18 +98,53 @@ GraphProducer& GraphProducer::add_random(const vector<unsigned int>& n,
 // (not including 1/step).
 // Allow the user to control the number of sampled instances for
 // each graph.
-GraphProducer& GraphProducer::add_random_pstep(const vector<unsigned int>& n,
+GraphProducer& GraphProducer::add_random_pstep_range(const vector<int>& n,
+                                     double first, double last, double step,
+                                     int instances)
+{
+    if (step >= 1-EPSILON || step <= EPSILON) {
+        TRACE(TRACE_LVL__ERROR, "Step value must be 0<step<1 (is " << step << ")");
+        return *this;
+    }
+    if (first >= 1-EPSILON || last <= EPSILON) {
+        TRACE(TRACE_LVL__ERROR, "Bounds must make sense (got " << first << "<=p<=" << last << ")");
+        return *this;
+    }
+    // We can allow these
+    if (first <= EPSILON) {
+        first = step;
+    }
+    if (last >= 1-EPSILON) {
+        last = 1-EPSILON;
+    }
+    for (unsigned i=0; i<n.size(); ++i) {
+        for (unsigned j=0; first+(double(j))*step < last; ++j) {
+            add_random(n[i], first+((double)j)*step, instances);
+        }
+    }
+    return *this;
+}
+GraphProducer& GraphProducer::add_random_pstep(const vector<int>& n,
                                      double step,
                                      int instances)
 {
-    if (step >= 1 || step <= 0) {
-        cout << "Step value must be 0<step<1 (is " << step << ")" << endl;
-        return *this;
+    return add_random_pstep_range(n, step, 1, step, instances);
+}
+
+GraphProducer& GraphProducer::hard_graphs(int instances) {
+    // p=0.2~0.4
+    for (int n: utils__vector_range(25,35)) {
+        add_random(n,0.2,instances);
+        add_random(n,0.3,instances);
+        add_random(n,0.4,instances);
     }
-    for (unsigned i=0; i<n.size(); ++i) {
-        for (unsigned j=1; (double(j))*step < 1; ++j) {
-            add_random(n[i], j*step, instances);
-        }
+    // p=0.1, 0.6~0.9
+    for (int n: utils__vector_range(50,60)) {
+        add_random(n,0.1,instances);
+        add_random(n,0.6,instances);
+        add_random(n,0.7,instances);
+        add_random(n,0.8,instances);
+        add_random(n,0.9,instances);
     }
     return *this;
 }

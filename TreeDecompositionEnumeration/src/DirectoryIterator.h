@@ -15,6 +15,7 @@ using std::vector;
 #define DATASET_DIR_BASE string("Datasets"+string(1,SLASH))
 #define DATASET_NEW_DIR_BASE string("NewDatasets"+string(1,SLASH))
 #define RESULT_DIR_BASE string("Results"+string(1,SLASH))
+#define DORI_PROJECT_RESULTS_DIR string(RESULT_DIR_BASE+"DoriProject"+string(1,SLASH))
 #define DATASET_DIR_DEADEASY string("DeadEasy"+string(1,SLASH))
 #define DATASET_DIR_EASY string("Easy"+string(1,SLASH)+ "Random"+string(1,SLASH))
 #define DATASET_DIR_DIFFICULT string("Difficult"+string(1,SLASH))
@@ -41,7 +42,7 @@ public:
                       unsigned int md = 100);
 
     // Add a substring to skip
-    void skip(const string& s);
+    DirectoryIterator& skip(const string& s);
 
     // Fetches the name of the next file under the directory.
     // Returns true <==> such a file exists (we aren't at the last file).

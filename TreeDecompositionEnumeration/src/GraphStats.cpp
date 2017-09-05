@@ -141,34 +141,34 @@ ostream& operator<<(ostream& os, const GraphStats& gs) {
     // MSs
     if (gs.valid(GRAPHSTATS_MS)) {
         os << "Printing " << gs.ms_count << " minimal separators within "
-           << secs_to_hhmmss(gs.ms_calc_time) << ":" << endl << gs.ms << endl;
+           << utils__secs_to_hhmmss(gs.ms_calc_time) << ":" << endl << gs.ms << endl;
     }
     else if (gs.ms_reached_count_limit || gs.ms_reached_time_limit) {
         os << "Reached " << (gs.ms_reached_count_limit ? "count" : "time") << " limit "
-           << "at " << (gs.ms_reached_count_limit ? UTILS__TO_STRING(gs.ms_count) : secs_to_hhmmss(gs.ms_calc_time))
+           << "at " << (gs.ms_reached_count_limit ? UTILS__TO_STRING(gs.ms_count) : utils__secs_to_hhmmss(gs.ms_calc_time))
            << " for minimal separators." << endl;
     }
 
     // PMCs
     if (gs.valid(GRAPHSTATS_PMC)) {
         os << "Printing " << gs.pmc_count << " PMCs within "
-           << secs_to_hhmmss(gs.pmc_calc_time) << ":" << endl << gs.pmc << endl;
+           << utils__secs_to_hhmmss(gs.pmc_calc_time) << ":" << endl << gs.pmc << endl;
     }
     else if (gs.pmc_reached_time_limit) {
-        os << "Reached time limit at " << secs_to_hhmmss(gs.pmc_calc_time)
+        os << "Reached time limit at " << utils__secs_to_hhmmss(gs.pmc_calc_time)
            << " (including Minimal separators precalculation: "
-           << secs_to_hhmmss(gs.actual_pmc_calc_time())
+           << utils__secs_to_hhmmss(gs.actual_pmc_calc_time())
            << " for PMCs." << endl;
     }
 
     // Triangulations
     if (gs.valid(GRAPHSTATS_TRNG)) {
         os << "Found " << gs.trng_count << " triangulations within "
-           << secs_to_hhmmss(gs.trng_calc_time) << "." << endl;
+           << utils__secs_to_hhmmss(gs.trng_calc_time) << "." << endl;
     }
     else if (gs.trng_reached_count_limit || gs.trng_reached_time_limit) {
         os << "Reached " << (gs.trng_reached_count_limit ? "count" : "time") << " limit at "
-           << (gs.trng_reached_count_limit ? UTILS__TO_STRING(gs.trng_count) : secs_to_hhmmss(gs.trng_calc_time))
+           << (gs.trng_reached_count_limit ? UTILS__TO_STRING(gs.trng_count) : utils__secs_to_hhmmss(gs.trng_calc_time))
            << " for minimal triangulations." << endl;
     }
 

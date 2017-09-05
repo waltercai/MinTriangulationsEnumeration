@@ -60,8 +60,7 @@ DatasetStatisticsGenerator::DatasetStatisticsGenerator(const string& outputfile,
                             trng_count_limit(GRAPHSTATS_TRNG_COUNT_LIMIT),
                             pmc_alg(PMCAlg()),
                             graphs_computed(0),
-                            max_text_len(utils_strlen(DSG_COL_TXT)),
-                            previous_progress_print_line_id(UTILS__REPLACE_STRING_INVALID_ID+1)
+                            max_text_len(utils__strlen(DSG_COL_TXT))
 {
     // Locking mechanism
     omp_init_lock(&lock);
@@ -275,37 +274,37 @@ string DatasetStatisticsGenerator::str(unsigned int i, bool csv) const {
 
     // Fields
     if (GRAPHSTATS_TEST_N(fields)) {
-        oss << delim << setw(utils_strlen(DSG_COL_NODES)) << gs[i].n;
+        oss << delim << setw(utils__strlen(DSG_COL_NODES)) << gs[i].n;
     }
     if (GRAPHSTATS_TEST_M(fields)) {
-        oss << delim << setw(utils_strlen(DSG_COL_EDGES)) << gs[i].m;
+        oss << delim << setw(utils__strlen(DSG_COL_EDGES)) << gs[i].m;
     }
     if (GRAPHSTATS_TEST_MS(fields)) {
-        oss << delim << setw(utils_strlen(DSG_COL_MSS)) << gs[i].ms_count;
+        oss << delim << setw(utils__strlen(DSG_COL_MSS)) << gs[i].ms_count;
     }
     if (GRAPHSTATS_TEST_PMC(fields)) {
-        oss << delim << setw(utils_strlen(DSG_COL_PMCS)) << gs[i].pmc_count;
+        oss << delim << setw(utils__strlen(DSG_COL_PMCS)) << gs[i].pmc_count;
     }
     if (GRAPHSTATS_TEST_TRNG(fields)) {
-        oss << delim << setw(utils_strlen(DSG_COL_TRNG)) << gs[i].trng_count;
+        oss << delim << setw(utils__strlen(DSG_COL_TRNG)) << gs[i].trng_count;
     }
     // Special columns
     if (has_random) {
         if (gs[i].g.isRandom()) {
-            oss << delim << setw(utils_strlen(DSG_COL_P)) << gs[i].g.getP();
+            oss << delim << setw(utils__strlen(DSG_COL_P)) << gs[i].g.getP();
             int N = gs[i].g.getNumberOfNodes();
             int M = gs[i].g.getNumberOfEdges();
-            oss << delim << setw(utils_strlen(DSG_COL_RATIO)) << 2*M / (double(N*(N-1))); // |E|/(|V| choose 2)
+            oss << delim << setw(utils__strlen(DSG_COL_RATIO)) << 2*M / (double(N*(N-1))); // |E|/(|V| choose 2)
         }
         else {
-            oss << delim << setw(utils_strlen(DSG_COL_P)) << " ";
-            oss << delim << setw(utils_strlen(DSG_COL_RATIO)) << " ";
+            oss << delim << setw(utils__strlen(DSG_COL_P)) << " ";
+            oss << delim << setw(utils__strlen(DSG_COL_RATIO)) << " ";
         }
     }
     // MS are calculated in one go if we're calculating PMCs,
     // no point in printing MS calculation time
     if (GRAPHSTATS_TEST_MS(fields) && !GRAPHSTATS_TEST_PMC(fields)) {
-        oss << delim << setw(utils_strlen(DSG_COL_MS_TIME)) << gs[i].ms_calc_time;
+        oss << delim << setw(utils__strlen(DSG_COL_MS_TIME)) << gs[i].ms_calc_time;
     }
     if (has_time_limit()) {
         string s;
@@ -323,7 +322,7 @@ string DatasetStatisticsGenerator::str(unsigned int i, bool csv) const {
         else {
             s = " ";
         }
-        oss << delim << setw(utils_strlen(DSG_COL_ERR_TIME)) << s;
+        oss << delim << setw(utils__strlen(DSG_COL_ERR_TIME)) << s;
     }
     if (has_count_limit()) {
         string s;
@@ -338,7 +337,7 @@ string DatasetStatisticsGenerator::str(unsigned int i, bool csv) const {
         else {
             s = " ";
         }
-        oss << delim << setw(utils_strlen(DSG_COL_CNT_TIME)) << s;
+        oss << delim << setw(utils__strlen(DSG_COL_CNT_TIME)) << s;
     }
     oss << endl;
 
@@ -372,7 +371,7 @@ string DatasetStatisticsGenerator::str(bool csv) const {
 void DatasetStatisticsGenerator::dump_parallel_aux(const string& s) {
     if(allow_dump_flag) {
         omp_set_lock(&lock);
-        dump_string_to_file(outfilename, s, true);
+        utils__dump_string_to_file(outfilename, s, true);
         omp_unset_lock(&lock);
     }
 }
@@ -413,11 +412,22 @@ void DatasetStatisticsGenerator::print_progress()  {
             oss << "/" << gs[j].trng_count << (gs[j].trng_reached_count_limit ? "+" : "") << (gs[j].trng_reached_time_limit ? "t" : "");
         }
     }
-    cout << utils_replace_string(oss.str(), previous_progress_print_line_id);
+    cout << utils__replace_string(oss.str());
 
     // Unlock
     omp_unset_lock(&lock);
 
+}
+// Assumes verbose ==
+void DatasetStatisticsGenerator::add_graph_to_progress(unsigned int i) {
+    if (verbose) {
+        omp_set_lock(&lock);
+        cout << utils__replace_string();
+        cout << utils__timestamp_to_fulldate(time(NULL)) << ": Calculating graph '" << gs[i].text << "'" << endl;
+        graphs_in_progress.push_back(i);
+        omp_unset_lock(&lock);
+        print_progress();
+    }
 }
 
 /**
@@ -444,7 +454,7 @@ void DatasetStatisticsGenerator::add_graph(const Graph& graph, const string& txt
     }
 
 }
-void DatasetStatisticsGenerator::add_random_graph(unsigned int n, double p, int instances) {
+void DatasetStatisticsGenerator::add_random_graph(int n, double p, int instances) {
     for (auto graph_stat: GraphProducer().add_random(n, p, instances).get()) {
         add_graph(graph_stat.g, graph_stat.text);
     }
@@ -464,13 +474,13 @@ void DatasetStatisticsGenerator::add_graphs_dir(const string& dir,
         add_graph(graph_stat.g, graph_stat.text);
     }
 }
-void DatasetStatisticsGenerator::add_random_graphs(const vector<unsigned int>& n,
+void DatasetStatisticsGenerator::add_random_graphs(const vector<int>& n,
                         const vector<double>& p, bool mix_match) {
     for (auto graph_stat: GraphProducer().add_random(n, p, mix_match).get()) {
         add_graph(graph_stat.g, graph_stat.text);
     }
 }
-void DatasetStatisticsGenerator::add_random_graphs_pstep(const vector<unsigned int>& n,
+void DatasetStatisticsGenerator::add_random_graphs_pstep(const vector<int>& n,
                                                          double step,
                                                          int instances) {
     for (auto graph_stat: GraphProducer().add_random_pstep(n, step, instances).get()) {
@@ -494,11 +504,7 @@ void DatasetStatisticsGenerator::compute(unsigned int i) {
     // This is a shared resource, so lock it.
     // If verbose is set to false, no need to keep track of the
     // graphs in progress.
-    if (verbose) {
-        omp_set_lock(&lock);
-        graphs_in_progress.push_back(i);
-        omp_unset_lock(&lock);
-    }
+    add_graph_to_progress(i);
 
     // Basics
     if (GRAPHSTATS_TEST_N(fields)) {
@@ -589,9 +595,7 @@ void DatasetStatisticsGenerator::compute(unsigned int i) {
         // Update the graphs in progress (while locked) and do some cleanup
         UTILS__REMOVE_FROM_VECTOR(graphs_in_progress, i);
         graphs_computed++;
-        cout << utils_replace_string();   // Clear output
-        previous_progress_print_line_id = // Always different from the previous ID
-            (2*UTILS__REPLACE_STRING_INVALID_ID + 3) - previous_progress_print_line_id;
+        cout << utils__replace_string();   // Clear output
 
         // Get the time and output.
         // If any limits were encountered, be verbose!

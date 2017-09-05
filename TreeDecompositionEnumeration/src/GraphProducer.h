@@ -20,7 +20,12 @@ private:
 
     // Textify a random graph
     string rand_str(unsigned n, double p, int instance) const;
+
+    // When adding a graph, print out info
+    bool verbose;
 public:
+
+    GraphProducer(bool v = false) : verbose(v) {}
 
     // Add graphs directly, by filename (default text is the filename),
     // in batch by providing a directory iterator (text will be the filenames),
@@ -46,20 +51,27 @@ public:
     // G(n[i],p[i]).
     // If mix_match is true, for every i and j a graph will be sampled
     // from G(n[i],p[j])
-    GraphProducer& add_random(unsigned n, double p, int instances = 1);
-    GraphProducer& add_random(const vector<unsigned int>& n,
+    GraphProducer& add_random(int n, double p, int instances = 1);
+    GraphProducer& add_random(const vector<int>& n,
                     const vector<double>& p,
                     bool mix_match = false,
-                    unsigned instances = 1);
+                    int instances = 1);
 
     // Adds random graphs. For each graph size (number of nodes) n,
     // samples a graph from G(n,k*step) for all k from k=1 to 1/step
     // (not including 1/step).
     // Allow the user to control the number of sampled instances for
     // each graph.
-    GraphProducer& add_random_pstep(const vector<unsigned int>& n,
+    GraphProducer& add_random_pstep(const vector<int>& n,
                           double step = 0.5,
-                          int instances = 3);
+                          int instances = 1);
+    GraphProducer& add_random_pstep_range(const vector<int>& n,
+                          double first = 0, double last = 1, double step = 0.5,
+                          int instances = 1);
+
+    // Generate graphs with 'interesting' run times for min seps / PMCs calculation.
+    // Random graphs with 0.2<=p<=0.4 tend to yield large numbers of said objects.
+    GraphProducer& hard_graphs(int instances = 1);
 
     // Returns the vector of graph statistic objects
     vector<GraphStats> get() const;
