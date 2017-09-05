@@ -60,8 +60,8 @@ string utils__secs_to_hhmmss(time_t t) {
 }
 
 string timestamp_aux(time_t t, bool fulldate) {
-    char buff[20];
-    strftime(buff, 20, fulldate ? "%c" : "%H:%M:%S", localtime(&t));
+    char buff[100];
+    strftime(buff, 100, fulldate ? "%c" : "%H:%M:%S", localtime(&t));
     return buff;
 }
 string utils__timestamp_to_hhmmss(time_t t) {
