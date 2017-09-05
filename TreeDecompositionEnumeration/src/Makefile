@@ -9,8 +9,9 @@ OBJS=ChordalGraph.o Converter.o DatasetStatisticsGenerator.o \
  PMCEnumerator.o PMCEnumeratorTester.o \
  PMCRacer.o SeparatorGraph.o SeparatorsScorer.o SubGraph.o Utils.o
 OBJS_TRNG_ENUM=$(OBJS) MinTriangulationsEnumeration.o
-OBJS_MAIN=$(OBJS) main.o
-EXEC=main
+EXEC=dori_main
+OBJS_MAIN=$(OBJS) $(EXEC).o
+
 
 $(EXEC): $(OBJS_MAIN)
 
@@ -34,6 +35,11 @@ DatasetStatisticsGenerator.o: DatasetStatisticsGenerator.cpp \
 DataStructures.o: DataStructures.cpp DataStructures.h
 DirectoryIterator.o: DirectoryIterator.cpp TestUtils.h Utils.h \
  DirectoryIterator.h
+dori_main.o: dori_main.cpp DatasetStatisticsGenerator.h Graph.h \
+ DataStructures.h GraphReader.h GraphStats.h \
+ MinimalSeparatorsEnumerator.h SeparatorsScorer.h PMCEnumerator.h \
+ SubGraph.h IndependentSetExtender.h PMCAlg.h DirectoryIterator.h \
+ GraphProducer.h Utils.h
 Graph.o: Graph.cpp Graph.h DataStructures.h Utils.h
 GraphProducer.o: GraphProducer.cpp GraphProducer.h Graph.h \
  DataStructures.h GraphReader.h GraphStats.h DirectoryIterator.h Utils.h
