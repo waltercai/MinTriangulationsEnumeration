@@ -45,7 +45,7 @@ public:
     DoriMain() :
         small_hard_stats(GraphProducer(true).add_random_pstep_range(utils__vector_range(25,35),0.2,0.45,0.1,instances).get()),
         sparse_stats(GraphProducer(true).add_random(utils__vector_range(50,60),{0.1},false,instances).get()),
-        dense_stats(GraphProducer(true).add_random_pstep_range(utils__vector_range(50,60),0.6,0.95,0.1,instances).get()),
+        dense_stats(GraphProducer(true).add_random_pstep_range(utils__vector_range(50,60),0.7,0.95,0.1,instances).get()),
         bayesian_stats(GraphProducer(true).add_by_dir(DirectoryIterator(DATASET_NEW_DIR_BASE).skip("evid")).get())
         {}
 
