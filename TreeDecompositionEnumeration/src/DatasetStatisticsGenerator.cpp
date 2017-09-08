@@ -253,7 +253,7 @@ string DatasetStatisticsGenerator::header(bool csv) const {
 string DatasetStatisticsGenerator::str(unsigned int i, bool csv) const {
 
     // Input validation
-    if (i>=gs.size() || !gs[i].valid(fields)) {
+    if (i>=gs.size()) {
         return "INVALID INPUT\n";
     }
 
@@ -481,8 +481,8 @@ void DatasetStatisticsGenerator::add_random_graphs(const vector<int>& n,
     }
 }
 void DatasetStatisticsGenerator::add_random_graphs_pstep(const vector<int>& n,
-                                                         double step,
-                                                         int instances) {
+                        double step,
+                        int instances) {
     for (auto graph_stat: GraphProducer().add_random_pstep(n, step, instances).get()) {
         add_graph(graph_stat.g, graph_stat.text);
     }
