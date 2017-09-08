@@ -37,7 +37,7 @@ namespace tdenum {
 /**
  * Note that we're using locks, so they need to be created and destroyed.
  *
- * Also, max_text_len needs to be at least the size of the string "Graph text"
+ * Also, max_text_len needs to be at least the size of the string "Graph text", quotes included!
  */
 DatasetStatisticsGenerator::DatasetStatisticsGenerator(const string& outputfile, int flds) :
                             outfilename(outputfile),
@@ -60,7 +60,7 @@ DatasetStatisticsGenerator::DatasetStatisticsGenerator(const string& outputfile,
                             trng_count_limit(GRAPHSTATS_TRNG_COUNT_LIMIT),
                             pmc_alg(PMCAlg()),
                             graphs_computed(0),
-                            max_text_len(utils__strlen(DSG_COL_TXT))
+                            max_text_len(utils__strlen(DSG_COL_TXT)+2) // Allow for extra quotes
 {
     // Locking mechanism
     omp_init_lock(&lock);
@@ -439,8 +439,8 @@ void DatasetStatisticsGenerator::add_graph(const Graph& graph, const string& txt
     gs.push_back(GraphStats(graph, txt));
 
     // Update max text length
-    if (max_text_len < strlen(txt.c_str())) {
-        max_text_len = strlen(txt.c_str());
+    if (max_text_len < strlen(txt.c_str())+2) {
+        max_text_len = strlen(txt.c_str())+2;
     }
 
     // If this is a random graph, inform the class
