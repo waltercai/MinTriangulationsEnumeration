@@ -30,7 +30,8 @@ public:
     // Add graphs directly, by filename (default text is the filename),
     // in batch by providing a directory iterator (text will be the filenames),
     // random graphs and batch random graphs (each with text defined by rand_txt()).
-    GraphProducer& add(const Graph& g, const string& text);
+    GraphProducer& add(const Graph& g, const string& text,
+                       bool is_random = false, double p=0, int instance = 1);
     GraphProducer& add(const string& filename, const string& txt = "");
 
     // Recursive search.

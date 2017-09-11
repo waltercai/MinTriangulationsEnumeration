@@ -7,7 +7,7 @@ namespace tdenum {
 const long GraphStats::invalid_value = -1;
 
 GraphStats::GraphStats() : GraphStats(Graph(), "") {}
-GraphStats::GraphStats(const Graph& graph, const string& s) :
+GraphStats::GraphStats(const Graph& graph, const string& s, bool is_rand, double prob, int inst) :
                        g(graph),
                        text(s),
                        n(g.getNumberOfNodes()),
@@ -15,6 +15,10 @@ GraphStats::GraphStats(const Graph& graph, const string& s) :
                        ms_count(0),
                        pmc_count(0),
                        trng_count(0),
+                       is_random(is_rand),
+                       p(prob),
+                       actual_ratio(2*(double)graph.getNumberOfEdges()/(graph.getNumberOfNodes()*(graph.getNumberOfNodes()-1))),
+                       instance(inst),
                        ms_valid(false),
                        pmc_valid(false),
                        trng_valid(false),
@@ -28,8 +32,13 @@ GraphStats::GraphStats(const Graph& graph, const string& s) :
                        trng_reached_time_limit(false),
                        ms_reached_count_limit(false),
                        trng_reached_count_limit(false),
+                       ms_mem_error(false),
+                       pmc_mem_error(false),
+                       trng_mem_error(false),
                        ms_calc_time(0),
-                       pmc_calc_time(0)
+                       pmc_calc_time(0),
+                       trng_calc_time(0),
+                       ms(graph.getNumberOfNodes())
 {}
 
 time_t GraphStats::actual_pmc_calc_time() const {
@@ -105,7 +114,8 @@ bool GraphStats::has_trng_count_limit() const {
     return trng_count_limit > 0;
 }
 
-
+#define MS_REACHED_LIMIT_OR_GET_ANYWAY \
+    (ms_valid || (get_if_limit && (ms_reached_count_limit || ms_reached_time_limit)))
 int GraphStats::get_n() const {
     return n;
 }
@@ -113,7 +123,7 @@ int GraphStats::get_m() const {
     return m;
 }
 long GraphStats::get_ms_count(bool get_if_limit) const {
-    return (ms_valid || (get_if_limit && (ms_reached_count_limit || ms_reached_time_limit)))
+    return (MS_REACHED_LIMIT_OR_GET_ANYWAY)
         ? ms_count : GraphStats::invalid_value;
 }
 long GraphStats::get_pmc_count(bool get_if_limit) const {
@@ -123,6 +133,39 @@ long GraphStats::get_pmc_count(bool get_if_limit) const {
 long GraphStats::get_trng_count(bool get_if_limit) const {
     return (trng_valid || (get_if_limit && (trng_reached_count_limit || trng_reached_time_limit)))
         ? trng_count : GraphStats::invalid_value;
+}
+
+void GraphStats::set_ms(const NodeSetSet& seps) {
+    ms.back() = seps;
+    ms_count = ms.size();
+}
+void GraphStats::set_pmc(const NodeSetSet& p) {
+    pmc = p;
+    pmc_count = p.size();
+}
+NodeSetSet GraphStats::get_ms(bool get_if_limit) const {
+    return (MS_REACHED_LIMIT_OR_GET_ANYWAY)
+        ? ms[g.getNumberOfNodes()-1] : NodeSetSet();
+}
+NodeSetSet GraphStats::get_subgraph_ms(int i, bool get_if_limit) const {
+    return (MS_REACHED_LIMIT_OR_GET_ANYWAY)
+        ? ms[g.getNumberOfNodes()-1] : NodeSetSet();
+}
+NodeSetSet GraphStats::get_pmc(bool get_if_limit) const {
+    return (pmc_valid || (get_if_limit && pmc_reached_time_limit))
+        ? pmc : NodeSetSet();
+}
+
+int GraphStats::get_instance() const {
+    return instance;
+}
+void GraphStats::set_instance(int inst) {
+    if (inst <= 0) {
+        cout << "Instance number should be at least 1. "
+             << "Leaving the instance number as '" << instance << "'" << endl;
+        return;
+    }
+    instance = inst;
 }
 
 bool GraphStats::valid(int fields) const {

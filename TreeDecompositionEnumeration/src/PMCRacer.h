@@ -26,6 +26,7 @@ private:
 
     // The output file name
     string outfilename;
+    bool dump_to_file_when_done;
 
     // Time limit for calculation
     bool has_time_limit;
@@ -58,6 +59,10 @@ public:
     // If calculating PMCs takes too long, stop and move on.
     void set_time_limit(time_t);
     void remove_time_limit();
+
+    // Prevent dumping to file
+    void suppress_dump();
+    void allow_dump();
 
     // Race! Optionally, print stuff to console.
     // If append_results is set to true, results will be appended

@@ -1,14 +1,15 @@
 #ifndef UTILS_H_INCLUDED
 #define UTILS_H_INCLUDED
 
-#include <string.h>
-#include <string>
-#include <iostream>
-#include <vector>
-#include <set>
 #include <fstream>
-#include <sstream>
 #include <iomanip>
+#include <iostream>
+#include <iterator>
+#include <set>
+#include <sstream>
+#include <string>
+#include <string.h>
+#include <vector>
 using std::ostream;
 using std::vector;
 using std::set;
@@ -119,9 +120,23 @@ string utils__secs_to_hhmmss(time_t t);
 // Convert time stamp (in seconds) to readable time
 string utils__timestamp_to_hhmmss(time_t t);
 string utils__timestamp_to_fulldate(time_t t);
+time_t utils__hhmmss_to_timestamp(const string& hhmmss);
 
 // Writes / appends a string of output to a file (doesn't append, by default)
 void utils__dump_string_to_file(const string& filename, const string& str, bool append = false);
+
+// Splits a string by delimiter.
+// For example, split("a:b::c",":",std::back_inserter(tokens)) will result
+// in tokens={"a","b","","c"}
+template<typename Out>
+void utils__split(const std::string &s, char delim, Out result) {
+    std::stringstream ss;
+    ss.str(s);
+    string item;
+    while (std::getline(ss, item, delim)) {
+        *(result++) = item;
+    }
+}
 
 /**
  * Useful container wrappers / utilities.

@@ -15,6 +15,7 @@ using std::ofstream;
 using std::endl;
 using std::ostringstream;
 using std::setw;
+using std::stoi;
 
 namespace tdenum {
 
@@ -60,7 +61,7 @@ DatasetStatisticsGenerator::DatasetStatisticsGenerator(const string& outputfile,
                             trng_count_limit(GRAPHSTATS_TRNG_COUNT_LIMIT),
                             pmc_alg(PMCAlg()),
                             graphs_computed(0),
-                            max_text_len(utils__strlen(DSG_COL_TXT)+2) // Allow for extra quotes
+                            max_text_len(utils__strlen(DSG_COL_STR_TXT)+2) // Allow for extra quotes
 {
     // Locking mechanism
     omp_init_lock(&lock);
@@ -188,8 +189,7 @@ void DatasetStatisticsGenerator::set_pmc_alg(const PMCAlg& alg) {
 void DatasetStatisticsGenerator::set_ms(const NodeSetSet& ms, time_t calc_time, unsigned index) {
     VALIDATE_GRAPH_INDEX_VOID_RET(index);
     --index;    // Zero-indexed now
-    gs[index].ms = ms;
-    gs[index].ms_count = ms.size();
+    gs[index].set_ms(ms);
     gs[index].ms_calc_time = calc_time;
     gs[index].ms_valid = true;
 }
@@ -197,7 +197,7 @@ NodeSetSet DatasetStatisticsGenerator::get_ms(unsigned index) const {
     VALIDATE_GRAPH_INDEX_WITH_RET(index, NodeSetSet());
     --index;    // Zero-indexed now
     if (gs[index].valid(GRAPHSTATS_MS)) {
-        return gs[index].ms;
+        return gs[index].get_ms();
     }
     TRACE(TRACE_LVL__WARNING, "Minimal separators are invalid, returning an empty container!");
     return NodeSetSet();
@@ -213,34 +213,34 @@ string DatasetStatisticsGenerator::header(bool csv) const {
 
     // Header
     oss.setf(std::ios_base::left, std::ios_base::adjustfield);
-    oss << setw(max_text_len) << DSG_COL_TXT;
+    oss << setw(max_text_len) << DSG_COL_STR_TXT;
     if (GRAPHSTATS_TEST_N(fields)) {
-        oss << delim << DSG_COL_NODES;
+        oss << delim << DSG_COL_STR_NODES;
     }
     if (GRAPHSTATS_TEST_M(fields)) {
-        oss << delim << DSG_COL_EDGES;
+        oss << delim << DSG_COL_STR_EDGES;
     }
     if (GRAPHSTATS_TEST_MS(fields)) {
-        oss << delim << DSG_COL_MSS;
+        oss << delim << DSG_COL_STR_MSS;
     }
     if (GRAPHSTATS_TEST_PMC(fields)) {
-        oss << delim << DSG_COL_PMCS;
+        oss << delim << DSG_COL_STR_PMCS;
     }
     if (GRAPHSTATS_TEST_TRNG(fields)) {
-        oss << delim << DSG_COL_TRNG;
+        oss << delim << DSG_COL_STR_TRNG;
     }
     // Special columns
     if (has_random) {
-        oss << delim << DSG_COL_P << delim << DSG_COL_RATIO;
+        oss << delim << DSG_COL_STR_P << delim << DSG_COL_STR_RATIO;
     }
     if (GRAPHSTATS_TEST_MS(fields)) {
-        oss << delim << DSG_COL_MS_TIME;
+        oss << delim << DSG_COL_STR_MS_TIME;
     }
     if (has_time_limit()) {
-        oss << delim << DSG_COL_ERR_TIME;
+        oss << delim << DSG_COL_STR_ERR_TIME;
     }
     if (has_count_limit()) {
-        oss << delim << DSG_COL_CNT_TIME;
+        oss << delim << DSG_COL_STR_ERR_CNT;
     }
     oss << endl;
     if (!csv) {
@@ -274,70 +274,68 @@ string DatasetStatisticsGenerator::str(unsigned int i, bool csv) const {
 
     // Fields
     if (GRAPHSTATS_TEST_N(fields)) {
-        oss << delim << setw(utils__strlen(DSG_COL_NODES)) << gs[i].n;
+        oss << delim << setw(utils__strlen(DSG_COL_STR_NODES)) << gs[i].n;
     }
     if (GRAPHSTATS_TEST_M(fields)) {
-        oss << delim << setw(utils__strlen(DSG_COL_EDGES)) << gs[i].m;
+        oss << delim << setw(utils__strlen(DSG_COL_STR_EDGES)) << gs[i].m;
     }
     if (GRAPHSTATS_TEST_MS(fields)) {
-        oss << delim << setw(utils__strlen(DSG_COL_MSS)) << gs[i].ms_count;
+        oss << delim << setw(utils__strlen(DSG_COL_STR_MSS)) << gs[i].ms_count;
     }
     if (GRAPHSTATS_TEST_PMC(fields)) {
-        oss << delim << setw(utils__strlen(DSG_COL_PMCS)) << gs[i].pmc_count;
+        oss << delim << setw(utils__strlen(DSG_COL_STR_PMCS)) << gs[i].pmc_count;
     }
     if (GRAPHSTATS_TEST_TRNG(fields)) {
-        oss << delim << setw(utils__strlen(DSG_COL_TRNG)) << gs[i].trng_count;
+        oss << delim << setw(utils__strlen(DSG_COL_STR_TRNG)) << gs[i].trng_count;
     }
     // Special columns
     if (has_random) {
         if (gs[i].g.isRandom()) {
-            oss << delim << setw(utils__strlen(DSG_COL_P)) << gs[i].g.getP();
+            oss << delim << setw(utils__strlen(DSG_COL_STR_P)) << gs[i].g.getP();
             int N = gs[i].g.getNumberOfNodes();
             int M = gs[i].g.getNumberOfEdges();
-            oss << delim << setw(utils__strlen(DSG_COL_RATIO)) << 2*M / (double(N*(N-1))); // |E|/(|V| choose 2)
+            oss << delim << setw(utils__strlen(DSG_COL_STR_RATIO)) << 2*M / (double(N*(N-1))); // |E|/(|V| choose 2)
         }
         else {
-            oss << delim << setw(utils__strlen(DSG_COL_P)) << " ";
-            oss << delim << setw(utils__strlen(DSG_COL_RATIO)) << " ";
+            oss << delim << setw(utils__strlen(DSG_COL_STR_P)) << " ";
+            oss << delim << setw(utils__strlen(DSG_COL_STR_RATIO)) << " ";
         }
     }
-    // MS are calculated in one go if we're calculating PMCs,
-    // no point in printing MS calculation time
-    if (GRAPHSTATS_TEST_MS(fields) && !GRAPHSTATS_TEST_PMC(fields)) {
-        oss << delim << setw(utils__strlen(DSG_COL_MS_TIME)) << gs[i].ms_calc_time;
+    if (GRAPHSTATS_TEST_MS(fields)) {
+        oss << delim << setw(utils__strlen(DSG_COL_STR_MS_TIME)) << utils__timestamp_to_hhmmss(gs[i].ms_calc_time);
     }
     if (has_time_limit()) {
         string s;
         if (gs[i].ms_reached_time_limit || gs[i].trng_reached_time_limit || gs[i].pmc_reached_time_limit) {
             if (gs[i].ms_reached_time_limit) {
-                s += string("MS");
+                s += string(DSG_ERROR_TEXT_MS);
             }
             if (gs[i].trng_reached_time_limit) {
-                s += (gs[i].ms_reached_time_limit ? "," : "") + string("TRNG");
+                s += (gs[i].ms_reached_time_limit ? ";" : "") + string(DSG_ERROR_TEXT_TRNG);
             }
             if (gs[i].pmc_reached_time_limit) {
-                s += (gs[i].ms_reached_time_limit || gs[i].trng_reached_time_limit ? "," : "") + string("PMC");
+                s += (gs[i].ms_reached_time_limit || gs[i].trng_reached_time_limit ? ";" : "") + string(DSG_ERROR_TEXT_PMC);
             }
         }
         else {
             s = " ";
         }
-        oss << delim << setw(utils__strlen(DSG_COL_ERR_TIME)) << s;
+        oss << delim << setw(utils__strlen(DSG_COL_STR_ERR_TIME)) << s;
     }
     if (has_count_limit()) {
         string s;
         if (gs[i].ms_reached_count_limit || gs[i].trng_reached_count_limit) {
             if (gs[i].ms_reached_count_limit) {
-                s += string("MS");
+                s += string(DSG_ERROR_TEXT_MS);
             }
             if (gs[i].trng_reached_count_limit) {
-                s += (gs[i].ms_reached_count_limit ? "," : "") + string("TRNG");
+                s += (gs[i].ms_reached_count_limit ? "," : "") + string(DSG_ERROR_TEXT_TRNG);
             }
         }
         else {
             s = " ";
         }
-        oss << delim << setw(utils__strlen(DSG_COL_CNT_TIME)) << s;
+        oss << delim << setw(utils__strlen(DSG_COL_STR_ERR_CNT)) << s;
     }
     oss << endl;
 
@@ -368,10 +366,10 @@ string DatasetStatisticsGenerator::str(bool csv) const {
  * Note that dump_line() is called by compute() which may be running
  * in several parallel instances, so be thread safe!
  */
-void DatasetStatisticsGenerator::dump_parallel_aux(const string& s) {
+void DatasetStatisticsGenerator::dump_parallel_aux(const string& s, bool append) {
     if(allow_dump_flag) {
         omp_set_lock(&lock);
-        utils__dump_string_to_file(outfilename, s, true);
+        utils__dump_string_to_file(outfilename, s, append);
         omp_unset_lock(&lock);
     }
 }
@@ -379,7 +377,7 @@ void DatasetStatisticsGenerator::dump_line(unsigned int i) {
     dump_parallel_aux(str(i, true));
 }
 void DatasetStatisticsGenerator::dump_header() {
-    dump_parallel_aux(header(true));
+    dump_parallel_aux(header(true), false); // New file, if we're dumping the header
 }
 
 /**
@@ -418,7 +416,6 @@ void DatasetStatisticsGenerator::print_progress()  {
     omp_unset_lock(&lock);
 
 }
-// Assumes verbose ==
 void DatasetStatisticsGenerator::add_graph_to_progress(unsigned int i) {
     if (verbose) {
         omp_set_lock(&lock);
@@ -521,22 +518,32 @@ void DatasetStatisticsGenerator::compute(unsigned int i) {
         gs[i].ms_count = 0;
         MinimalSeparatorsEnumerator mse(gs[i].g, UNIFORM);
         t = time(NULL);
-        while(mse.hasNext()) {
-            min_seps.insert(mse.next());
-            ++(gs[i].ms_count);
-            print_progress();
-            if (has_ms_count_limit && gs[i].ms_count > ms_count_limit) {
-                gs[i].ms_reached_count_limit = true;
-                break;
+        try {
+            while(mse.hasNext()) {
+                min_seps.insert(mse.next());
+                ++(gs[i].ms_count);
+                print_progress();
+                if (has_ms_count_limit && gs[i].ms_count > ms_count_limit) {
+                    gs[i].ms_reached_count_limit = true;
+                    break;
+                }
+                if (has_ms_time_limit && time(NULL)-t > ms_time_limit) {
+                    gs[i].ms_reached_time_limit = true;
+                    break;
+                }
+                mse.next();
             }
-            if (has_ms_time_limit && time(NULL)-t > ms_time_limit) {
-                gs[i].ms_reached_time_limit = true;
-                break;
-            }
-            mse.next();
+            gs[i].set_ms(min_seps);
+            gs[i].ms_valid = !(gs[i].ms_reached_time_limit || gs[i].ms_reached_count_limit);
+        }
+        catch(std::bad_alloc) {
+            TRACE(TRACE_LVL__ERROR, "Caught std::bad_alloc while calculating separators! Setting MS 'valid' field to FALSE");
+            gs[i].ms_mem_error = true;
+            gs[i].ms_valid = false;
         }
         gs[i].ms_calc_time = time(NULL)-t;
-        gs[i].ms_valid = !(gs[i].ms_reached_time_limit || gs[i].ms_reached_count_limit);
+        TRACE(TRACE_LVL__TEST, "Timestamp difference: " << gs[i].ms_calc_time);
+        TRACE(TRACE_LVL__TEST, "Timestamp in hhmmss format: " << utils__timestamp_to_hhmmss(gs[i].ms_calc_time));
         TRACE(TRACE_LVL__TEST,"SET MS COUNT TO " << gs[i].ms_count);
     }
 
@@ -554,15 +561,22 @@ void DatasetStatisticsGenerator::compute(unsigned int i) {
             pmce.set_minimal_separators(min_seps);
         }
         t = time(NULL);
-        pmce.get();
-        gs[i].pmc_calc_time = time(NULL) - t;
-        gs[i].pmc_count = pmce.get().size();
-        gs[i].ms_count = pmce.get_ms().size(); // Redundant? Not expensive, though..
-        if (pmce.is_out_of_time()) {
-            gs[i].pmc_reached_time_limit = true;
+        try {
+            pmce.get();
+            gs[i].pmc_valid = !pmce.is_out_of_time();
+            gs[i].pmc_count = pmce.get().size();
+            gs[i].ms_count = pmce.get_ms().size(); // Redundant? Not expensive, though..
+            if (pmce.is_out_of_time()) {
+                gs[i].pmc_reached_time_limit = true;
+            }
         }
+        catch(std::bad_alloc) {
+            TRACE(TRACE_LVL__ERROR, "Caught std::bad_alloc while calculating PMCs! Setting PMC 'valid' field to FALSE");
+            gs[i].pmc_mem_error = true;
+            gs[i].pmc_valid = false;
+        }
+        gs[i].pmc_calc_time = time(NULL) - t;
         print_progress();
-        gs[i].pmc_valid = !pmce.is_out_of_time();
     }
 
     // Triangulations
@@ -570,21 +584,28 @@ void DatasetStatisticsGenerator::compute(unsigned int i) {
         gs[i].trng_count = 0;
         MinimalTriangulationsEnumerator enumerator(gs[i].g, NONE, UNIFORM, SEPARATORS);
         t = time(NULL);
-        while (enumerator.hasNext()) {
-            ++gs[i].trng_count;
-            print_progress();
-            if (has_trng_count_limit && gs[i].trng_count > trng_count_limit) {
-                gs[i].trng_reached_count_limit = true;
-                break;
+        try {
+            while (enumerator.hasNext()) {
+                ++gs[i].trng_count;
+                print_progress();
+                if (has_trng_count_limit && gs[i].trng_count > trng_count_limit) {
+                    gs[i].trng_reached_count_limit = true;
+                    break;
+                }
+                if (has_trng_time_limit && time(NULL)-t > trng_time_limit) {
+                    gs[i].trng_reached_time_limit = true;
+                    break;
+                }
+                enumerator.next();
             }
-            if (has_trng_time_limit && time(NULL)-t > trng_time_limit) {
-                gs[i].trng_reached_time_limit = true;
-                break;
-            }
-            enumerator.next();
+            gs[i].trng_valid = !(gs[i].trng_reached_time_limit || gs[i].trng_reached_count_limit);
+        }
+        catch(std::bad_alloc) {
+            TRACE(TRACE_LVL__ERROR, "Caught std::bad_alloc while calculating triangulations! Setting triangulations 'valid' field to FALSE");
+            gs[i].trng_mem_error = true;
+            gs[i].trng_valid = false;
         }
         gs[i].trng_calc_time = time(NULL)-t;
-        gs[i].trng_valid = !(gs[i].trng_reached_time_limit || gs[i].trng_reached_count_limit);
     }
 
     // Printing and cleanup.
@@ -624,9 +645,9 @@ void DatasetStatisticsGenerator::compute_by_graph_number_range(unsigned int firs
 
     // Validate input
     if (first < 1 || first > last || last > gs.size()) {
-        cout << "Bad parameter: called compute_by_graph_number_range(first,last) "
+        TRACE(TRACE_LVL__ERROR, "Bad parameter: called compute_by_graph_number_range(first,last) "
              << "with first=" << first << " and last=" << last
-             << ". Legal values require 1<=first<=last<=" << gs.size() << endl;
+             << ". Legal values require 1<=first<=last<=" << gs.size());
         return;
     }
 
@@ -672,6 +693,79 @@ unsigned DatasetStatisticsGenerator::get_total_graphs() const {
  */
 void DatasetStatisticsGenerator::print() const {
     cout << str(false);
+}
+
+vector<GraphStats> DatasetStatisticsGenerator::read_stats(const string& filename) {
+    vector<GraphStats> data;
+
+    // Open the file, read the header.
+    ifstream file(filename);
+    if (!file.good()) {
+        TRACE(TRACE_LVL__ERROR, "Couldn't open file '" << filename << "'");
+        return data;
+    }
+    string line;
+    vector<string> headers;
+    getline(file, line);
+    utils__split(line, ',', std::back_inserter(headers));
+    // First cell is useless
+    headers.erase(headers.begin());
+
+    // For every other line, add a graph stat object and populate using
+    // the headers.
+    while(file.good()) {
+        vector<string> tokens;
+        GraphStats stats;
+        getline(file,line);
+        utils__split(line, ',', std::back_inserter(tokens));
+        stats.text = tokens[0];
+        for (unsigned int i=0; i<headers.size(); ++i) {
+            string token = tokens[i+1];
+            switch(DSG_COL_STR_TO_INT_MAP.at(headers[i])) {
+            case DSG_COL_NODES:
+                stats.n = stoi(token);
+                break;
+            case DSG_COL_EDGES:
+                stats.m = stoi(token);
+                break;
+            case DSG_COL_MSS:
+                stats.ms_count = stoi(token);
+                break;
+            case DSG_COL_PMCS:
+                stats.pmc_count = stoi(token);
+                break;
+            case DSG_COL_TRNG:
+                stats.trng_count = stoi(token);
+                break;
+            case DSG_COL_P:
+                stats.p = stod(token);
+                break;
+            case DSG_COL_RATIO:
+                stats.actual_ratio = stod(token);
+                break;
+            case DSG_COL_MS_TIME:
+                stats.ms_calc_time = utils__hhmmss_to_timestamp(token);
+                break;
+            case DSG_COL_ERR_TIME:
+                // This needs to be parsed so we can tell where the time error occurred
+                stats.ms_reached_time_limit = (token.find(DSG_ERROR_TEXT_MS) != string::npos);
+                stats.pmc_reached_time_limit = (token.find(DSG_ERROR_TEXT_PMC) != string::npos);
+                stats.trng_reached_time_limit = (token.find(DSG_ERROR_TEXT_TRNG) != string::npos);
+                break;
+            case DSG_COL_ERR_CNT:
+                stats.ms_reached_count_limit = (token.find(DSG_ERROR_TEXT_MS) != string::npos);
+                stats.trng_reached_count_limit = (token.find(DSG_ERROR_TEXT_TRNG) != string::npos);
+                break;
+            case DSG_COL_TXT:
+            case DSG_COL_LAST:
+            default:
+                break;
+            }
+        }
+        data.push_back(stats);
+    }
+
+    return data;
 }
 
 }

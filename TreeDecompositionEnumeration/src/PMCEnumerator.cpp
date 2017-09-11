@@ -17,7 +17,7 @@ namespace tdenum {
             time_t _t = time(NULL); \
             if (_t - start_time >= limit) { \
                 out_of_time = true; \
-                TRACE(TRACE_LVL__TEST, "Out of time!"); \
+                TRACE(TRACE_LVL__WARNING, "Out of time!"); \
                 _op; \
             } \
         } \
@@ -245,7 +245,7 @@ NodeSetSet PMCEnumerator::get() {
             // The NORMAL algorithm requires calculation of separators
             if (!alg.is_reverse()) {
                 if (i == n-1) {
-                    TRACE(TRACE_LVL__TEST, "Last iteration, moving from:" << endl << subg[i-1] <<
+                    TRACE(TRACE_LVL__OFF, "Last iteration, moving from:" << endl << subg[i-1] <<
                                            "To (by adding node " << a << "):" << endl << subg[i] <<
                                            "With minimal separators " << MSi << " and " <<
                                            tmp_graph.getNewNames(get_ms()) << ", respectively.");
@@ -256,7 +256,7 @@ NodeSetSet PMCEnumerator::get() {
                     MSip1 = DiEnumerator.getAll();
                     pmcs = one_more_vertex(subg[i], subg[i-1], a, MSip1, MSi, prev_pmcs);
                 }
-                TRACE(TRACE_LVL__TEST, "Current pmcs: " << tmp_graph.getOriginalNames(pmcs));
+                TRACE(TRACE_LVL__OFF, "Current pmcs: " << tmp_graph.getOriginalNames(pmcs));
             }
             else {
                 pmcs = one_more_vertex(subg[i], subg[i-1], a, sub_ms[i], sub_ms[i-1], prev_pmcs);
@@ -343,17 +343,13 @@ NodeSetSet PMCEnumerator::one_more_vertex(
                 VERIFY_SORT_OMV(S);
 
                 // Add a, if not already in:
-                TRACE(TRACE_LVL__TEST, "S=" << S << ", Sa=" << Sa);
                 if (!UTILS__IS_IN_CONTAINER(a,Sa)) {
                     Sa.insert(Sa.end(), a);
                 }
-                TRACE(TRACE_LVL__TEST, "Sa is now " << Sa);
                 if (is_pmc(Sa, G1)) {
-                    TRACE(TRACE_LVL__TEST, "Inserting Sa");
                     utils__insert_critical(Sa, P1);
                 }
                 if (!UTILS__IS_IN_CONTAINER(a,S) && !D2.isMember(S)) {
-                    TRACE(TRACE_LVL__TEST, "Node a=" << a << " is in S=" << S);
 
                     // For each separator S, iterate over all full components C of G
                     // associated with S. In other words, all connected components C
@@ -374,9 +370,7 @@ NodeSetSet PMCEnumerator::one_more_vertex(
                             NodeSet SuTcapC;
                             UTILS__SET_UNION(&TcapC, &S, SuTcapC);
                             VERIFY_SORT_OMV(SuTcapC);
-                            TRACE(TRACE_LVL__TEST, "Constructed SuTcapC=" << SuTcapC);
                             if (is_pmc(SuTcapC, G1)) {
-                                TRACE(TRACE_LVL__TEST, "..and inserting it");
                                 utils__insert_critical(SuTcapC, P1);
                             }
                             #pragma omp critical
@@ -443,6 +437,7 @@ bool PMCEnumerator::is_pmc(NodeSet K, const SubGraph& G) {
         // Find the S[i]s containing x
         vector<NodeSet> Sx;
         for (j=0; j<B.size(); ++j) {
+            CHECK_TIME_OR_OP(return false);
             // They're all sorted, so use binary search
             if (UTILS__IS_IN_CONTAINER(x, B[j]->S)) {
                 Sx.push_back(B[j]->S);
@@ -451,6 +446,7 @@ bool PMCEnumerator::is_pmc(NodeSet K, const SubGraph& G) {
         // For every unchecked y in K (scanning forward) check adjacency
         // in the graph F
         for (j=i+1; j<K.size(); ++j) {
+            CHECK_TIME_OR_OP(return false);
             Node y = K[j];
             if (G.areNeighbors(x, y)) {
                 continue;

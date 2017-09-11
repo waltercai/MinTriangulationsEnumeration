@@ -72,6 +72,7 @@ public:
     // General invalid value
     static const long invalid_value;
 
+    // Basic graph data
     Graph g;
     string text;
     int n;
@@ -79,12 +80,19 @@ public:
     long ms_count;
     long pmc_count;
     long trng_count;
+
+    // Useful fields for random graphs
+    bool is_random;
+    double p, actual_ratio;
+    int instance;
+
     // Are the (n,m,ms,pmcs,triangs) fields valid for graph i?
     // Note: if the DSG didn't request PMCs, then even if valid
     // is true the PMCs should be zero.
     bool ms_valid;
     bool pmc_valid;
     bool trng_valid;
+
     // If the limit was overreached, set the relevant flag.
     time_t ms_time_limit;
     time_t pmc_time_limit;
@@ -96,6 +104,10 @@ public:
     bool trng_reached_time_limit;
     bool ms_reached_count_limit;
     bool trng_reached_count_limit;
+    bool ms_mem_error;
+    bool pmc_mem_error;
+    bool trng_mem_error;
+
     // The amount of time required for calculation the minimal separators.
     // Note: PMC calculation time may disregard the time required to calculate
     // the minimal separators of g (see actual_pmc_calc_time())
@@ -103,14 +115,19 @@ public:
     time_t pmc_calc_time;
     time_t trng_calc_time;
 
-    // Data
-    NodeSetSet ms;  // Minimal separators
-    NodeSetSet pmc; // PMCs
+    // Data.
+    // Minimal separators of all subgraphs may also be stored.
+    vector<NodeSetSet> ms;  // Minimal separators
+    NodeSetSet pmc;         // PMCs
 
     // Basic constructors.
-    // We need a default constructor for containers
+    // We need a default constructor for containers.
     GraphStats();
-    GraphStats(const Graph&, const string&);
+    GraphStats(const Graph& g,
+               const string& text,
+               bool is_rand = false,
+               double p = 0,
+               int inst = 1);
 
     // Include the time required to calculate the MSs
     time_t actual_pmc_calc_time() const;
@@ -149,6 +166,17 @@ public:
     long get_ms_count(bool get_if_limit = true) const;
     long get_pmc_count(bool get_if_limit = true) const;
     long get_trng_count(bool get_if_limit = true) const;
+
+    // Data utility methods
+    void set_ms(const NodeSetSet&);
+    void set_pmc(const NodeSetSet&);
+    NodeSetSet get_ms(bool get_if_limit = true) const;
+    NodeSetSet get_subgraph_ms(int i, bool get_if_limit = true) const;
+    NodeSetSet get_pmc(bool get_if_limit = true) const;
+
+    // Graph instance
+    int get_instance() const;
+    void set_instance(int inst);
 
     // Given a bit mask of active metrics (see the defined GRAPHSTATS_USING_X),
     // return true iff all requested metrics are valid.

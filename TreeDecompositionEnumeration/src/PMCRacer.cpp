@@ -12,6 +12,7 @@ namespace tdenum {
 
 PMCRacer::PMCRacer(const string& out, time_t limit) :
     outfilename(out),
+    dump_to_file_when_done(true),
     has_time_limit(limit > 0),
     time_limit(limit),
     alg_gs(PMCAlg::last()),
@@ -68,10 +69,17 @@ void PMCRacer::remove_time_limit() {
     time_limit = 0;
 }
 
+void PMCRacer::suppress_dump() {
+    dump_to_file_when_done = false;
+}
+void PMCRacer::allow_dump() {
+    dump_to_file_when_done = true;
+}
+
 void PMCRacer::go(bool verbose, bool append_results) {
 
     // Open a new file, dump the header
-    if (!append_results) {
+    if (!append_results && dump_to_file_when_done) {
         utils__dump_string_to_file(outfilename, stringify_header());
     }
 
@@ -106,7 +114,7 @@ void PMCRacer::go(bool verbose, bool append_results) {
             UTILS__PRINT_IF(verbose, "Out of time in initial MS calculation, moving on to the next graph." << endl);
             gs[i].set_pmc_time_limit(time_limit);
             gs[i].pmc_calc_time = time_limit+1;
-            gs[i].ms = min_seps;
+            gs[i].set_ms(min_seps);
             for (int alg=PMCAlg::first(); alg<PMCAlg::last(); ++alg) {
                 alg_gs[alg].push_back(gs[i]);
             }
@@ -154,7 +162,9 @@ void PMCRacer::go(bool verbose, bool append_results) {
         }
 
         // Output the result to file
-        utils__dump_string_to_file(outfilename, stringify_result(i), append_results);
+        if (dump_to_file_when_done) {
+            utils__dump_string_to_file(outfilename, stringify_result(i), append_results);
+        }
         UTILS__PRINT_IF(verbose,"Dumped string #" << i+1 << "/" << gs.size() << ":" << endl << stringify_result(i));
     }
 

@@ -8,10 +8,12 @@
 #include "PMCEnumerator.h"
 #include "PMCAlg.h"
 #include "DirectoryIterator.h"
+#include <map>
 #include <string>
 #include <vector>
 #include <omp.h>
 using std::vector;
+using std::map;
 
 namespace tdenum {
 
@@ -23,6 +25,7 @@ namespace tdenum {
  * - Number of minimal separators
  * - Number of PMCs
  * - Number of minimal triangulations
+ * - Number of minimal separators of each subgraph of G
  *
  * By default, the results are output to CSV file (optionally, print
  * formatted statistics to console with the 'verbose' flag). If the DSG
@@ -58,19 +61,61 @@ namespace tdenum {
 
 /**
  * Text to be displayed in the CSV file header.
+ * Map names to numeric identifiers for ease of use.
  */
-#define DSG_COL_TXT "Graph text"
-#define DSG_COL_NODES "Nodes "
-#define DSG_COL_EDGES "Edges "
-#define DSG_COL_MSS "Minimal separators"
-#define DSG_COL_PMCS "PMCs    "
-#define DSG_COL_TRNG "Minimal triangulations"
-#define DSG_COL_P "P value"
-#define DSG_COL_RATIO "Edge ratio"
-#define DSG_COL_MS_TIME "MS calculation time"
-#define DSG_COL_ERR_TIME "Time errors"
-#define DSG_COL_CNT_TIME "Count errors"
+#define DSG_ERROR_TEXT_MS "MS"
+#define DSG_ERROR_TEXT_PMC "PMC"
+#define DSG_ERROR_TEXT_TRNG "TRNG"
 
+#define DSG_COL_TABLE \
+    X(TXT, "Graph text") \
+    X(NODES, "Nodes ") \
+    X(EDGES, "Edges ") \
+    X(MSS, "Minimal separators") \
+    X(PMCS, "PMCs    ") \
+    X(TRNG, "Minimal triangulations") \
+    X(P, "P value") \
+    X(RATIO, "Edge ratio") \
+    X(MS_TIME, "MS calculation time") \
+    X(ERR_TIME, "Time errors") \
+    X(ERR_CNT, "Count errors")
+
+#define X(ID,_) DSG_COL_##ID,
+typedef enum _dsg_columns {
+    DSG_COL_TABLE
+    DSG_COL_LAST
+} dsg_columns;
+#undef X
+
+#define X(ID,str) const string DSG_COL_STR_##ID = str;
+DSG_COL_TABLE
+#undef X
+
+#define X(ID,str) {str, DSG_COL_##ID},
+const map<string, dsg_columns> DSG_COL_STR_TO_INT_MAP {
+    DSG_COL_TABLE
+};
+#undef X
+
+#define X(ID,str) {DSG_COL_##ID, str},
+const map<dsg_columns, string> DSG_COL_INT_TO_STR_MAP {
+    DSG_COL_TABLE
+};
+#undef X
+
+/*
+#define DSG_COL_STR_TXT "Graph text"
+#define DSG_COL_STR_NODES "Nodes "
+#define DSG_COL_STR_EDGES "Edges "
+#define DSG_COL_STR_MSS "Minimal separators"
+#define DSG_COL_STR_PMCS "PMCs    "
+#define DSG_COL_STR_TRNG "Minimal triangulations"
+#define DSG_COL_STR_P "P value"
+#define DSG_COL_STR_RATIO "Edge ratio"
+#define DSG_COL_STR_MS_TIME "MS calculation time"
+#define DSG_COL_STR_ERR_TIME "Time errors"
+#define DSG_COL_STR_CNT_TIME "Count errors"
+*/
 
 
 class DatasetStatisticsGenerator {
@@ -156,7 +201,7 @@ private:
     // Can't be const, we need to lock the lock here
     void dump_line(unsigned int i);
     void dump_header();
-    void dump_parallel_aux(const string& s);
+    void dump_parallel_aux(const string& s, bool append = true);
 
     // If verbose computation is enabled, use this to print progress
     // to the screen.
@@ -295,6 +340,13 @@ public:
 
     // Prints data to console (only valid data).
     void print() const;
+
+    // Reads graph statistics from a CSV file.
+    // Assumes the actual graph isn't encoded in the CSV (no actual
+    // graph is stored).
+    // Designed to work with the dumped CSV output generated in the DSG
+    // when computing.
+    static vector<GraphStats> read_stats(const string& filename);
 
 };
 

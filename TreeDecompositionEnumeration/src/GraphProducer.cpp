@@ -14,11 +14,12 @@ string GraphProducer::rand_str(unsigned n, double p, int instance) const {
 // Add graphs directly, by filename (default text is the filename),
 // in batch by providing a directory iterator (text will be the filenames),
 // random graphs and batch random graphs (each with text defined by rand_txt()).
-GraphProducer& GraphProducer::add(const Graph& g, const string& text) {
+GraphProducer& GraphProducer::add(const Graph& g, const string& text,
+                                  bool is_random, double p, int instance) {
     if (verbose) {
         cout << "Adding graph '" << text << "'..." << endl;
     }
-    graphs.push_back(GraphStats(g,text));
+    graphs.push_back(GraphStats(g,text,is_random,p,instance));
     return *this;
 }
 GraphProducer& GraphProducer::add(const string& filename, const string& txt) {
@@ -63,7 +64,7 @@ GraphProducer& GraphProducer::add_random(int n, double p, int instances) {
     for (int i=0; i<instances; ++i) {
         Graph g(n);
         g.randomize(p);
-        add(g, rand_str(n,p,i+1));
+        add(g, rand_str(n,p,i+1), true, p, i+1);
     }
     return *this;
 }
@@ -74,8 +75,8 @@ GraphProducer& GraphProducer::add_random(const vector<int>& n,
 {
     if (!mix_match) {
         if (n.size() != p.size()) {
-            cout << "Invalid arguments (" << n.size() << " graphs requested, "
-                 << p.size() << " probabilities sent)" << endl;
+            TRACE(TRACE_LVL__ERROR, "Invalid arguments (" << n.size() << " graphs requested, "
+                 << p.size() << " probabilities sent)");
             return *this;
         }
         for (unsigned i=0; i<n.size(); ++i) {

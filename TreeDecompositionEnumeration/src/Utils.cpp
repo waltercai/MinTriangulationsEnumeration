@@ -42,7 +42,7 @@ string utils__replace_string(const string& s) {
     }
 }
 string utils__replace_string() {
-    if (utils_replace_string__last_strlen = UTILS__INVALID_STRING_LENGTH) {
+    if (utils_replace_string__last_strlen == UTILS__INVALID_STRING_LENGTH) {
         return "";
     }
     string eraser(utils_replace_string__last_strlen, '\b');
@@ -58,17 +58,24 @@ string utils__secs_to_hhmmss(time_t t) {
     oss << ":" << setfill('0') << setw(2) << t%60;
     return oss.str();
 }
-
-string timestamp_aux(time_t t, bool fulldate) {
-    char buff[100];
-    strftime(buff, 100, fulldate ? "%c" : "%H:%M:%S", localtime(&t));
-    return buff;
-}
+// Assume time_t stores seconds
 string utils__timestamp_to_hhmmss(time_t t) {
-    return timestamp_aux(t, false);
+    return utils__secs_to_hhmmss(t);
 }
 string utils__timestamp_to_fulldate(time_t t) {
-    return timestamp_aux(t, true);
+    char buff[100];
+    strftime(buff, 100, "%c", localtime(&t));
+    return buff;
+}
+time_t utils__hhmmss_to_timestamp(const string& hhmmss) {
+    if (utils__strlen(hhmmss) != 8) {
+        TRACE(TRACE_LVL__ERROR, "Can't translate '" << hhmmss << "' into timestamp, must be a string of type 'HH:MM:SS'");
+        return 0;
+    }
+    string hours = hhmmss.substr(0,2);
+    string mins = hhmmss.substr(3,2);
+    string secs = hhmmss.substr(6,2);
+    return stoi(hours)*3600 + stoi(mins)*60 + stoi(secs);
 }
 
 void utils__dump_string_to_file(const string& filename, const string& str, bool append) {
