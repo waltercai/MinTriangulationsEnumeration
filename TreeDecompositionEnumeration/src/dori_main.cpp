@@ -4,6 +4,7 @@
 #include "GraphProducer.h"
 #include "GraphStats.h"
 #include "PMCAlg.h"
+#include "PMCEnumeratorTester.h"
 #include "PMCRacer.h"
 #include "Utils.h"
 
@@ -92,7 +93,10 @@ public:
 using namespace tdenum;
 
 int main(int argc, char *argv[]) {
-    DoriMain dm;
-    dm.calc_stats();
+    Logger::start("log.txt", false);
+    PMCEnumeratorTester pmcet(false);
+    pmcet.go();
+    //DoriMain dm;
+    //dm.calc_stats();
     return 0;
 }

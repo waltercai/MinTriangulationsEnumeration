@@ -23,9 +23,14 @@ private:
 
     // When adding a graph, print out info
     bool verbose;
+
+    // When outputting to file, dump here
+    string output_dir;
+
 public:
 
     GraphProducer(bool v = false) : verbose(v) {}
+    GraphProducer(const string& dir, bool v = false) : verbose(v), output_dir(dir) {}
 
     // Add graphs directly, by filename (default text is the filename),
     // in batch by providing a directory iterator (text will be the filenames),
@@ -76,6 +81,13 @@ public:
 
     // Returns the vector of graph statistic objects
     vector<GraphStats> get() const;
+
+    // Dumps the graphs to files.
+    // Filenames are as defined above.
+    // Graphs read from files will be dumped to the given directory!
+    // The output format is hard coded, and may be read by the graph
+    // reader class.
+    GraphProducer& dump_graphs() const;
 
 };
 

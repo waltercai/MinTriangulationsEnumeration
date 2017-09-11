@@ -77,6 +77,8 @@ namespace tdenum {
     X(P, "P value") \
     X(RATIO, "Edge ratio") \
     X(MS_TIME, "MS calculation time") \
+    X(PMC_TIME, "PMC calculation time") \
+    X(TRNG_TIME, "Triangulation calculation time") \
     X(ERR_TIME, "Time errors") \
     X(ERR_CNT, "Count errors")
 

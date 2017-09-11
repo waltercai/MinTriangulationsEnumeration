@@ -236,6 +236,12 @@ string DatasetStatisticsGenerator::header(bool csv) const {
     if (GRAPHSTATS_TEST_MS(fields)) {
         oss << delim << DSG_COL_STR_MS_TIME;
     }
+    if (GRAPHSTATS_TEST_PMC(fields)) {
+        oss << delim << DSG_COL_STR_PMC_TIME;
+    }
+    if (GRAPHSTATS_TEST_TRNG(fields)) {
+        oss << delim << DSG_COL_STR_TRNG_TIME;
+    }
     if (has_time_limit()) {
         oss << delim << DSG_COL_STR_ERR_TIME;
     }
@@ -303,6 +309,12 @@ string DatasetStatisticsGenerator::str(unsigned int i, bool csv) const {
     }
     if (GRAPHSTATS_TEST_MS(fields)) {
         oss << delim << setw(utils__strlen(DSG_COL_STR_MS_TIME)) << utils__timestamp_to_hhmmss(gs[i].ms_calc_time);
+    }
+    if (GRAPHSTATS_TEST_PMC(fields)) {
+        oss << delim << setw(utils__strlen(DSG_COL_STR_PMC_TIME)) << utils__timestamp_to_hhmmss(gs[i].pmc_calc_time);
+    }
+    if (GRAPHSTATS_TEST_TRNG(fields)) {
+        oss << delim << setw(utils__strlen(DSG_COL_STR_TRNG_TIME)) << utils__timestamp_to_hhmmss(gs[i].trng_calc_time);
     }
     if (has_time_limit()) {
         string s;

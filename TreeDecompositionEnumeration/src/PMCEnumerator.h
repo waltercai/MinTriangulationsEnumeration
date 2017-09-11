@@ -48,6 +48,12 @@ private:
     // The PMCs (after calculation)
     NodeSetSet pmcs;
 
+    // Count the number of minimal separators in each subgraph.
+    // This is calculated anyway, however this may be useful information
+    // as different orderings of subgraphs may yield different amounts
+    // of separators/
+    vector<int> ms_subgraph_count;
+
     // If this is set to true, OMP #pragmas will be activated.
     bool allow_parallel;
     omp_lock_t lock;

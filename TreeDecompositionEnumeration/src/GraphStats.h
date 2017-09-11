@@ -7,37 +7,41 @@
 
 using std::string;
 
+namespace tdenum {
+
+
 /**
  * Not all metrics are required.
  * The DatasetStatisticsGenerator uses these flags, the GraphStats
  * class uses them to report to the user which values are valid.
  */
-#define GRAPHSTATS_N 1
-#define GRAPHSTATS_M 2
-#define GRAPHSTATS_MS 4
-#define GRAPHSTATS_PMC 8
-#define GRAPHSTATS_TRNG 16
-#define GRAPHSTATS_ALL (-1) // All bits are 1
+#define GRAPHSTATS_FIELD_TABLE \
+    X(N,1) \
+    X(M,2) \
+    X(MS,4) \
+    X(PMC,8) \
+    X(TRNG,16) \
+    X(MS_SUBGRAPH_COUNT,32) \
+    X(ALL,-1)
 
-// Use these macros to test if the bit is on or not in the argument
-#define GRAPHSTATS_TEST_N(_flds) (_flds & GRAPHSTATS_N)
-#define GRAPHSTATS_TEST_M(_flds) (_flds & GRAPHSTATS_M)
-#define GRAPHSTATS_TEST_MS(_flds) (_flds & GRAPHSTATS_MS)
-#define GRAPHSTATS_TEST_PMC(_flds) (_flds & GRAPHSTATS_PMC)
-#define GRAPHSTATS_TEST_TRNG(_flds) (_flds & GRAPHSTATS_TRNG)
+// As in: const int GRAPHSTATS_M = 2;
+#define X(_name,_id) const int GRAPHSTATS_##_name = _id;
+GRAPHSTATS_FIELD_TABLE
+#undef X
+
+// Use these macros to test if the bit is on or not in the argument,
+// as in: bool GRAPHSTATS_TEST_N(int _flds) { return (_flds & GRAPHSTATS_N); }
+#define X(_name,_) bool GRAPHSTATS_TEST_##_name(int _flds);
+GRAPHSTATS_FIELD_TABLE
+#undef X
 
 // Use these macros to turn bits on and / or off
-#define GRAPHSTATS_SET_N(_flds) (_flds |= GRAPHSTATS_N)
-#define GRAPHSTATS_SET_M(_flds) (_flds |= GRAPHSTATS_M)
-#define GRAPHSTATS_SET_MS(_flds) (_flds |= GRAPHSTATS_MS)
-#define GRAPHSTATS_SET_PMC(_flds) (_flds |= GRAPHSTATS_PMC)
-#define GRAPHSTATS_SET_TRNG(_flds) (_flds |= GRAPHSTATS_TRNG)
-
-#define GRAPHSTATS_UNSET_N(_flds) (_flds &= (GRAPHSTATS_ALL ^ GRAPHSTATS_N))
-#define GRAPHSTATS_UNSET_M(_flds) (_flds &= (GRAPHSTATS_ALL ^ GRAPHSTATS_M))
-#define GRAPHSTATS_UNSET_MS(_flds) (_flds &= (GRAPHSTATS_ALL ^ GRAPHSTATS_MS))
-#define GRAPHSTATS_UNSET_PMC(_flds) (_flds &= (GRAPHSTATS_ALL ^ GRAPHSTATS_PMC))
-#define GRAPHSTATS_UNSET_TRNG(_flds) (_flds &= (GRAPHSTATS_ALL ^ GRAPHSTATS_TRNG))
+#define X(_name,_) void GRAPHSTATS_SET_##_name(int& _flds);
+GRAPHSTATS_FIELD_TABLE
+#undef X
+#define X(_name,_) void GRAPHSTATS_UNSET_##_name(int& _flds);
+GRAPHSTATS_FIELD_TABLE
+#undef X
 
 /**
  * If calculations take too long, limit the number of
@@ -64,8 +68,6 @@ using std::string;
  * This class represents graph statistical data.
  * Minimal separators, PMCs, triangulations, time metrics.
  */
-namespace tdenum {
-
 class GraphStats {
 public:
 

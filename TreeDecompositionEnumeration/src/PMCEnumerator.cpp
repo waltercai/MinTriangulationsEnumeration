@@ -55,6 +55,7 @@ PMCEnumerator::PMCEnumerator(const Graph& g, time_t time_limit) :
         graph(g),
         alg(default_alg),
         has_ms(false),
+        ms_subgraph_count(g.getNumberOfNodes()),
         allow_parallel(false),
         done(false),
         limit(time_limit),
@@ -95,6 +96,7 @@ void PMCEnumerator::suppress_parallel() {
  */
 void PMCEnumerator::set_minimal_separators(const NodeSetSet& min_seps) {
     ms = graph.getNewNames(min_seps);
+    ms_subgraph_count[graph.getNumberOfNodes()-1] = ms.size();
     has_ms = true;
 }
 
@@ -106,6 +108,7 @@ NodeSetSet PMCEnumerator::get_ms() {
         ms.clear();
         MinimalSeparatorsEnumerator mse(graph, UNIFORM);
         ms = mse.getAll();
+        ms_subgraph_count[graph.getNumberOfNodes()-1] = ms.size();
         has_ms = true;
     }
     return ms;
@@ -216,6 +219,7 @@ NodeSetSet PMCEnumerator::get() {
                         sub_ms[i].insert(S);
                     }
                 }
+                ms_subgraph_count[i] = sub_ms[i].size();
             }
         }
 
@@ -225,6 +229,8 @@ NodeSetSet PMCEnumerator::get() {
         // graphs: Gi and Gip1 (i plus 1).
         // Use pmcs instead of PMCip1 to save space and a copy at the end.
         NodeSetSet prev_pmcs, MSi, MSip1;
+        MSip1.clear();
+        MSi.clear();
 
         // If the nodes of G are {a_1,...,a_n} then P1 = {{a1}}
         pmcs.insert(NodeSet({nodes[0]})); // Later, PMCi=PMCip1
@@ -254,6 +260,7 @@ NodeSetSet PMCEnumerator::get() {
                 else {
                     MinimalSeparatorsEnumerator DiEnumerator(subg[i], UNIFORM);
                     MSip1 = DiEnumerator.getAll();
+                    ms_subgraph_count[i] = MSip1.size();
                     pmcs = one_more_vertex(subg[i], subg[i-1], a, MSip1, MSi, prev_pmcs);
                 }
                 TRACE(TRACE_LVL__OFF, "Current pmcs: " << tmp_graph.getOriginalNames(pmcs));
@@ -270,6 +277,7 @@ NodeSetSet PMCEnumerator::get() {
         // Update the minimal separators
         if (!has_ms) {
             ms = tmp_graph.getOriginalNames(alg.is_reverse() ? sub_ms[n-1] : MSip1);
+            ms_subgraph_count[n-1] = ms.size();
             has_ms = true;
         }
 

@@ -4,6 +4,16 @@
 
 namespace tdenum {
 
+#define X(_name,_) bool GRAPHSTATS_TEST_##_name(int _flds) { return (_flds & GRAPHSTATS_##_name); }
+GRAPHSTATS_FIELD_TABLE
+#undef X
+#define X(_name,_) void GRAPHSTATS_SET_##_name(int& _flds) { _flds |= GRAPHSTATS_##_name; }
+GRAPHSTATS_FIELD_TABLE
+#undef X
+#define X(_name,_) void GRAPHSTATS_UNSET_##_name(int& _flds) { _flds &= (GRAPHSTATS_ALL ^ GRAPHSTATS_##_name); }
+GRAPHSTATS_FIELD_TABLE
+#undef X
+
 const long GraphStats::invalid_value = -1;
 
 GraphStats::GraphStats() : GraphStats(Graph(), "") {}
