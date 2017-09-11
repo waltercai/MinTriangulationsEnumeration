@@ -37,7 +37,7 @@ public:
     // Some constants.
     // 'instances' must be defined before the dataset fields for proper construction
     const int instances = 10;
-    const int max_seconds = 7; // Make it quick
+    const int max_seconds = 20*60;
     const char* small_hard_stats_filename = "SmallHardStats.csv";
     const char* sparse_stats_filename = "SparseStats.csv";
     const char* dense_stats_filename = "DenseStats.csv";
