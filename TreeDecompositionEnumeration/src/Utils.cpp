@@ -29,6 +29,26 @@ void Logger::out(const ostringstream& os) {
     }
 }
 
+string utils__replace_substr_with_substr(const string& str,
+                                         const string& old_substr,
+                                         const string& new_substr)
+{
+    string ret = str;
+    size_t old_len = utils__strlen(old_substr);
+    size_t index = 0;
+    while(true) {
+        index = str.find(old_substr, index);
+        if (index == string::npos) {
+            break;
+        }
+        string first_half = ret.substr(0, index);
+        string second_half = ret.substr(index + old_len);
+        ret = first_half + new_substr + second_half;
+        index += old_len;   // Search from new position
+    }
+    return ret;
+}
+
 int utils_replace_string__last_strlen = UTILS__INVALID_STRING_LENGTH;
 string utils__replace_string(const string& s) {
     if (utils_replace_string__last_strlen == UTILS__INVALID_STRING_LENGTH) {

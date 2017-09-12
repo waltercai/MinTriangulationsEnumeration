@@ -10,21 +10,37 @@ string GraphProducer::rand_str(unsigned n, double p, int instance) const {
     oss << "G(" << n << ":" << p << "); instance " << instance;
     return oss.str();
 }
+string GraphProducer::rand_filename(unsigned n, double p, int instance) const {
+    string filename = GRAPHPRODUCER_RANDFILE_EXPR;
+    filename = utils__replace_substr_with_substr(filename, GRAPHPRODUCER_RANDFILE_TOKEN_N, UTILS__TO_STRING(n));
+    filename = utils__replace_substr_with_substr(filename, GRAPHPRODUCER_RANDFILE_TOKEN_P, UTILS__TO_STRING(p));
+    filename = utils__replace_substr_with_substr(filename, GRAPHPRODUCER_RANDFILE_TOKEN_INST, UTILS__TO_STRING(instance));
+    return filename;
+}
 
 // Add graphs directly, by filename (default text is the filename),
 // in batch by providing a directory iterator (text will be the filenames),
 // random graphs and batch random graphs (each with text defined by rand_txt()).
-GraphProducer& GraphProducer::add(const Graph& g, const string& text,
-                                  bool is_random, double p, int instance) {
+GraphProducer& GraphProducer::add(const Graph& g,
+                                  const string& text,
+                                  bool is_random,
+                                  double p,
+                                  int instance,
+                                  bool from_file) {
     if (verbose) {
         cout << "Adding graph '" << text << "'..." << endl;
     }
-    graphs.push_back(GraphStats(g,text,is_random,p,instance));
+    graphs.push_back(GraphStats(g,text,is_random,p,instance,from_file));
     return *this;
 }
 GraphProducer& GraphProducer::add(const string& filename, const string& txt) {
     Graph g = GraphReader::read(filename);
-    add(g, txt == "" ? filename : txt);
+    add(g,
+        txt == "" ? filename : txt,
+        false,
+        0,
+        1,
+        true);
     return *this;
 }
 
@@ -153,6 +169,17 @@ GraphProducer& GraphProducer::hard_graphs(int instances) {
 // Returns the vector of graph statistic objects
 vector<GraphStats> GraphProducer::get() const {
     return graphs;
+}
+
+GraphProducer& GraphProducer::dump_graphs(bool skip_graphs_from_files) {
+    for (GraphStats gs: graphs) {
+        if (skip_graphs_from_files && gs.from_file) {
+            continue;
+        }
+        string filename = gs.is_random ? output_dir + rand_filename(gs.n, gs.p, gs.instance) : gs.text;
+        GraphReader::dump(gs.g, filename);
+    }
+    return *this;
 }
 
 }

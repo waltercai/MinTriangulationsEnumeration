@@ -10,6 +10,11 @@
 
 namespace tdenum {
 
+#define DORI_PROJECT_DATASET_DIR_SMALLHARD (DORI_PROJECT_DATASET_DIR + string("SmallHard") + string(1,SLASH))
+#define DORI_PROJECT_DATASET_DIR_SPARSE (DORI_PROJECT_DATASET_DIR + string("Sparse") + string(1,SLASH))
+#define DORI_PROJECT_DATASET_DIR_DENSE (DORI_PROJECT_DATASET_DIR + string("Dense") + string(1,SLASH))
+#define DORI_PROJECT_DATASET_DIR_BAYESIAN DATASET_NEW_DIR_BASE
+
 class DoriMain {
 private:
     // Calculates the data required (fast) and populates data fields.
@@ -54,13 +59,29 @@ public:
     vector<GraphStats> dense_stats;
     vector<GraphStats> bayesian_stats;
 
-    // Construction merely populates the datasets
-    DoriMain() :
-        small_hard_stats(GraphProducer(true).add_random_pstep_range(utils__vector_range(25,35),0.2,0.45,0.1,instances).get()),
-        sparse_stats(GraphProducer(true).add_random(utils__vector_range(50,60),{0.05},true,instances).get()),
-        dense_stats(GraphProducer(true).add_random_pstep_range(utils__vector_range(50,60),0.7,0.95,0.1,instances).get()),
-        bayesian_stats(GraphProducer(true).add_by_dir(DirectoryIterator(DATASET_NEW_DIR_BASE).skip("evid")).get())
-        {}
+    // Used to create random graphs and save them to disk.
+    // We want consistent datasets for future study
+    DoriMain& produce_datasets() {
+        GraphProducer(DORI_PROJECT_DATASET_DIR_SMALLHARD, true)
+            .add_random_pstep_range(utils__vector_range(25,35),0.2,0.45,0.1,instances)
+            .dump_graphs();
+        GraphProducer(DORI_PROJECT_DATASET_DIR_SPARSE, true)
+            .add_random(utils__vector_range(50,60),{0.05},true,instances)
+            .dump_graphs();
+        GraphProducer(DORI_PROJECT_DATASET_DIR_DENSE, true)
+            .add_random_pstep_range(utils__vector_range(50,60),0.7,0.95,0.1,instances)
+            .dump_graphs();
+        return *this;
+    }
+
+    // Assumes the datasets exist, and loads them.
+    DoriMain& load_datasets() {
+        small_hard_stats = GraphProducer(true).add_by_dir(DirectoryIterator(DORI_PROJECT_DATASET_DIR_SMALLHARD)).get();
+        sparse_stats = GraphProducer(true).add_by_dir(DirectoryIterator(DORI_PROJECT_DATASET_DIR_SPARSE)).get();
+        dense_stats = GraphProducer(true).add_by_dir(DirectoryIterator(DORI_PROJECT_DATASET_DIR_DENSE)).get();
+        bayesian_stats = GraphProducer(true).add_by_dir(DirectoryIterator(DORI_PROJECT_DATASET_DIR_BAYESIAN).skip("evid")).get();
+        return *this;
+    }
 
     /**
      * Statistics generation.
@@ -94,9 +115,9 @@ using namespace tdenum;
 
 int main(int argc, char *argv[]) {
     Logger::start("log.txt", false);
-    PMCEnumeratorTester pmcet(false);
-    pmcet.go();
-    //DoriMain dm;
-    //dm.calc_stats();
+    //PMCEnumeratorTester pmcet(false);
+    //pmcet.go();
+    DoriMain dm;
+    dm.load_datasets().calc_stats().race_graphs();
     return 0;
 }

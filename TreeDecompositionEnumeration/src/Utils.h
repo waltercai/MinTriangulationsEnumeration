@@ -101,6 +101,11 @@ unsigned utils__strlen(const char*);
         } \
     } while(0)
 
+// For example:
+// utils__replace_substr_with_substr("abcabd", "b", "xx") == "axxcaxxc"
+string utils__replace_substr_with_substr(const string& str,
+                                         const string& old_substr,
+                                         const string& new_substr);
 
 // Returns the input string (assumes no newline in the string), and
 // if the function is called with the same output ID (can be any

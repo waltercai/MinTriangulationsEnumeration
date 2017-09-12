@@ -17,7 +17,7 @@ GRAPHSTATS_FIELD_TABLE
 const long GraphStats::invalid_value = -1;
 
 GraphStats::GraphStats() : GraphStats(Graph(), "") {}
-GraphStats::GraphStats(const Graph& graph, const string& s, bool is_rand, double prob, int inst) :
+GraphStats::GraphStats(const Graph& graph, const string& s, bool is_rand, double prob, int inst, bool ff) :
                        g(graph),
                        text(s),
                        n(g.getNumberOfNodes()),
@@ -29,6 +29,7 @@ GraphStats::GraphStats(const Graph& graph, const string& s, bool is_rand, double
                        p(prob),
                        actual_ratio(2*(double)graph.getNumberOfEdges()/(graph.getNumberOfNodes()*(graph.getNumberOfNodes()-1))),
                        instance(inst),
+                       from_file(ff),
                        ms_valid(false),
                        pmc_valid(false),
                        trng_valid(false),

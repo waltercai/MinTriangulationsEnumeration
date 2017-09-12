@@ -16,6 +16,7 @@ using std::vector;
 #define DATASET_NEW_DIR_BASE string("NewDatasets"+string(1,SLASH))
 #define RESULT_DIR_BASE string("Results"+string(1,SLASH))
 #define DORI_PROJECT_RESULTS_DIR string(RESULT_DIR_BASE+"DoriProject"+string(1,SLASH))
+#define DORI_PROJECT_DATASET_DIR string(DATASET_DIR_BASE+"DoriProject"+string(1,SLASH))
 #define DATASET_DIR_DEADEASY string("DeadEasy"+string(1,SLASH))
 #define DATASET_DIR_EASY string("Easy"+string(1,SLASH)+ "Random"+string(1,SLASH))
 #define DATASET_DIR_DIFFICULT string("Difficult"+string(1,SLASH))

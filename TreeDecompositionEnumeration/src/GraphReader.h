@@ -23,6 +23,11 @@ public:
 	 * Where all nodes are numbers between 1 and <number-of-nodes>.
 	 */
 	static Graph read(const string& fileName);
+
+	/**
+	 * Dumps the given graph in CSV format (as described above).
+	 */
+    static void dump(const Graph& graph, const string& filename);
 };
 
 } /* namespace tdenum */

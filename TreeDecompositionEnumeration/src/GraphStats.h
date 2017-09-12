@@ -88,6 +88,9 @@ public:
     double p, actual_ratio;
     int instance;
 
+    // If this graph was read from a file, set this flag to true
+    bool from_file;
+
     // Are the (n,m,ms,pmcs,triangs) fields valid for graph i?
     // Note: if the DSG didn't request PMCs, then even if valid
     // is true the PMCs should be zero.
@@ -129,7 +132,8 @@ public:
                const string& text,
                bool is_rand = false,
                double p = 0,
-               int inst = 1);
+               int inst = 1,
+               bool file = false);
 
     // Include the time required to calculate the MSs
     time_t actual_pmc_calc_time() const;

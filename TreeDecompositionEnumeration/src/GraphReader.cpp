@@ -1,4 +1,5 @@
 #include "GraphReader.h"
+#include "Utils.h"
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -204,6 +205,17 @@ Graph GraphReader::read(const string& fileName) {
 	}
 	cout << "Unrecognized file extension '." << extension << "'" << endl;
 	return Graph();
+}
+
+void GraphReader::dump(const Graph& graph, const string& filename) {
+    ostringstream oss;
+    for (Node v: graph.getNodesVector()) {
+        for (Node u: graph.getNeighbors({v})) {
+            // We need \r, readCSV needs it
+            oss << v << "," << u << "\n\r";
+        }
+    }
+    utils__dump_string_to_file(filename, oss.str(), false);
 }
 
 } /* namespace tdenum */

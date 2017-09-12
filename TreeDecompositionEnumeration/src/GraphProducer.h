@@ -11,6 +11,23 @@ using std::vector;
 
 namespace tdenum {
 
+// These strings are used for random graph file names.
+// Make sure none of the tokens exist as characters in the rest of the
+// filename!
+#define GRAPHPRODUCER_RANDFILE_TOKEN_N string("N")
+#define GRAPHPRODUCER_RANDFILE_TOKEN_P string("P")
+#define GRAPHPRODUCER_RANDFILE_TOKEN_INST string("I")
+#define GRAPHPRODUCER_RANDFILE_EXPR (\
+        string("RandGraph_") + \
+        string(GRAPHPRODUCER_RANDFILE_TOKEN_N) + \
+        string("_") + \
+        string(GRAPHPRODUCER_RANDFILE_TOKEN_P) + \
+        string("_inst") + \
+        string(GRAPHPRODUCER_RANDFILE_TOKEN_INST) + \
+        string(".csv") \
+    )
+
+
 /**
  * Class used to create graph statistic objects in batch jobs.
  */
@@ -18,8 +35,9 @@ class GraphProducer {
 private:
     vector<GraphStats> graphs;
 
-    // Textify a random graph
+    // Textify a random graph (to graph name or filename)
     string rand_str(unsigned n, double p, int instance) const;
+    string rand_filename(unsigned n, double p, int instance) const;
 
     // When adding a graph, print out info
     bool verbose;
@@ -35,9 +53,14 @@ public:
     // Add graphs directly, by filename (default text is the filename),
     // in batch by providing a directory iterator (text will be the filenames),
     // random graphs and batch random graphs (each with text defined by rand_txt()).
-    GraphProducer& add(const Graph& g, const string& text,
-                       bool is_random = false, double p=0, int instance = 1);
-    GraphProducer& add(const string& filename, const string& txt = "");
+    GraphProducer& add(const Graph& g,
+                       const string& text,
+                       bool is_random = false,
+                       double p=0,
+                       int instance = 1,
+                       bool from_file = false);
+    GraphProducer& add(const string& filename,
+                       const string& txt = "");
 
     // Recursive search.
     // Allow user to send a directory iterator.
@@ -84,10 +107,11 @@ public:
 
     // Dumps the graphs to files.
     // Filenames are as defined above.
-    // Graphs read from files will be dumped to the given directory!
+    // Graphs read from files will be dumped to the given directory, unless
+    // the skip_graphs flag is set to true.
     // The output format is hard coded, and may be read by the graph
     // reader class.
-    GraphProducer& dump_graphs() const;
+    GraphProducer& dump_graphs(bool skip_graphs_from_files = true);
 
 };
 
