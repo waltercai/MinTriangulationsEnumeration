@@ -22,6 +22,8 @@ using std::vector;
 #define DATASET_DIR_DIFFICULT string("Difficult"+string(1,SLASH))
 #define DATASET_DIR_DIFFICULT_BN string(DATASET_DIR_DIFFICULT+"BN"+string(1,SLASH))
 
+#define DUMMY_FILENAME "dummy.txt"
+
 namespace tdenum {
 
 /**

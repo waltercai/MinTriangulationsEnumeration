@@ -76,10 +76,10 @@ public:
 
     // Assumes the datasets exist, and loads them.
     DoriMain& load_datasets() {
-        small_hard_stats = GraphProducer(true).add_by_dir(DirectoryIterator(DORI_PROJECT_DATASET_DIR_SMALLHARD)).get();
-        sparse_stats = GraphProducer(true).add_by_dir(DirectoryIterator(DORI_PROJECT_DATASET_DIR_SPARSE)).get();
-        dense_stats = GraphProducer(true).add_by_dir(DirectoryIterator(DORI_PROJECT_DATASET_DIR_DENSE)).get();
-        bayesian_stats = GraphProducer(true).add_by_dir(DirectoryIterator(DORI_PROJECT_DATASET_DIR_BAYESIAN).skip("evid")).get();
+        small_hard_stats = GraphProducer(true).add_by_dir(DirectoryIterator(DORI_PROJECT_DATASET_DIR_SMALLHARD).skip(DUMMY_FILENAME)).get();
+        sparse_stats = GraphProducer(true).add_by_dir(DirectoryIterator(DORI_PROJECT_DATASET_DIR_SPARSE).skip(DUMMY_FILENAME)).get();
+        dense_stats = GraphProducer(true).add_by_dir(DirectoryIterator(DORI_PROJECT_DATASET_DIR_DENSE).skip(DUMMY_FILENAME)).get();
+        bayesian_stats = GraphProducer(true).add_by_dir(DirectoryIterator(DORI_PROJECT_DATASET_DIR_BAYESIAN).skip(DUMMY_FILENAME).skip("evid")).get();
         return *this;
     }
 
