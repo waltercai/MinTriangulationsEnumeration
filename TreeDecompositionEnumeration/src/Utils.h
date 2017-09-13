@@ -91,7 +91,11 @@ unsigned utils__strlen(const char*);
 
 #define UTILS__ASSERT_PRINT(_stream) do { \
         ostringstream _oss; \
-        _oss << UTILS__FILENAME << ":" << __FUNCTION__ << ":" << __LINE__ << ": " << _stream << "\n"; \
+        _oss << utils__timestamp_to_fulldate(time(NULL)) \
+             << ":" << UTILS__FILENAME \
+             << ":" << __FUNCTION__ \
+             << ":" << __LINE__ \
+             << ": " << _stream << std::endl; \
         cout << _oss.str(); \
         Logger::out(_oss); \
     } while(0)
