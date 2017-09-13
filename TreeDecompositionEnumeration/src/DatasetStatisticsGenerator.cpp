@@ -534,6 +534,8 @@ void DatasetStatisticsGenerator::compute(unsigned int i) {
                     gs[i].set_reached_count_limit_ms();
                     break;
                 }
+                TRACE(TRACE_LVL__NOISE, "Time taken: " << utils__timestamp_to_hhmmss(difftime(time(NULL),t)) << ", "
+                      << "limit is " << utils__timestamp_to_hhmmss(ms_time_limit));
                 if (has_ms_time_limit && difftime(time(NULL),t) > ms_time_limit) {
                     gs[i].set_reached_time_limit_ms();
                     break;
@@ -567,6 +569,7 @@ void DatasetStatisticsGenerator::compute(unsigned int i) {
         }
         t = time(NULL);
         try {
+            TRACE(TRACE_LVL__NOISE, "Starting the PMC part...");
             pmce.get();
             gs[i].set_ms(pmce.get_ms());
             gs[i].set_pmc(pmce.get());

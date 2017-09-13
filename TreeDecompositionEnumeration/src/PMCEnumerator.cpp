@@ -176,6 +176,8 @@ NodeSetSet PMCEnumerator::get() {
             // Use the algorithm described in the PDF
             for (int i=n-2; i>=0; --i) {
 
+                TRACE(TRACE_LVL__NOISE, "In reverse MS iteration, i=" << i);
+
                 sub_ms[i].clear();
 
                 // To prevent checking both S and S u {v}, if they exist
@@ -234,6 +236,9 @@ NodeSetSet PMCEnumerator::get() {
 
         // MS1 should remain empty, so MSi=MSip1 is OK
         for (int i=1; i<n; ++i) {
+
+            TRACE(TRACE_LVL__NOISE, "In PMC iterations after MS iterations, i=" << i);
+
             // Calculate MSip1 and PMCip1, and use OneMoreVertex.
             // This is the main function described in the paper.
             prev_pmcs = pmcs;
@@ -248,7 +253,7 @@ NodeSetSet PMCEnumerator::get() {
             // The NORMAL algorithm requires calculation of separators
             if (!alg.is_reverse()) {
                 if (i == n-1) {
-                    TRACE(TRACE_LVL__OFF, "Last iteration, moving from:" << endl << subg[i-1] <<
+                    TRACE(TRACE_LVL__NOISE, "Last iteration, moving from:" << endl << subg[i-1] <<
                                            "To (by adding node " << a << "):" << endl << subg[i] <<
                                            "With minimal separators " << MSi << " and " <<
                                            tmp_graph.getNewNames(get_ms()) << ", respectively.");
@@ -260,11 +265,11 @@ NodeSetSet PMCEnumerator::get() {
                     ms_subgraph_count[i] = MSip1.size();
                     pmcs = one_more_vertex(subg[i], subg[i-1], a, MSip1, MSi, prev_pmcs);
                 }
-                TRACE(TRACE_LVL__OFF, "Current pmcs: " << tmp_graph.getOriginalNames(pmcs));
+                TRACE(TRACE_LVL__NOISE, "Current pmcs: " << tmp_graph.getOriginalNames(pmcs));
             }
             else {
                 pmcs = one_more_vertex(subg[i], subg[i-1], a, sub_ms[i], sub_ms[i-1], prev_pmcs);
-                TRACE(TRACE_LVL__OFF, "With i=" << i << ", where the parent graph is:" << endl
+                TRACE(TRACE_LVL__NOISE, "With i=" << i << ", where the parent graph is:" << endl
                       << subg[i] << "and the subgraph is:" << endl << subg[i-1]
                       << "We have minimal separators " << sub_ms[i] << " and " << sub_ms[i-1]
                       << ", main graph / subgraph respectively. As a result, we got PMCs " << pmcs);
@@ -312,6 +317,8 @@ NodeSetSet PMCEnumerator::one_more_vertex(
         return P1;
     }
 
+    TRACE(TRACE_LVL__NOISE, "Starting first parallel loop...");
+
     #pragma omp parallel if(allow_parallel)
     {
         for (auto pmc2it=P2.begin(); keep_running && pmc2it != P2.end(); ++pmc2it) {
@@ -336,6 +343,8 @@ NodeSetSet PMCEnumerator::one_more_vertex(
         }
     }
     CHECK_TIME_OR_OP(return P1);
+
+    TRACE(TRACE_LVL__NOISE, "Done with first parallel loop, starting second...");
 
     #pragma omp parallel if(allow_parallel)
     {
