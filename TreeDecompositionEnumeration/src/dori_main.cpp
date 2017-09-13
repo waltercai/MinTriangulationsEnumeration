@@ -47,7 +47,7 @@ public:
     // Some constants.
     // 'instances' must be defined before the dataset fields for proper construction
     const int instances = 10;
-    const int max_seconds = 10; // Temporary
+    const int max_seconds = 20*60;
     const char* small_hard_stats_filename = "SmallHardStats.csv";
     const char* sparse_stats_filename = "SparseStats.csv";
     const char* dense_stats_filename = "DenseStats.csv";
@@ -91,9 +91,9 @@ public:
      * Statistics generation.
      */
     DoriMain& calc_stats() {
-//        calc_stats_aux(small_hard_stats, small_hard_stats_filename);
-//        calc_stats_aux(sparse_stats, sparse_stats_filename);
-//        calc_stats_aux(dense_stats, dense_stats_filename);
+        calc_stats_aux(small_hard_stats, small_hard_stats_filename);
+        calc_stats_aux(sparse_stats, sparse_stats_filename);
+        calc_stats_aux(dense_stats, dense_stats_filename);
         calc_stats_aux(bayesian_stats, bayesian_stats_filename);
         return *this;
     }
