@@ -83,7 +83,7 @@ void PMCRacer::go(bool verbose, bool append_results) {
         utils__dump_string_to_file(outfilename, stringify_header());
     }
 
-    TRACE(TRACE_LVL__NOISE, "Current status of alg_gs: " << alg_gs);
+    TRACE(TRACE_LVL__OFF, "Current status of alg_gs: " << alg_gs);
 
     // For each graph:
     for (unsigned i=0; i<gs.size(); ++i) {
@@ -155,9 +155,9 @@ void PMCRacer::go(bool verbose, bool append_results) {
             GraphStats stats = dsg.get_stats()[0];
             stats.set_pmc_time_limit(time_limit);   // Was initialized to time_limit - ms_calc_time by the DSG
             stats.set_pmc_calc_time(stats.get_pmc_calc_time() + ms_calc_time);
-            TRACE(TRACE_LVL__NOISE, "Got stats, pushing into alg_gs[" << alg
+            TRACE(TRACE_LVL__OFF, "Got stats, pushing into alg_gs[" << alg
                             << "], which currently contains " << alg_gs << endl);
-            TRACE(TRACE_LVL__NOISE, "alg_gs[" << alg << "] is " << alg_gs[alg] << endl);
+            TRACE(TRACE_LVL__OFF, "alg_gs[" << alg << "] is " << alg_gs[alg] << endl);
             alg_gs[alg].push_back(stats);
         }
 

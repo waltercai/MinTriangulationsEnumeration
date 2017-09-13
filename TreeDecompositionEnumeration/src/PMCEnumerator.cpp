@@ -253,7 +253,7 @@ NodeSetSet PMCEnumerator::get() {
             // The NORMAL algorithm requires calculation of separators
             if (!alg.is_reverse()) {
                 if (i == n-1) {
-                    TRACE(TRACE_LVL__NOISE, "Last iteration, moving from:" << endl << subg[i-1] <<
+                    TRACE(TRACE_LVL__OFF, "Last iteration, moving from:" << endl << subg[i-1] <<
                                            "To (by adding node " << a << "):" << endl << subg[i] <<
                                            "With minimal separators " << MSi << " and " <<
                                            tmp_graph.getNewNames(get_ms()) << ", respectively.");
@@ -265,11 +265,11 @@ NodeSetSet PMCEnumerator::get() {
                     ms_subgraph_count[i] = MSip1.size();
                     pmcs = one_more_vertex(subg[i], subg[i-1], a, MSip1, MSi, prev_pmcs);
                 }
-                TRACE(TRACE_LVL__NOISE, "Current pmcs: " << tmp_graph.getOriginalNames(pmcs));
+                TRACE(TRACE_LVL__OFF, "Current pmcs: " << tmp_graph.getOriginalNames(pmcs));
             }
             else {
                 pmcs = one_more_vertex(subg[i], subg[i-1], a, sub_ms[i], sub_ms[i-1], prev_pmcs);
-                TRACE(TRACE_LVL__NOISE, "With i=" << i << ", where the parent graph is:" << endl
+                TRACE(TRACE_LVL__OFF, "With i=" << i << ", where the parent graph is:" << endl
                       << subg[i] << "and the subgraph is:" << endl << subg[i-1]
                       << "We have minimal separators " << sub_ms[i] << " and " << sub_ms[i-1]
                       << ", main graph / subgraph respectively. As a result, we got PMCs " << pmcs);
