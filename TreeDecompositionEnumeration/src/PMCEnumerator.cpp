@@ -104,7 +104,9 @@ NodeSetSet PMCEnumerator::get_ms() {
     if (!has_ms) {
         ms.clear();
         MinimalSeparatorsEnumerator mse(graph, UNIFORM);
-        ms = mse.getAll();
+        if (!mse.getAll(ms, difftime(limit,difftime(time(NULL),start_time)))) {
+            out_of_time = true;
+        }
         ms_subgraph_count[graph.getNumberOfNodes()-1] = ms.size();
         has_ms = true;
     }
@@ -179,6 +181,7 @@ NodeSetSet PMCEnumerator::get() {
 
             // Calculate the first set of minimal separators
             sub_ms[n-1] = tmp_graph.getNewNames(get_ms());
+            CHECK_TIME_OR_OP(return NodeSetSet());
 
             // Use the algorithm described in the PDF
             for (int i=n-2; i>=0; --i) {
@@ -270,7 +273,8 @@ NodeSetSet PMCEnumerator::get() {
                 }
                 else {
                     MinimalSeparatorsEnumerator DiEnumerator(subg[i], UNIFORM);
-                    MSip1 = DiEnumerator.getAll();
+                    DiEnumerator.getAll(MSip1, difftime(limit,difftime(time(NULL),start_time)));
+                    CHECK_TIME_OR_OP(return NodeSetSet());
                     ms_subgraph_count[i] = MSip1.size();
                     pmcs = one_more_vertex(subg[i], subg[i-1], a, MSip1, MSi, prev_pmcs);
                 }
