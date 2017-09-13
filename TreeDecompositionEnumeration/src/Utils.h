@@ -9,6 +9,7 @@
 #include <sstream>
 #include <string>
 #include <string.h>
+#include <unistd.h>
 #include <vector>
 using std::ostream;
 using std::vector;
@@ -203,6 +204,11 @@ UTILS__AUTOPRINT_CONTAINER(vector)
                        std::back_inserter(_res)); \
     } while(0)
 
+
+/**
+ * IO stuff
+ */
+bool utils__file_exists(const string& file);
 
 /**
  * For use in live code.

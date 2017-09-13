@@ -1,13 +1,14 @@
 #ifndef DATASETSTATISTICSGENERATOR_H_INCLUDED
 #define DATASETSTATISTICSGENERATOR_H_INCLUDED
 
+#include "DirectoryIterator.h"
 #include "Graph.h"
 #include "GraphReader.h"
 #include "GraphStats.h"
 #include "MinimalSeparatorsEnumerator.h"
 #include "PMCEnumerator.h"
 #include "PMCAlg.h"
-#include "DirectoryIterator.h"
+#include "Utils.h"
 #include <map>
 #include <string>
 #include <vector>
@@ -67,6 +68,8 @@ namespace tdenum {
 #define DSG_ERROR_TEXT_PMC "PMC"
 #define DSG_ERROR_TEXT_TRNG "TRNG"
 
+// The possible columns appearing in the output CSV table.
+// Note that PMC algorithms also have columns (calculation time per algorithm)
 #define DSG_COL_TABLE \
     X(TXT, "Graph text") \
     X(NODES, "Nodes ") \
@@ -80,7 +83,8 @@ namespace tdenum {
     X(PMC_TIME, "PMC calculation time") \
     X(TRNG_TIME, "Triangulation calculation time") \
     X(ERR_TIME, "Time errors") \
-    X(ERR_CNT, "Count errors")
+    X(ERR_CNT, "Count errors") \
+    PMCALG_ALGORITHM_TABLE
 
 #define X(ID,_) DSG_COL_##ID,
 typedef enum _dsg_columns {
@@ -89,36 +93,21 @@ typedef enum _dsg_columns {
 } dsg_columns;
 #undef X
 
-#define X(ID,str) const string DSG_COL_STR_##ID = str;
+#define X(ID,str) const string DSG_COL_STR_##ID = UTILS__TO_STRING(str);
 DSG_COL_TABLE
 #undef X
 
-#define X(ID,str) {str, DSG_COL_##ID},
+#define X(ID,str) {UTILS__TO_STRING(str), DSG_COL_##ID},
 const map<string, dsg_columns> DSG_COL_STR_TO_INT_MAP {
     DSG_COL_TABLE
 };
 #undef X
 
-#define X(ID,str) {DSG_COL_##ID, str},
+#define X(ID,str) {DSG_COL_##ID, UTILS__TO_STRING(str)},
 const map<dsg_columns, string> DSG_COL_INT_TO_STR_MAP {
     DSG_COL_TABLE
 };
 #undef X
-
-/*
-#define DSG_COL_STR_TXT "Graph text"
-#define DSG_COL_STR_NODES "Nodes "
-#define DSG_COL_STR_EDGES "Edges "
-#define DSG_COL_STR_MSS "Minimal separators"
-#define DSG_COL_STR_PMCS "PMCs    "
-#define DSG_COL_STR_TRNG "Minimal triangulations"
-#define DSG_COL_STR_P "P value"
-#define DSG_COL_STR_RATIO "Edge ratio"
-#define DSG_COL_STR_MS_TIME "MS calculation time"
-#define DSG_COL_STR_ERR_TIME "Time errors"
-#define DSG_COL_STR_CNT_TIME "Count errors"
-*/
-
 
 class DatasetStatisticsGenerator {
 private:
@@ -345,9 +334,13 @@ public:
 
     // Reads graph statistics from a CSV file.
     // Assumes the actual graph isn't encoded in the CSV (no actual
-    // graph is stored).
+    // graph is stored), however - the text in the first column must be
+    // the filename of the relevant graph.
     // Designed to work with the dumped CSV output generated in the DSG
     // when computing.
+    // DOES NOT WORK with statistics files created using random graphs
+    // generated at runtime, or statistic files using graphs that no
+    // longer exist at the location specified.
     static vector<GraphStats> read_stats(const string& filename);
 
 };

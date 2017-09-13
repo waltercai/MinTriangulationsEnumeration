@@ -179,6 +179,26 @@ Graph readBliss(ifstream& input) {
 	return g;
 }
 
+/**
+ * The GRP format is simply one line with the number of nodes, and then
+ * pairs of nodes (one on each line) representing edges.
+ */
+Graph readGrp(ifstream& input) {
+    string line;
+    getline(input, line);
+    istringstream lineStream(line);
+    int n;
+    lineStream >> n;
+    Graph g(n);
+    while (getline(input, line)) {
+        int u,v;
+        istringstream strm(line);
+        strm >> u >> v;
+        g.addEdge(u,v);
+    }
+    return g;
+}
+
 string GetFileExtension(const string& fileName) {
     if(fileName.find_last_of(".") != string::npos)
         return fileName.substr(fileName.find_last_of(".")+1);
@@ -202,6 +222,8 @@ Graph GraphReader::read(const string& fileName) {
 		return readCSV(input);
 	} else if ( extension == "bliss") {
 		return readBliss(input);
+	} else if ( extension == "grp") {
+        return readGrp(input);
 	}
 	cout << "Unrecognized file extension '." << extension << "'" << endl;
 	return Graph();
@@ -209,10 +231,12 @@ Graph GraphReader::read(const string& fileName) {
 
 void GraphReader::dump(const Graph& graph, const string& filename) {
     ostringstream oss;
+    // Start with a total number of nodes
+    oss << graph.getNumberOfNodes() << endl;
     for (Node v: graph.getNodesVector()) {
         for (Node u: graph.getNeighbors({v})) {
             // We need \r, readCSV needs it
-            oss << v << "," << u << "\n\r";
+            oss << v << " " << u << endl;
         }
     }
     utils__dump_string_to_file(filename, oss.str(), false);

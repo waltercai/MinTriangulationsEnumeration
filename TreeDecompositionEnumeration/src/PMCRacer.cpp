@@ -36,16 +36,16 @@ string PMCRacer::stringify_result(unsigned i) const {
         cout << oss.str();
         return oss.str();
     }
-    oss << alg_gs[0][i].text << ","
-        << alg_gs[0][i].n << ","
-        << alg_gs[0][i].m << ","
-        << alg_gs[0][i].pmc_count;
+    oss << alg_gs[0][i].get_text() << ","
+        << alg_gs[0][i].get_n() << ","
+        << alg_gs[0][i].get_m() << ","
+        << alg_gs[0][i].get_pmc_count();
     for (int alg = PMCAlg::first(); alg<PMCAlg::last(); ++alg) {
-        if (alg_gs[alg][i].pmc_calc_time > alg_gs[alg][i].pmc_time_limit) {
+        if (alg_gs[alg][i].get_pmc_calc_time() > alg_gs[alg][i].get_pmc_time_limit()) {
             oss << "," << utils__secs_to_hhmmss(alg_gs[alg][i].get_pmc_time_limit());
         }
         else {
-            oss << "," << utils__secs_to_hhmmss(alg_gs[alg][i].pmc_calc_time);
+            oss << "," << utils__secs_to_hhmmss(alg_gs[alg][i].get_pmc_calc_time());
         }
     }
     oss << endl;
@@ -88,7 +88,7 @@ void PMCRacer::go(bool verbose, bool append_results) {
     // For each graph:
     for (unsigned i=0; i<gs.size(); ++i) {
         UTILS__PRINT_IF(verbose, "=== Racing graph " << i+1 << "/" << gs.size()
-                       << ": '" << gs[i].text << "'" << endl);
+                       << ": '" << gs[i].get_text() << "'" << endl);
         UTILS__PRINT_IF(verbose, "Start time: " << utils__timestamp_to_fulldate(time(NULL)) << endl);
 
         // Use all algorithms on the graph.
@@ -98,11 +98,11 @@ void PMCRacer::go(bool verbose, bool append_results) {
         // To enforce the time limit, calculate the separators one by one.
         time_t start_time = time(NULL);
         bool time_limit_exceeded = false;
-        MinimalSeparatorsEnumerator mse(gs[i].g, UNIFORM);
+        MinimalSeparatorsEnumerator mse(gs[i].get_graph(), UNIFORM);
         NodeSetSet min_seps;
         while(mse.hasNext()) {
             min_seps.insert(mse.next());
-            if (time(NULL)-start_time > time_limit) {
+            if (difftime(time(NULL),start_time) > time_limit) {
                 time_limit_exceeded = true;
                 break;
             }
@@ -113,7 +113,7 @@ void PMCRacer::go(bool verbose, bool append_results) {
         if (time_limit_exceeded) {
             UTILS__PRINT_IF(verbose, "Out of time in initial MS calculation, moving on to the next graph." << endl);
             gs[i].set_pmc_time_limit(time_limit);
-            gs[i].pmc_calc_time = time_limit+1;
+            gs[i].set_pmc_calc_time(time_limit+1);
             gs[i].set_ms(min_seps);
             for (int alg=PMCAlg::first(); alg<PMCAlg::last(); ++alg) {
                 alg_gs[alg].push_back(gs[i]);
@@ -123,7 +123,7 @@ void PMCRacer::go(bool verbose, bool append_results) {
 
         // Keep calculating. Now, the remaining time can be used by each algorithm
         // separately.
-        time_t ms_calc_time = time(NULL) - start_time;
+        time_t ms_calc_time = difftime(time(NULL),start_time);
         UTILS__PRINT_IF(verbose, "MS calc time: " << utils__secs_to_hhmmss(ms_calc_time) << endl);
 
         // Use a random order of the algorithms, in case
@@ -141,10 +141,10 @@ void PMCRacer::go(bool verbose, bool append_results) {
             DatasetStatisticsGenerator dsg(GRAPHSTATS_N | GRAPHSTATS_M | GRAPHSTATS_PMC);
             dsg.set_pmc_alg(PMCAlg(alg));
             dsg.dont_show_added_graphs();
-            dsg.add_graph(gs[i].g,gs[i].text);
+            dsg.add_graph(gs[i].get_graph(),gs[i].get_text());
             dsg.disable_all_limits();
             if (has_time_limit) {
-                dsg.set_pmc_time_limit(time_limit - ms_calc_time);
+                dsg.set_pmc_time_limit(difftime(time_limit,ms_calc_time));
             }
             // Add the minimal separators
             dsg.set_ms(min_seps, ms_calc_time, 1);
@@ -154,7 +154,7 @@ void PMCRacer::go(bool verbose, bool append_results) {
             // Get stats, add the time
             GraphStats stats = dsg.get_stats()[0];
             stats.set_pmc_time_limit(time_limit);   // Was initialized to time_limit - ms_calc_time by the DSG
-            stats.pmc_calc_time += ms_calc_time;
+            stats.set_pmc_calc_time(stats.get_pmc_calc_time() + ms_calc_time);
             TRACE(TRACE_LVL__OFF, "Got stats, pushing into alg_gs[" << alg
                             << "], which currently contains " << alg_gs << endl);
             TRACE(TRACE_LVL__OFF, "alg_gs[" << alg << "] is " << alg_gs[alg] << endl);

@@ -114,6 +114,10 @@ void utils__dump_string_to_file(const string& filename, const string& str, bool 
     }
 }
 
+bool utils__file_exists(const string& file) {
+    return (access(file.c_str(), F_OK) != -1);
+}
+
 string Logger::filename;
 ofstream Logger::file;
 bool Logger::state;

@@ -19,12 +19,16 @@ class DoriMain {
 private:
     // Calculates the data required (fast) and populates data fields.
     void calc_stats_aux(vector<GraphStats>& dataset, const char* filename) {
+        if (utils__file_exists(filename)) {
+            dataset = GraphProducer(true).import(filename).get();
+            return;
+        }
         DatasetStatisticsGenerator dsg(DORI_PROJECT_RESULTS_DIR+filename, GRAPHSTATS_ALL ^ (GRAPHSTATS_TRNG));
         dsg.set_pmc_alg(PMCAlg(true, false, true)); // As fast as possible, synced
         dsg.set_ms_time_limit(max_seconds); // So we see time taken in the results
         dsg.set_pmc_time_limit(max_seconds);
         for (GraphStats gs: dataset) {
-            dsg.add_graph(gs.g, gs.text);
+            dsg.add_graph(gs.get_graph(), gs.get_text());
         }
         dsg.compute(true);
         dsg.print();
@@ -115,9 +119,10 @@ using namespace tdenum;
 
 int main(int argc, char *argv[]) {
     Logger::start("log.txt", false);
-    //PMCEnumeratorTester pmcet(false);
-    //pmcet.go();
+//    PMCEnumeratorTester pmcet(false);
+//    pmcet.go();
     DoriMain dm;
+//    dm.produce_datasets();
     dm.load_datasets().calc_stats().race_graphs();
     return 0;
 }

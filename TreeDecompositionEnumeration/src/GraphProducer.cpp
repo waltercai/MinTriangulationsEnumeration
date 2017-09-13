@@ -1,3 +1,4 @@
+#include "DatasetStatisticsGenerator.h"
 #include "GraphProducer.h"
 #include "GraphReader.h"
 #include <string>
@@ -41,6 +42,11 @@ GraphProducer& GraphProducer::add(const string& filename, const string& txt) {
         0,
         1,
         true);
+    return *this;
+}
+
+GraphProducer& GraphProducer::import(const string& csv_filename) {
+    graphs = DatasetStatisticsGenerator::read_stats(csv_filename);
     return *this;
 }
 
@@ -173,11 +179,11 @@ vector<GraphStats> GraphProducer::get() const {
 
 GraphProducer& GraphProducer::dump_graphs(bool skip_graphs_from_files) {
     for (GraphStats gs: graphs) {
-        if (skip_graphs_from_files && gs.from_file) {
+        if (skip_graphs_from_files && gs.is_from_file()) {
             continue;
         }
-        string filename = gs.is_random ? output_dir + rand_filename(gs.n, gs.p, gs.instance) : gs.text;
-        GraphReader::dump(gs.g, filename);
+        string filename = gs.is_random() ? output_dir + rand_filename(gs.get_n(), gs.get_p(), gs.get_instance()) : gs.get_text();
+        GraphReader::dump(gs.get_graph(), filename);
     }
     return *this;
 }

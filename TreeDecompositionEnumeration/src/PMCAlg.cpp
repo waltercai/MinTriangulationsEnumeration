@@ -135,6 +135,13 @@ int PMCAlg::last() {
 }
 
 string PMCAlg::str() const {
+    switch(int(*this)) {
+    #define X(_name,_num) case _num: return #_name;
+    PMCALG_ALGORITHM_TABLE
+    #undef X
+    default: return "Unknown PMC algorithm";
+    }
+    /*
     if (is_normal()) {
         return PMC_ALG_BASENAME + "_NORMAL";
     }
@@ -156,6 +163,7 @@ string PMCAlg::str() const {
         oss << "_RANDOMRENAME";
     }
     return oss.str();
+    */
 }
 
 }

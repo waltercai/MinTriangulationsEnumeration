@@ -1,11 +1,15 @@
 #ifndef GRAPHSTATS_H_INCLUDED
 #define GRAPHSTATS_H_INCLUDED
 
-#include "Graph.h"
+#include "ChordalGraph.h"
 #include "DataStructures.h"
+#include "Graph.h"
+#include "PMCAlg.h"
+#include <map>
 #include <string>
 
 using std::string;
+using std::map;
 
 namespace tdenum {
 
@@ -69,7 +73,7 @@ GRAPHSTATS_FIELD_TABLE
  * Minimal separators, PMCs, triangulations, time metrics.
  */
 class GraphStats {
-public:
+private:
 
     // General invalid value
     static const long invalid_value;
@@ -79,12 +83,12 @@ public:
     string text;
     int n;
     int m;
-    long ms_count;
-    long pmc_count;
-    long trng_count;
+    long count_ms;
+    long count_pmc;
+    long count_trng;
 
     // Useful fields for random graphs
-    bool is_random;
+    bool is_random_flag;
     double p, actual_ratio;
     int instance;
 
@@ -94,36 +98,48 @@ public:
     // Are the (n,m,ms,pmcs,triangs) fields valid for graph i?
     // Note: if the DSG didn't request PMCs, then even if valid
     // is true the PMCs should be zero.
-    bool ms_valid;
-    bool pmc_valid;
-    bool trng_valid;
+    bool calculated_ms;
+    bool calculated_pmc;
+    bool calculated_trng;
+
+    // The algorithm used to calculate the PMCs (if applicable)
+    PMCAlg alg;
 
     // If the limit was overreached, set the relevant flag.
-    time_t ms_time_limit;
-    time_t pmc_time_limit;
-    time_t trng_time_limit;
-    long ms_count_limit;
-    long trng_count_limit;
-    bool ms_reached_time_limit;
-    bool pmc_reached_time_limit;
-    bool trng_reached_time_limit;
-    bool ms_reached_count_limit;
-    bool trng_reached_count_limit;
-    bool ms_mem_error;
-    bool pmc_mem_error;
-    bool trng_mem_error;
+    time_t time_limit_ms;
+    time_t time_limit_pmc;
+    time_t time_limit_trng;
+    long count_limit_ms;
+    long count_limit_trng;
+    bool reached_time_limit_flag_ms;
+    bool reached_time_limit_flag_pmc;
+    bool reached_time_limit_flag_trng;
+    bool reached_count_limit_flag_ms;
+    bool reached_count_limit_flag_trng;
+    bool mem_error_flag_ms;
+    bool mem_error_flag_pmc;
+    bool mem_error_flag_trng;
 
     // The amount of time required for calculation the minimal separators.
     // Note: PMC calculation time may disregard the time required to calculate
     // the minimal separators of g (see actual_pmc_calc_time())
-    time_t ms_calc_time;
-    time_t pmc_calc_time;
-    time_t trng_calc_time;
+    time_t calc_time_ms;
+    time_t calc_time_pmc;
+    time_t calc_time_trng;
+
+    // If several algorithms were used for the same graph, the user
+    // may report the calculation times by algorithm
+    map<PMCAlg,time_t> calc_time_by_alg_ms;
+    map<PMCAlg,time_t> calc_time_by_alg_pmc;
+    map<PMCAlg,time_t> calc_time_by_alg_trng;
 
     // Data.
     // Minimal separators of all subgraphs may also be stored.
-    vector<NodeSetSet> ms;  // Minimal separators
-    NodeSetSet pmc;         // PMCs
+    vector<NodeSetSet> ms;      // Minimal separators
+    NodeSetSet pmc;             // PMCs
+    vector<ChordalGraph> trng;  // Triangulations
+
+public:
 
     // Basic constructors.
     // We need a default constructor for containers.
@@ -161,21 +177,67 @@ public:
     bool has_pmc_time_limit() const;
     bool has_trng_time_limit() const;
     bool has_ms_count_limit() const;
-    bool has_trng_count_limit() const ;
+    bool has_trng_count_limit() const;
+    void set_reached_time_limit_ms();
+    void set_reached_time_limit_pmc();
+    void set_reached_time_limit_trng();
+    void set_reached_count_limit_ms();
+    void set_reached_count_limit_trng();
+    void set_mem_error_ms();
+    void set_mem_error_pmc();
+    void set_mem_error_trng();
+    bool reached_time_limit_ms() const;
+    bool reached_time_limit_pmc() const;
+    bool reached_time_limit_trng() const;
+    bool reached_count_limit_ms() const;
+    bool reached_count_limit_trng() const;
+    bool mem_error_ms() const;
+    bool mem_error_pmc() const;
+    bool mem_error_trng() const;
 
-    // If the value is invalid, returns a special value.
-    // If the flag is set to 'true', if the value calculated
-    // is invalid because of timeout / count limit, return the value
-    // calculated (may be invalid!)
+    // Setters
+    void set_pmc_alg(PMCAlg);
+    void set_ms_calc_time(time_t);
+    void set_pmc_calc_time(time_t);
+    void set_trng_calc_time(time_t);
+    void set_pmc_calc_time_by_alg(PMCAlg,time_t);
+    void set_ms_count(long);
+    void set_pmc_count(long);
+    void set_trng_count(long);
+    void set_random();
+    void unset_random();
+    void set_p(double);
+    double get_p() const;
+    void refresh_edge_ratio();
+    bool is_from_file() const;
+    bool is_random() const;
+
+    // If the value calculated is invalid because of timeout / count limit,
+    // return the value calculated (may be invalid!)
+    string get_text() const;
+    Graph get_graph() const;
     int get_n() const;
     int get_m() const;
-    long get_ms_count(bool get_if_limit = true) const;
-    long get_pmc_count(bool get_if_limit = true) const;
-    long get_trng_count(bool get_if_limit = true) const;
+    PMCAlg get_pmc_alg() const;
+    long get_ms_count() const;
+    long get_pmc_count() const;
+    long get_trng_count() const;
+    time_t get_ms_calc_time() const;
+    time_t get_pmc_calc_time() const;
+    time_t get_trng_calc_time() const;
+    time_t get_pmc_calc_time_by_alg(PMCAlg) const;
+
+    // Are the (n,m,ms,pmcs,triangs) fields valid for graph i?
+    // Note: if the DSG didn't request PMCs, then even if valid
+    // is true the PMCs should be zero.
+    bool ms_valid() const;
+    bool pmc_valid() const;
+    bool trng_valid() const;
 
     // Data utility methods
     void set_ms(const NodeSetSet&);
     void set_pmc(const NodeSetSet&);
+    void set_trng(const vector<ChordalGraph>&);
     NodeSetSet get_ms(bool get_if_limit = true) const;
     NodeSetSet get_subgraph_ms(int i, bool get_if_limit = true) const;
     NodeSetSet get_pmc(bool get_if_limit = true) const;

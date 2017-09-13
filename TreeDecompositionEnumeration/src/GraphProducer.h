@@ -24,7 +24,7 @@ namespace tdenum {
         string(GRAPHPRODUCER_RANDFILE_TOKEN_P) + \
         string("_inst") + \
         string(GRAPHPRODUCER_RANDFILE_TOKEN_INST) + \
-        string(".csv") \
+        string(".grp") \
     )
 
 
@@ -61,6 +61,14 @@ public:
                        bool from_file = false);
     GraphProducer& add(const string& filename,
                        const string& txt = "");
+
+    // The DatasetStatisticsGenerator outputs CSV files with specific syntax.
+    // This method uses static methods from the DatasetStatisticsGenerator to
+    // parse existing statistic files into the original GraphStats objects used
+    // to generate the graph.
+    // Note: this method assumes the statistics were gathered for graphs which
+    // exist as files, and the text in the text column is the filename.
+    GraphProducer& import(const string& csv_filename);
 
     // Recursive search.
     // Allow user to send a directory iterator.

@@ -13,13 +13,10 @@ namespace tdenum {
  * Parallelized code can't do that, so use workarounds..
  */
 #define CHECK_TIME_OR_OP(_op) do { \
-        if (limit != 0) { \
-            time_t _t = time(NULL); \
-            if (_t - start_time >= limit) { \
-                out_of_time = true; \
-                TRACE(TRACE_LVL__WARNING, "Out of time!"); \
-                _op; \
-            } \
+        if (limit != 0 && difftime(time(NULL),start_time) >= limit) { \
+            out_of_time = true; \
+            TRACE(TRACE_LVL__WARNING, "Out of time!"); \
+            _op; \
         } \
     } while(0)
 

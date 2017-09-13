@@ -4,6 +4,25 @@
 #include <string>
 using std::string;
 
+#define PMCALG_ALGORITHM_TABLE \
+    X(PMCALG_ALGORITHM_NORMAL, 0) \
+    X(PMCALG_ALGORITHM_REVERSE_MS, (PMCAlg::reverse_ms_mask)) \
+    X(PMCALG_ALGORITHM_ASCENDING, (PMCAlg::ascending_deg_mask)) \
+    X(PMCALG_ALGORITHM_ASCENDING_REVERSE_MS, (PMCAlg::reverse_ms_mask | PMCAlg::ascending_deg_mask)) \
+    X(PMCALG_ALGORITHM_DESCENDING, (PMCAlg::descending_deg_mask)) \
+    X(PMCALG_ALGORITHM_DESCENDING_REVERSE_MS, (PMCAlg::descending_deg_mask | PMCAlg::reverse_ms_mask)) \
+    X(PMCALG_ALGORITHM_RANDOM_RENAME, (PMCAlg::random_rename_mask)) \
+    X(PMCALG_ALGORITHM_RANDOM_RENAME_REVERSE_MS, (PMCAlg::reverse_ms_mask | PMCAlg::random_rename_mask)) \
+    X(PMCALG_ALGORITHM_PARALLEL_OMV, (PMCAlg::parallel_omv_mask)) \
+    X(PMCALG_ALGORITHM_PARALLEL_OMV_REVERSE_MS, (PMCAlg::parallel_omv_mask | PMCAlg::reverse_ms_mask)) \
+    X(PMCALG_ALGORITHM_PARALLEL_OMV_ASCENDING, (PMCAlg::parallel_omv_mask | PMCAlg::ascending_deg_mask)) \
+    X(PMCALG_ALGORITHM_PARALLEL_OMV_ASCENDING_REVERSE_MS, (PMCAlg::parallel_omv_mask | PMCAlg::reverse_ms_mask | PMCAlg::ascending_deg_mask)) \
+    X(PMCALG_ALGORITHM_PARALLEL_OMV_DESCENDING, (PMCAlg::parallel_omv_mask | PMCAlg::descending_deg_mask)) \
+    X(PMCALG_ALGORITHM_PARALLEL_OMV_DESCENDING_REVERSE_MS, (PMCAlg::parallel_omv_mask | PMCAlg::descending_deg_mask | PMCAlg::reverse_ms_mask)) \
+    X(PMCALG_ALGORITHM_PARALLEL_OMV_RANDOM_RENAME, (PMCAlg::parallel_omv_mask | PMCAlg::random_rename_mask)) \
+    X(PMCALG_ALGORITHM_PARALLEL_OMV_RANDOM_RENAME_REVERSE_MS, (PMCAlg::parallel_omv_mask | PMCAlg::reverse_ms_mask | PMCAlg::random_rename_mask))
+
+
 namespace tdenum {
 
 /**
@@ -11,6 +30,12 @@ namespace tdenum {
  */
 class PMCAlg {
 private:
+
+    // The actual algorithm
+    int alg;
+
+public:
+
     // Different algorithm strains are allowed.
     // The all_mask value doubles as an invalid algorithm value.
     static const int all_mask = -1;            // (all bits are 1)
@@ -19,11 +44,6 @@ private:
     static const int descending_deg_mask = 2*ascending_deg_mask; // mutually
     static const int random_rename_mask = 2*descending_deg_mask; // exclusive
     static const int parallel_omv_mask = 2*random_rename_mask;   // Async version of one_more_vertex
-
-    // The actual algorithm
-    int alg;
-
-public:
 
     // If more than one of the node-rename modes is true, prefer descending, then ascending,
     // then random.

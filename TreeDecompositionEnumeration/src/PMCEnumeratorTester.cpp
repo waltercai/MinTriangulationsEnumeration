@@ -523,7 +523,7 @@ bool algorithmconsistency_aux(bool pmc_parallel = false) {
                 .get();
     for (unsigned i=0; i<gs.size(); ++i) {
         cout << UTILS__REPLACE_STREAM(i+1 << "/" << gs.size());
-        Graph& g = gs[i].g;
+        const Graph& g = gs[i].get_graph();
         NodeSetSet pmcs;
         bool found_pmcs = false;
         for (int alg = PMCAlg::first(); alg<PMCAlg::last(); ++alg) {
@@ -562,9 +562,9 @@ bool crosscheck_aux(const GraphStats& gs) {
     // Iterate over all maximal cliques in all triangulations.
     // Make sure each one is in the NodeSetSet returned by the
     // PMCEnumerator, and vice-versa.
-    cout << endl << " - Cross-checking graph '" << gs.text << "'... ";
+    cout << endl << " - Cross-checking graph '" << gs.get_text() << "'... ";
     NodeSetSet found;
-    const Graph& g = gs.g;
+    const Graph& g = gs.get_graph();
     PMCEnumerator pmce(g);
     NodeSetSet pmcs = pmce.get();
     MinimalTriangulationsEnumerator enumerator(g, NONE, UNIFORM, SEPARATORS);
