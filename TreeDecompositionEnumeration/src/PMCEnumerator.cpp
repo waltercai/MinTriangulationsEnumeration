@@ -155,6 +155,8 @@ NodeSetSet PMCEnumerator::get() {
         }
         vector<Node> nodes = tmp_graph.getNodesVector();
 
+        TRACE(TRACE_LVL__NOISE, "Done renaming. Calculating subgraphs...");
+
         // Start by creating all subgraphs.
         // This should not constitute a memory bottleneck... if so,
         // the graphs are WAY too large for these algorithms :)
@@ -165,10 +167,15 @@ NodeSetSet PMCEnumerator::get() {
             subg.push_back(SubGraph(tmp_graph, subnodes));
         }
 
+        TRACE(TRACE_LVL__NOISE, "Done calculating subgraphs. Is the algorithm a reverse-MS type?");
+
         // Optionally use the (memory-inefficient) algorithm, which
         // calculates the minimal separators in advance:
         vector<NodeSetSet> sub_ms(n);
         if (alg.is_reverse()) {
+
+            TRACE(TRACE_LVL__NOISE, "Yes!");
+
 
             // Calculate the first set of minimal separators
             sub_ms[n-1] = tmp_graph.getNewNames(get_ms());
@@ -233,6 +240,8 @@ NodeSetSet PMCEnumerator::get() {
 
         // If the nodes of G are {a_1,...,a_n} then P1 = {{a1}}
         pmcs.insert(NodeSet({nodes[0]})); // Later, PMCi=PMCip1
+
+        TRACE(TRACE_LVL__NOISE, "Done with reverse-MS part, starting main loop...");
 
         // MS1 should remain empty, so MSi=MSip1 is OK
         for (int i=1; i<n; ++i) {

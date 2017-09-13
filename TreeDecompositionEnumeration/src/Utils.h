@@ -233,7 +233,7 @@ typedef enum _TRACE_LVL_CODES {
     TRACE_LVL__NOISE,
     TRACE_LVL__OFF
 } TRACE_LVL__CODES;
-#define TRACE_LVL TRACE_LVL__WARNING
+#define TRACE_LVL TRACE_LVL__NOISE
 #define TRACE(_lvl, _stream) do { \
         if (_lvl <= TRACE_LVL) { \
             UTILS__ASSERT_PRINT(_stream); \
