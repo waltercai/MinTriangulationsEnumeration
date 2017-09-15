@@ -44,8 +44,9 @@ public:
                       bool verbose = true,
                       unsigned int md = 100);
 
-    // Add a substring to skip
+    // Add a substring(s) to skip
     DirectoryIterator& skip(const string& s);
+    DirectoryIterator& skip(const vector<string>& vs);
 
     // Fetches the name of the next file under the directory.
     // Returns true <==> such a file exists (we aren't at the last file).
