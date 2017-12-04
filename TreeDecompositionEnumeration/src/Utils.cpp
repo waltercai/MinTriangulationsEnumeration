@@ -3,13 +3,16 @@
 #include <cstdlib>
 #include <dirent.h>
 #include <fstream>
-#include <io.h>
 #include <regex>
-#include <Shlwapi.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+
+#ifdef UTILS__WINDOWS_MODE
+#include <io.h>
+#include <Shlwapi.h>
 #include <Windows.h>
+#endif
 
 using std::ifstream;
 using std::regex;
@@ -310,7 +313,11 @@ bool utils__mkdir(const string& path) {
         TRACE(TRACE_LVL__ERROR, "Cannot create new directory, parent dir '" << parent_dir << "' doesn't exist");
         return false;
     }
+#ifdef UTILS__WINDOWS_MODE
     int mkdir_ret = _mkdir(path.c_str());
+#else
+    int mkdir_ret = mkdir(path.c_str(), S_IRWXU | S_IRWXG | S_IRWXO);
+#endif
     if (mkdir_ret == 0) {
         TRACE(TRACE_LVL__NOISE, "Created directory '" << path << "'");
         return true;
