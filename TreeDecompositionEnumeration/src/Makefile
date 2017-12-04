@@ -1,7 +1,7 @@
 CC=g++
 CPPFLAGS=-std=c++11 -fopenmp -g
 LDFLAGS=-fopenmp
-OBJS=ChordalGraph.o Converter.o DatasetStatisticsGenerator.o \
+OBJS=ChordalGraph.o Converter.o \
  DataStructures.o DirectoryIterator.o Graph.o GraphProducer.o GraphReader.o \
  GraphStats.o GraphTester.o IndSetExtBySeparators.o IndSetExtByTriangulation.o \
  IndSetScorerByTriangulation.o MinimalSeparatorsEnumerator.o \
@@ -23,19 +23,19 @@ BlockInfo.o: BlockInfo.cpp BlockInfo.h Graph.h DataStructures.h \
 ChordalGraph.o: ChordalGraph.cpp ChordalGraph.h Graph.h DataStructures.h
 Converter.o: Converter.cpp Converter.h Graph.h DataStructures.h \
  ChordalGraph.h
-DatasetStatisticsGenerator.o: DatasetStatisticsGenerator.cpp \
- DatasetStatisticsGenerator.h Graph.h DataStructures.h GraphReader.h \
- GraphStats.h MinimalSeparatorsEnumerator.h SeparatorsScorer.h \
- PMCEnumerator.h SubGraph.h IndependentSetExtender.h PMCAlg.h \
- DirectoryIterator.h MinimalTriangulationsEnumerator.h SeparatorGraph.h \
- SuccinctGraphRepresentation.h IndSetExtByTriangulation.h \
- MinimalTriangulator.h ChordalGraph.h IndSetExtBySeparators.h \
- MaximalIndependentSetsEnumerator.h IndependentSetScorer.h \
- IndSetScorerByTriangulation.h GraphProducer.h Utils.h TestUtils.h
+#DatasetStatisticsGenerator.o: DatasetStatisticsGenerator.cpp \
+# DatasetStatisticsGenerator.h Graph.h DataStructures.h GraphReader.h \
+# GraphStats.h MinimalSeparatorsEnumerator.h SeparatorsScorer.h \
+# PMCEnumerator.h SubGraph.h IndependentSetExtender.h PMCAlg.h \
+# DirectoryIterator.h MinimalTriangulationsEnumerator.h SeparatorGraph.h \
+# SuccinctGraphRepresentation.h IndSetExtByTriangulation.h \
+# MinimalTriangulator.h ChordalGraph.h IndSetExtBySeparators.h \
+# MaximalIndependentSetsEnumerator.h IndependentSetScorer.h \
+# IndSetScorerByTriangulation.h GraphProducer.h Utils.h TestUtils.h
 DataStructures.o: DataStructures.cpp DataStructures.h
 DirectoryIterator.o: DirectoryIterator.cpp TestUtils.h Utils.h \
  DirectoryIterator.h
-dori_main.o: dori_main.cpp DatasetStatisticsGenerator.h Graph.h \
+#dori_main.o: dori_main.cpp DatasetStatisticsGenerator.h Graph.h \
  DataStructures.h GraphReader.h GraphStats.h \
  MinimalSeparatorsEnumerator.h SeparatorsScorer.h PMCEnumerator.h \
  SubGraph.h IndependentSetExtender.h PMCAlg.h DirectoryIterator.h \
@@ -58,7 +58,7 @@ IndSetExtByTriangulation.o: IndSetExtByTriangulation.cpp \
 IndSetScorerByTriangulation.o: IndSetScorerByTriangulation.cpp \
  IndSetScorerByTriangulation.h IndependentSetScorer.h Graph.h \
  DataStructures.h ChordalGraph.h Converter.h
-main.o: main.cpp DatasetStatisticsGenerator.h Graph.h DataStructures.h \
+#main.o: main.cpp DatasetStatisticsGenerator.h Graph.h DataStructures.h \
  GraphReader.h GraphStats.h MinimalSeparatorsEnumerator.h \
  SeparatorsScorer.h PMCEnumerator.h SubGraph.h IndependentSetExtender.h \
  PMCAlg.h DirectoryIterator.h GraphProducer.h Utils.h TestUtils.h \
@@ -108,7 +108,7 @@ PMCEnumeratorTester.o: PMCEnumeratorTester.cpp PMCEnumeratorTester.h \
  IndSetScorerByTriangulation.h GraphStats.h GraphProducer.h
 PMCRacer.o: PMCRacer.cpp PMCEnumerator.h Graph.h DataStructures.h \
  SubGraph.h IndependentSetExtender.h PMCAlg.h PMCRacer.h \
- DatasetStatisticsGenerator.h GraphReader.h GraphStats.h \
+# DatasetStatisticsGenerator.h GraphReader.h GraphStats.h \
  MinimalSeparatorsEnumerator.h SeparatorsScorer.h DirectoryIterator.h \
  Utils.h
 RankedTriangulationEnumerator.o: RankedTriangulationEnumerator.cpp \

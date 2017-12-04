@@ -6,6 +6,8 @@
 
 namespace tdenum {
 
+int PMCE_RUNMODE = PMCE_RUNMODE_FAST;
+
 /**
  * A macro used to stop everything and return if the time
  * limit is reached.
@@ -69,23 +71,16 @@ PMCEnumerator::~PMCEnumerator() {
     omp_destroy_lock(&lock);
 }
 
-void PMCEnumerator::reset(const Graph& g, time_t time_limit) {
-    *this = PMCEnumerator(g, time_limit);
-}
+void PMCEnumerator::reset(const Graph& g, time_t time_limit) { *this = PMCEnumerator(g, time_limit); }
 
-void PMCEnumerator::set_algorithm(PMCAlg a) {
-    alg = a;
-}
-PMCAlg PMCEnumerator::get_alg() const {
-    return alg;
-}
+void PMCEnumerator::set_algorithm(PMCAlg a) { alg = a; }
+PMCAlg PMCEnumerator::get_alg() const { return alg; }
 
-void PMCEnumerator::enable_parallel() {
-    allow_parallel = true;
-}
-void PMCEnumerator::suppress_parallel() {
-    allow_parallel = false;
-}
+void PMCEnumerator::set_time_limit(time_t t) { limit = t; }
+void PMCEnumerator::unset_time_limit() { limit = 0; }
+
+void PMCEnumerator::enable_parallel() { allow_parallel = true; }
+void PMCEnumerator::suppress_parallel() { allow_parallel = false; }
 
 /**
  * Allows caller to report the minimal separators of the graph.
@@ -93,8 +88,12 @@ void PMCEnumerator::suppress_parallel() {
  */
 void PMCEnumerator::set_minimal_separators(const NodeSetSet& min_seps) {
     ms = graph.getNewNames(min_seps);
-    ms_subgraph_count[graph.getNumberOfNodes()-1] = ms.size();
     has_ms = true;
+    if (graph.getNumberOfNodes() == 0) {
+        TRACE(TRACE_LVL__ERROR, "No nodes (empty graph)! Can't set MS count");
+        return;
+    }
+    ms_subgraph_count[graph.getNumberOfNodes()-1] = ms.size();
 }
 
 /**
@@ -103,6 +102,11 @@ void PMCEnumerator::set_minimal_separators(const NodeSetSet& min_seps) {
 NodeSetSet PMCEnumerator::get_ms() {
     if (!has_ms) {
         ms.clear();
+        if (graph.getNumberOfNodes() == 0) {
+            TRACE(TRACE_LVL__NOISE, "Empty graph yields an empty set of minimal separators.");
+            set_minimal_separators(NodeSetSet());
+            return ms;
+        }
         MinimalSeparatorsEnumerator mse(graph, UNIFORM);
         if (!mse.getAll(ms, difftime(limit,difftime(time(NULL),start_time)))) {
             out_of_time = true;
@@ -112,9 +116,25 @@ NodeSetSet PMCEnumerator::get_ms() {
     }
     return ms;
 }
+vector<NodeSetSet> PMCEnumerator::get_ms_subgraphs() { return ms_subgraphs; }
+vector<long> PMCEnumerator::get_ms_count_subgraphs() { return ms_subgraph_count; }
 
 Graph PMCEnumerator::get_graph() const {
     return graph;
+}
+
+void PMCEnumerator::update_ms_subgraph_count() {
+    read_ms_subgraph_count_from_vector(ms_subgraphs);
+}
+void PMCEnumerator::read_ms_subgraph_count_from_vector(const vector<NodeSetSet>& v) {
+    if (v.size() != (size_t)graph.getNumberOfNodes()) {
+        TRACE(TRACE_LVL__ERROR, "Size mismatch: got " << v.size() << " separators " <<
+              "for a graph of size " << graph.getNumberOfNodes());
+        return;
+    }
+    for (unsigned i=0; i<v.size(); ++i) {
+        ms_subgraph_count[i] = v[i].size();
+    }
 }
 
 /**
@@ -127,10 +147,12 @@ Graph PMCEnumerator::get_graph() const {
  * The REVERSE_MS_PRECALC algorithm starts by calculating all sets of minimal
  * separators - in reverse order - before starting the PMC algorithm.
  */
-NodeSetSet PMCEnumerator::get() {
+NodeSetSet PMCEnumerator::get(const StatisticRequest& sr) {
+
     if (!done) {
 
         // Cleanup
+        start_time = time(NULL);
         pmcs.clear();
 
         /**
@@ -174,13 +196,13 @@ NodeSetSet PMCEnumerator::get() {
         // Optionally use the (memory-inefficient) algorithm, which
         // calculates the minimal separators in advance:
         vector<NodeSetSet> sub_ms(n);
+        sub_ms[n-1] = tmp_graph.getNewNames(get_ms());
         if (alg.is_reverse()) {
 
             TRACE(TRACE_LVL__NOISE, "Yes!");
 
 
             // Calculate the first set of minimal separators
-            sub_ms[n-1] = tmp_graph.getNewNames(get_ms());
             CHECK_TIME_OR_OP(return NodeSetSet());
 
             // Use the algorithm described in the PDF
@@ -269,12 +291,13 @@ NodeSetSet PMCEnumerator::get() {
                                            "To (by adding node " << a << "):" << endl << subg[i] <<
                                            "With minimal separators " << MSi << " and " <<
                                            tmp_graph.getNewNames(get_ms()) << ", respectively.");
-                    pmcs = one_more_vertex(subg[i], subg[i-1], a, tmp_graph.getNewNames(get_ms()), MSi, prev_pmcs);
+                    pmcs = one_more_vertex(subg[n-1], subg[n-2], a, sub_ms[n-1], MSi, prev_pmcs);
                 }
                 else {
                     MinimalSeparatorsEnumerator DiEnumerator(subg[i], UNIFORM);
                     DiEnumerator.getAll(MSip1, difftime(limit,difftime(time(NULL),start_time)));
                     CHECK_TIME_OR_OP(return NodeSetSet());
+                    sub_ms[i] = MSip1;
                     ms_subgraph_count[i] = MSip1.size();
                     pmcs = one_more_vertex(subg[i], subg[i-1], a, MSip1, MSi, prev_pmcs);
                 }
@@ -295,6 +318,14 @@ NodeSetSet PMCEnumerator::get() {
             ms_subgraph_count[n-1] = ms.size();
             has_ms = true;
         }
+        if (sr.test_ms_subgraphs()) {
+            TRACE(TRACE_LVL__TEST, "Setting MS subgraphs to " << sub_ms);
+            ms_subgraphs = sub_ms;
+            update_ms_subgraph_count();
+        }
+        else if (sr.test_ms_subgraph_count()) {
+            read_ms_subgraph_count_from_vector(sub_ms);
+        }
 
         // That's it! Translate to user-friendly state
         // pmcs now contains the correct set of PMCs.
@@ -302,6 +333,8 @@ NodeSetSet PMCEnumerator::get() {
         done = true;
     }
 
+    // Update
+    CHECK_TIME_OR_OP(((void)0));
     return pmcs;
 }
 
@@ -367,16 +400,16 @@ NodeSetSet PMCEnumerator::one_more_vertex(
                 // Sort S first so we can easily compare P=S later.
                 NodeSet S = *Sit;
                 NodeSet Sa = S;
-                VERIFY_SORT_OMV(S);
+                VERIFY_SORT_OMV(Sa);
 
                 // Add a, if not already in:
-                if (!UTILS__IS_IN_CONTAINER(a,Sa)) {
+                if (!UTILS__IS_IN_SORTED_CONTAINER(a,Sa)) {
                     Sa.insert(Sa.end(), a);
                 }
                 if (is_pmc(Sa, G1)) {
                     utils__insert_critical(Sa, P1);
                 }
-                if (!UTILS__IS_IN_CONTAINER(a,S) && !D2.isMember(S)) {
+                if (!UTILS__IS_IN_SORTED_CONTAINER(a,S) && !D2.isMember(S)) {
 
                     // For each separator S, iterate over all full components C of G
                     // associated with S. In other words, all connected components C
@@ -391,11 +424,12 @@ NodeSetSet PMCEnumerator::one_more_vertex(
                         }
                         for (auto sep2 = D2.begin(); keep_running && sep2 != D2.end(); ++sep2) {
                             VERIFY_SORT_OMV(*sep2);
+                            VERIFY_SORT_OMV(blocks[i]->C);
                             NodeSet TcapC;
-                            UTILS__SET_INTERSECTION(sep2, &(blocks[i]->C), TcapC);
+                            UTILS__VECTOR_INTERSECTION(*sep2, blocks[i]->C, TcapC);
                             VERIFY_SORT_OMV(TcapC);
                             NodeSet SuTcapC;
-                            UTILS__SET_UNION(&TcapC, &S, SuTcapC);
+                            UTILS__VECTOR_UNION(TcapC, S, SuTcapC);  // S is verified sorted (above)
                             VERIFY_SORT_OMV(SuTcapC);
                             if (is_pmc(SuTcapC, G1)) {
                                 utils__insert_critical(SuTcapC, P1);
@@ -466,7 +500,7 @@ bool PMCEnumerator::is_pmc(NodeSet K, const SubGraph& G) {
         for (j=0; j<B.size(); ++j) {
             CHECK_TIME_OR_OP(return false);
             // They're all sorted, so use binary search
-            if (UTILS__IS_IN_CONTAINER(x, B[j]->S)) {
+            if (UTILS__IS_IN_SORTED_CONTAINER(x, B[j]->S)) {
                 Sx.push_back(B[j]->S);
             }
         }
@@ -482,7 +516,7 @@ bool PMCEnumerator::is_pmc(NodeSet K, const SubGraph& G) {
             for (k=0; k<Sx.size(); ++k) {
                 // Sx is sorted by construction (otherwise, S is unsorted),
                 // so IS_IN_CONTAINER can be safely used.
-                if (UTILS__IS_IN_CONTAINER(y, Sx[k])) {
+                if (UTILS__IS_IN_SORTED_CONTAINER(y, Sx[k])) {
                     foundSi = true;
                     break;
                 }

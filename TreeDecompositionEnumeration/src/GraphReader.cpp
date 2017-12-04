@@ -10,6 +10,11 @@ using namespace std;
 
 namespace tdenum {
 
+bool GraphReader::fail_flag = false;
+void GraphReader::set_fail_flag() { fail_flag = true; }
+void GraphReader::unset_fail_flag() { fail_flag = false; }
+bool GraphReader::last_read_failed() { return fail_flag; }
+
 Graph readCliques(ifstream& input) {
 	// Get numbers of variables and clauses
 	string line;
@@ -179,26 +184,6 @@ Graph readBliss(ifstream& input) {
 	return g;
 }
 
-/**
- * The GRP format is simply one line with the number of nodes, and then
- * pairs of nodes (one on each line) representing edges.
- */
-Graph readGrp(ifstream& input) {
-    string line;
-    getline(input, line);
-    istringstream lineStream(line);
-    int n;
-    lineStream >> n;
-    Graph g(n);
-    while (getline(input, line)) {
-        int u,v;
-        istringstream strm(line);
-        strm >> u >> v;
-        g.addEdge(u,v);
-    }
-    return g;
-}
-
 string GetFileExtension(const string& fileName) {
     if(fileName.find_last_of(".") != string::npos)
         return fileName.substr(fileName.find_last_of(".")+1);
@@ -206,9 +191,11 @@ string GetFileExtension(const string& fileName) {
 }
 
 Graph GraphReader::read(const string& fileName) {
+    unset_fail_flag();
 	ifstream input (fileName.c_str());
 	if (!input.is_open()) {
 		cout << "Unable to open file '" << fileName << "'" << endl;
+		set_fail_flag();
 		return Graph();
 	}
 	string extension = GetFileExtension(fileName);
@@ -222,10 +209,11 @@ Graph GraphReader::read(const string& fileName) {
 		return readCSV(input);
 	} else if ( extension == "bliss") {
 		return readBliss(input);
-	} else if ( extension == "grp") {
+	}/* else if ( extension == "grp") {
         return readGrp(input);
-	}
-	cout << "Unrecognized file extension '." << extension << "'" << endl;
+	}*/
+	TRACE(TRACE_LVL__ERROR, "Unrecognized file extension '." << extension << "'");
+	set_fail_flag();
 	return Graph();
 }
 
@@ -239,7 +227,7 @@ void GraphReader::dump(const Graph& graph, const string& filename) {
             oss << v << " " << u << endl;
         }
     }
-    utils__dump_string_to_file(filename, oss.str(), false);
+    utils__dump_string_to_file(oss.str(), filename, false);
 }
 
 } /* namespace tdenum */

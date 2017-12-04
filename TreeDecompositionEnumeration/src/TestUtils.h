@@ -32,17 +32,19 @@ using std::cout;
 #define END_TESTS() \
     cout << "DONE. " << _passcounter << "/" << _totalcounter << " passed\n"
 
+// Designed for use with classes implementing TestInterface.
 #define DO_TEST(_testfunc) do { \
         cout << utils__timestamp_to_fulldate(time(NULL)) <<  ": Running '" << #_testfunc << "'... "; \
         if (!(_testfunc())) { \
             cout << "'" << #_testfunc << "' FAILED\n"; \
+            failed = true; \
         } \
         else { \
-            ++_passcounter; \
+            ++total_passed; \
             cout << "PASSED\n"; \
         } \
-        ++_totalcounter; \
-    }while(0)
+        ++total_tests; \
+    } while(0)
 
 
 #endif // TESTUTILS_H_INCLUDED

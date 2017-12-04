@@ -31,6 +31,9 @@ public:
 	ChordalGraph next();
 	// Returns the number of minimal separators generated
 	int getNumberOfMinimalSeperatorsGenerated();
+	// Get all triangulations, return them in an ordered vector.
+	// After calling getAll(), hasNext() should return false.
+	vector<ChordalGraph> getAll();
 };
 
 } /* namespace tdenum */

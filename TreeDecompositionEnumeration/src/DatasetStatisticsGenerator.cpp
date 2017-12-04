@@ -766,7 +766,7 @@ vector<GraphStats> DatasetStatisticsGenerator::read_stats(const string& filename
                 }
                 break;
             case DSG_COL_RATIO:
-                stats.refresh_edge_ratio(); // Don't read from file
+                stats.refresh_graph_data(); // Don't read from file
                 break;
             case DSG_COL_MS_TIME:
                 stats.set_ms_calc_time(utils__hhmmss_to_timestamp(token));

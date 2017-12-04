@@ -57,13 +57,17 @@ namespace tdenum {
  * statistics vector call get_stats().
  */
 
-#define DEFAULT_OUTPUT_DIR "./"
-
+/**
+ * The output data is dumped to file using the Dataset class, which requires
+ * a filename suffix
+ */
+#define DSG_OUTPUT_SUFFIX "DSGout"
 
 /**
  * Text to be displayed in the CSV file header.
  * Map names to numeric identifiers for ease of use.
  */
+TODO: delete these
 #define DSG_ERROR_TEXT_MS "MS"
 #define DSG_ERROR_TEXT_PMC "PMC"
 #define DSG_ERROR_TEXT_TRNG "TRNG"
@@ -158,10 +162,14 @@ private:
     // The algorithm to be used when calculating PMCs
     PMCAlg pmc_alg;
 
-    // For every i, the following vectors store the data of graph i.
+/*    // For every i, the following vectors store the data of graph i.
     // Different threads access these at different indexes, so there
     // should be no need to lock any of them.
-    vector<GraphStats> gs;
+    vector<GraphStats> gs;*/
+    // Contains all datasets on which the users requires computation.
+    // Each dataset should be output to a separate file (see the Dataset
+    // class).
+    vector<Dataset> datasets;
 
     // While computing a graph's stats, push it's index here so
     // print_progress will output the current computation status.
@@ -210,9 +218,9 @@ public:
     // Optionally send a directory iterator to input graphs from.
     // If no file name is sent, no output is dumped.
     DatasetStatisticsGenerator(const string& outputfile, int flds = GRAPHSTATS_ALL);
-    DatasetStatisticsGenerator(const string& outputfile,
+/*    DatasetStatisticsGenerator(const string& outputfile,
                                DirectoryIterator di,
-                               int flds = GRAPHSTATS_ALL);
+                               int flds = GRAPHSTATS_ALL);*/
     DatasetStatisticsGenerator(int flds = GRAPHSTATS_ALL);
     ~DatasetStatisticsGenerator();
 
@@ -240,7 +248,7 @@ public:
 
     // Changes filename (doesn't call reset()), or prevents output to file
     // altogether.
-    void change_outfile(const string&);
+//    void change_outfile(const string&);
     void suppress_dump();
     void allow_dump(const string& filename);
 
@@ -263,6 +271,10 @@ public:
     void set_ms(const NodeSetSet& ms, time_t calc_time, unsigned index);
     NodeSetSet get_ms(unsigned index) const;
 
+    // Add datasets to the DSG
+    void add(const Dataset&);
+    void add(const vector<Dataset>&);
+
     // Add graphs.
     // The user may either send an input filename to read the data
     // from, or a graph instance.
@@ -270,19 +282,19 @@ public:
     // data may be sent as input (to identify the graph). This is a
     // required parameter if a Graph is sent, otherwise the default is
     // the filename.
-    void add_graph(const Graph& g, const string& text);
+/*    void add_graph(const Graph& g, const string& text);
     void add_graph(const string& filename, const string& text = "");
-
+*/
     // Recursive search.
     // Allow user to send a directory iterator.
     // The second method scans the directory given by the user (recursively)
     // and adds all graphs found. Optionally add filters to the path strings
     // (graphs with at least one filter as a substring of the path won't be
     // added).
-    void add_graphs(DirectoryIterator di);
+/*    void add_graphs(DirectoryIterator di);
     void add_graphs_dir(const string& dir,
                         const vector<string>& filters = vector<string>());
-
+*/
 
     // Adds random graphs to the DSG.
     // The inputs are:
@@ -292,24 +304,21 @@ public:
     // G(n[i],p[i]).
     // If mix_match is true, for every i and j a graph will be sampled
     // from G(n[i],p[j])
-    void add_random_graph(int n, double p, int instances = 1);
+/*    void add_random_graph(int n, double p, int instances = 1);
     void add_random_graphs(const vector<int>& n,
                            const vector<double>& p,
                            bool mix_match = false);
-
+*/
     // Adds random graphs. For each graph size (number of nodes) n,
     // samples a graph from G(n,k*step) for all k from k=1 to 1/step
     // (not including 1/step).
     // Allow the user to control the number of sampled instances for
     // each graph.
-    void add_random_graphs_pstep(const vector<int>& n,
+/*    void add_random_graphs_pstep(const vector<int>& n,
                                  double step = 0.5,
                                  int instances = 3);
+*/
 
-    // Scans the directory given by the user (recursively) and
-    // adds all graphs found.
-    // Optionally add filters to the path strings (graphs with
-    // at least one filter as a substring won't be added).
     // Computes the desired fields and outputs to file.
     // Optionally, output progress to console.
     void compute(bool verbose = false);
@@ -341,7 +350,7 @@ public:
     // DOES NOT WORK with statistics files created using random graphs
     // generated at runtime, or statistic files using graphs that no
     // longer exist at the location specified.
-    static vector<GraphStats> read_stats(const string& filename);
+//    static vector<GraphStats> read_stats(const string& filename);
 
 };
 

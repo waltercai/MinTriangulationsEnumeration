@@ -1,10 +1,10 @@
 #ifndef POTENTIALMAXIMALCLIQUESENUMERATORTESTER_H_INCLUDED
 #define POTENTIALMAXIMALCLIQUESENUMERATORTESTER_H_INCLUDED
 
-#include "TestUtils.h"
+#include "DirectoryIterator.h"
 #include "Graph.h"
 #include "PMCEnumerator.h"
-#include "DirectoryIterator.h"
+#include "TestInterface.h"
 
 // Graphs with more nodes may cause slow tests
 #define FAST_GRAPH_SIZE 10
@@ -41,16 +41,21 @@
        algorithm with Nofar's version */ \
     X(crosscheck)
 
-#define X(func) PMCENUM_TEST_NAME__##func,
 typedef enum {
+#define X(func) PMCENUM_TEST_NAME__##func,
     PMC_TEST_TABLE
+#undef X
     PMCENUM_TEST_NAME__LAST
 } PMCEnumeratorTesterFunctions;
-#undef X
 
 namespace tdenum {
 
-class PMCEnumeratorTester {
+class PMCEnumeratorTester : public TestInterface {
+private:
+
+    // Calls all tests with flag_ values set to true.
+    PMCEnumeratorTester& go();
+
 public:
 
     // Define all functions and on/off flags.
@@ -58,20 +63,20 @@ public:
     //     PMCEnumeratorTester p(false);
     //
     #define X(_func) \
+        PMCEnumeratorTester& set_##_func(); \
+        PMCEnumeratorTester& unset__##_func(); \
+        PMCEnumeratorTester& set_only_##_func(); \
         bool _func() const; \
         bool flag_##_func;
     PMC_TEST_TABLE
     #undef X
 
     // Calls all test functions, unless start=false.
-    PMCEnumeratorTester(bool start);
-
-    // Calls all tests with flag_ values set to true.
-    void go() const;
+    PMCEnumeratorTester();
 
     // Sets / clears all flags
-    void setAll();
-    void clearAll();
+    PMCEnumeratorTester& set_all();
+    PMCEnumeratorTester& clear_all();
 
 };
 

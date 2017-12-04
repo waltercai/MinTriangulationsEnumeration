@@ -5,6 +5,7 @@
 #include "DataStructures.h"
 #include "Graph.h"
 #include "PMCAlg.h"
+#include "StatisticRequest.h"
 #include <map>
 #include <string>
 
@@ -12,11 +13,57 @@ using std::string;
 using std::map;
 
 namespace tdenum {
+/**
+ * This class represents statistical data for graphs (a kind of wrapper class).
+ *
+ * This class is used for graph IO: storing and reading graphs and statistical graph data
+ * from file.
+ *
+ * To read an existing GS instance use the static read() method. To dump an instance to disk,
+ * use dump().
+ * Note that if the GRAPHSTATS_FILE_EXTENSION is missing from the input to read() or dump(), it
+ * will NOT appended to the input path!
+ *
+ * The 'text' field is used by the Dataset class and is assumed to be the path to the file
+ * the GS instance represents:
+ * - If the instance was successfully constructed via read(), the text field will be the filename
+ *   given.
+ * - If read() failed, text==GRAPHSTATS_INVALID_TEXT_FIELD and the instance will be constructed using
+ *   a default Graph() and no extra data.
+ * - If dump() is called, the text field will be updated to contain the actual filename used for
+ *   writing (dump() may add GRAPHSTATS_FILE_EXTENSION).
+ */
 
+#define GRAPHSTATS_METADATA_TXT_NOT_RANDOM ("NOT_RANDOM") /* No commas! */
+
+/**
+ * Text set as the GS text when the source (graph) file is unknown / doesn't exist
+ */
+#define GRAPHSTATS_NO_FILE_KNOWN (string("NO GRAPH FILE KNOWN"))
+
+/**
+ * These strings are used for random graph (or any graph) file names.
+ * Make sure none of the tokens exist as characters in the rest of the
+ * filename!
+ */
+#define GRAPHSTATS_DEFAULT_FILENAME_TOKEN_N "N"
+#define GRAPHSTATS_DEFAULT_FILENAME_TOKEN_P "P"
+#define GRAPHSTATS_DEFAULT_FILENAME_TOKEN_INST "I"
+#define GRAPHSTATS_FILE_EXTENSION "grp"
+#define GRAPHSTATS_DEFAULT_FILENAME_EXPR (\
+        string("Default_graph_name_") + \
+        string(GRAPHSTATS_DEFAULT_FILENAME_TOKEN_N) + \
+        string("_") + \
+        string(GRAPHSTATS_DEFAULT_FILENAME_TOKEN_P) + \
+        string("_inst") + \
+        string(GRAPHSTATS_DEFAULT_FILENAME_TOKEN_INST) + \
+        string(".") + \
+        string(GRAPHSTATS_FILE_EXTENSION) \
+    )
 
 /**
  * Not all metrics are required.
- * The DatasetStatisticsGenerator uses these flags, the GraphStats
+ * The Dataset object uses these flags, the GraphStats
  * class uses them to report to the user which values are valid.
  */
 #define GRAPHSTATS_FIELD_TABLE \
@@ -40,33 +87,10 @@ GRAPHSTATS_FIELD_TABLE
 #undef X
 
 // Use these macros to turn bits on and / or off
-#define X(_name,_) void GRAPHSTATS_SET_##_name(int& _flds);
+#define X(_name,_) void GRAPHSTATS_SET_##_name(int& _flds); \
+                   void GRAPHSTATS_UNSET_##_name(int& _flds);
 GRAPHSTATS_FIELD_TABLE
 #undef X
-#define X(_name,_) void GRAPHSTATS_UNSET_##_name(int& _flds);
-GRAPHSTATS_FIELD_TABLE
-#undef X
-
-/**
- * If calculations take too long, limit the number of
- * minimal separators / triangulations calculated (PMCs
- * are calculated all-or-nothing anyway), and / or the amount
- * of time (in seconds) required.
- *
- * To run with no limit, set DSG_<MS|TRNG|PMC>_<COUNT|TIME>_LIMIT
- * to DSG_NO_LIMIT.
- *
- * The output statistic will contain a "t" for out-of-time, or
- * a "+" for hitting DSG_COUNT limits.
- */
-#define GRAPHSTATS_NO_LIMIT (-1)
-#define GRAPHSTATS_MS_COUNT_LIMIT (500000)
-#define GRAPHSTATS_TRNG_COUNT_LIMIT GRAPHSTATS_MS_COUNT_LIMIT
-#define GRAPHSTATS_MS_TIME_LIMIT (20*60) // Ten minutes
-#define GRAPHSTATS_TRNG_TIME_LIMIT GRAPHSTATS_MS_TIME_LIMIT
-#define GRAPHSTATS_PMC_TIME_LIMIT (5*60)
-
-
 
 /**
  * This class represents graph statistical data.
@@ -75,183 +99,214 @@ GRAPHSTATS_FIELD_TABLE
 class GraphStats {
 private:
 
-    // General invalid value
-    static const long invalid_value;
+    friend class GraphStatsTester;
+    friend class GraphProducerTester;
 
-    // Basic graph data
+    // Basic graph data.
+    // Minimal separators may be stored for all subgraphs; ms_count.back()
+    // is the real number of MSs in the graph
     Graph g;
     string text;
-    int n;
-    int m;
-    long count_ms;
+    vector<long> count_ms;
     long count_pmc;
     long count_trng;
 
-    // Useful fields for random graphs
-    bool is_random_flag;
-    double p, actual_ratio;
-    int instance;
-
-    // If this graph was read from a file, set this flag to true
-    bool from_file;
-
-    // Are the (n,m,ms,pmcs,triangs) fields valid for graph i?
-    // Note: if the DSG didn't request PMCs, then even if valid
-    // is true the PMCs should be zero.
-    bool calculated_ms;
-    bool calculated_pmc;
-    bool calculated_trng;
-
-    // The algorithm used to calculate the PMCs (if applicable)
-    PMCAlg alg;
-
     // If the limit was overreached, set the relevant flag.
-    time_t time_limit_ms;
-    time_t time_limit_pmc;
-    time_t time_limit_trng;
-    long count_limit_ms;
-    long count_limit_trng;
-    bool reached_time_limit_flag_ms;
-    bool reached_time_limit_flag_pmc;
-    bool reached_time_limit_flag_trng;
     bool reached_count_limit_flag_ms;
     bool reached_count_limit_flag_trng;
+    bool reached_time_limit_flag_ms;
+    map<PMCAlg,bool> reached_time_limit_flag_pmc;
+    bool reached_time_limit_flag_trng;
     bool mem_error_flag_ms;
-    bool mem_error_flag_pmc;
+    map<PMCAlg,bool> mem_error_flag_pmc;
     bool mem_error_flag_trng;
 
     // The amount of time required for calculation the minimal separators.
     // Note: PMC calculation time may disregard the time required to calculate
     // the minimal separators of g (see actual_pmc_calc_time())
     time_t calc_time_ms;
-    time_t calc_time_pmc;
-    time_t calc_time_trng;
-
-    // If several algorithms were used for the same graph, the user
-    // may report the calculation times by algorithm
-    map<PMCAlg,time_t> calc_time_by_alg_ms;
     map<PMCAlg,time_t> calc_time_by_alg_pmc;
-    map<PMCAlg,time_t> calc_time_by_alg_trng;
+    time_t calc_time_trng;
 
     // Data.
     // Minimal separators of all subgraphs may also be stored.
-    vector<NodeSetSet> ms;      // Minimal separators
-    NodeSetSet pmc;             // PMCs
-    vector<ChordalGraph> trng;  // Triangulations
+    vector<NodeSetSet> ms;          // Minimal separators
+    NodeSetSet pmc;                 // PMCs
+    vector<ChordalGraph> trng;      // Triangulations
+
+    // Refresh calculated data
+    GraphStats& update_ms_count();
+    GraphStats& update_ms_subgraph_count();
+    GraphStats& update_pmc_count();
+    GraphStats& update_trng_count();
+
+    // Add the GraphStats extension to the given filename, if missing
+    static string add_ext_if_missing(const string&);
+
+    // Make this private.
+    // The field is supposed to be the most recently updated file path
+    GraphStats& set_text(const string&);
+
+    // Stringify instance
+    string str() const;
+
+    // Helper methods for integrity().
+    // The aux_path() method decides the actual path to the filename to be tested for
+    // integrity: constructs default / adds extension, etc.
+    // the aux() method does the actual work. Called from both const and non-const versions
+    // of integrity()
+    string integrity_aux_path(const string& path) const;
+    bool integrity_aux(const string& path) const;
 
 public:
 
-    // Basic constructors.
-    // We need a default constructor for containers.
-    GraphStats();
-    GraphStats(const Graph& g,
-               const string& text,
-               bool is_rand = false,
-               double p = 0,
-               int inst = 1,
-               bool file = false);
+    /**
+     * Basic constructors.
+     *
+     * We need a default constructor for containers.
+     *
+     * Note that graph text should be a unique identifier for ease of
+     * use with the Dataset class - when random graphs are given, use the
+     * 'instance' field to differentiate between different samples of the
+     * same G(n,p) space.
+     *
+     * To update the text field, dump the data to a unique filename. The filename
+     * will become the identifying text of the graph.
+     */
+    GraphStats(const Graph& g = Graph());
 
-    // Include the time required to calculate the MSs
-    time_t actual_pmc_calc_time() const;
+    // Compare all fields. except the graph text
+    bool equal_except_text(const GraphStats&) const;
 
-    // Sets all validation flags
-    void set_all_invalid();
+    // Compare all fields
+    bool operator==(const GraphStats&) const;
+    bool operator!=(const GraphStats&) const;
 
-    // Set / unset limits
-    void set_ms_time_limit(time_t);
-    void set_pmc_time_limit(time_t);
-    void set_trng_time_limit(time_t);
-    void set_ms_count_limit(long);
-    void set_trng_count_limit(long);
-    void unset_ms_time_limit();
-    void unset_pmc_time_limit();
-    void unset_trng_time_limit();
-    void unset_ms_count_limit();
-    void unset_trng_count_limit();
-    time_t get_ms_time_limit() const;
-    time_t get_pmc_time_limit() const;
-    time_t get_trng_time_limit() const;
-    long get_ms_count_limit() const;
-    long get_trng_count_limit() const;
-    bool has_ms_time_limit() const;
-    bool has_pmc_time_limit() const;
-    bool has_trng_time_limit() const;
-    bool has_ms_count_limit() const;
-    bool has_trng_count_limit() const;
-    void set_reached_time_limit_ms();
-    void set_reached_time_limit_pmc();
-    void set_reached_time_limit_trng();
-    void set_reached_count_limit_ms();
-    void set_reached_count_limit_trng();
-    void set_mem_error_ms();
-    void set_mem_error_pmc();
-    void set_mem_error_trng();
+    // Checks if the object is valid (coupled to file) by testing the text field
+    bool text_valid() const;
+
+    // Default output filename for given graphs
+    static string get_default_filename_from_graph(const Graph&);
+
+    // With no input, get_dump_filepath() returns get_text() if the text
+    // is valid, or ./<default_graph_filename> if it's invalid.
+    // With an input string prepend_dir, if the GS object is valid
+    // the filename will be taken from the get_text() value (not the leading
+    // path, mind you!) and the input string will be prepended as a directory.
+    //
+    // Note: get_dump_filepath("") == get_dump_filepath()
+    string get_dump_filepath() const;
+    string get_dump_filepath(const string& prepend_dir) const;
+
+    // Set / unset limit / error flags
+    GraphStats& set_reached_time_limit_ms();
+    GraphStats& set_reached_time_limit_pmc(const PMCAlg&);
+    GraphStats& set_reached_time_limit_pmc(const set<PMCAlg>&);
+    GraphStats& set_reached_time_limit_trng();
+    GraphStats& set_reached_count_limit_ms();
+    GraphStats& set_reached_count_limit_trng();
+    GraphStats& unset_reached_time_limit_ms();
+    GraphStats& unset_reached_time_limit_pmc(const PMCAlg&);
+    GraphStats& unset_reached_time_limit_trng();
+    GraphStats& unset_reached_count_limit_ms();
+    GraphStats& unset_reached_count_limit_trng();
+    GraphStats& set_mem_error_ms();
+    GraphStats& set_mem_error_pmc(const PMCAlg&);
+    GraphStats& set_mem_error_trng();
+    bool reached_time_limit() const;
     bool reached_time_limit_ms() const;
-    bool reached_time_limit_pmc() const;
+    bool reached_time_limit_pmc(const PMCAlg&) const;
     bool reached_time_limit_trng() const;
+    bool reached_count_limit() const;
     bool reached_count_limit_ms() const;
     bool reached_count_limit_trng() const;
     bool mem_error_ms() const;
-    bool mem_error_pmc() const;
+    bool mem_error_pmc(const PMCAlg&) const;
     bool mem_error_trng() const;
 
-    // Setters
-    void set_pmc_alg(PMCAlg);
-    void set_ms_calc_time(time_t);
-    void set_pmc_calc_time(time_t);
-    void set_trng_calc_time(time_t);
-    void set_pmc_calc_time_by_alg(PMCAlg,time_t);
-    void set_ms_count(long);
-    void set_pmc_count(long);
-    void set_trng_count(long);
-    void set_random();
-    void unset_random();
-    void set_p(double);
-    double get_p() const;
-    void refresh_edge_ratio();
-    bool is_from_file() const;
-    bool is_random() const;
+    // Compound tests. Check if there are any error flags on
+    bool ms_no_errors() const;
+    bool pmc_no_errors(const PMCAlg&) const;
+    bool trng_no_errors() const;
+
+    // Setters.
+    GraphStats& set_ms_count(long);
+    GraphStats& set_ms_subgraph_count(const vector<long>&);
+    GraphStats& set_pmc_count(long);
+    GraphStats& set_trng_count(long);
+    GraphStats& set_ms(const NodeSetSet&);
+    GraphStats& set_ms_subgraphs(const vector<NodeSetSet>&);
+    GraphStats& set_pmc(const NodeSetSet&);
+    GraphStats& set_trng(const vector<ChordalGraph>&);
+    GraphStats& set_instance(int inst);
+    GraphStats& set_ms_subgraphs(unsigned index, const NodeSetSet&);
+    GraphStats& add_sep(const NodeSet&);   // Add a minimal separator (main graph)
+    GraphStats& increment_ms_count();      // Adds 1 to the ms count
+    GraphStats& add_trng(const ChordalGraph&);
+    GraphStats& increment_trng_count();    // Adds 1 to the trng count
+    GraphStats& set_ms_calc_time(time_t);
+    GraphStats& set_pmc_calc_time(const PMCAlg&,time_t);
+    GraphStats& set_pmc_calc_time(const set<PMCAlg>&,time_t);   // Same time all algs
+    GraphStats& set_pmc_calc_time(const vector<PMCAlg>&,time_t);   // Same time all algs
+    GraphStats& set_trng_calc_time(time_t);
+    GraphStats& set_random();
+    GraphStats& unset_random();
+    GraphStats& set_p(double);
 
     // If the value calculated is invalid because of timeout / count limit,
     // return the value calculated (may be invalid!)
-    string get_text() const;
+    bool has_nodes() const;
     Graph get_graph() const;
-    int get_n() const;
+    unsigned get_n() const;
     int get_m() const;
-    PMCAlg get_pmc_alg() const;
+    int get_instance() const;
+    double get_p() const;
+    double get_ratio() const;   // Returns edge ratio
+    bool is_random() const;
+    string get_text() const;
     long get_ms_count() const;
+    vector<long> get_ms_subgraph_count() const;
     long get_pmc_count() const;
     long get_trng_count() const;
     time_t get_ms_calc_time() const;
-    time_t get_pmc_calc_time() const;
+    time_t get_pmc_calc_time(const PMCAlg&) const;
     time_t get_trng_calc_time() const;
-    time_t get_pmc_calc_time_by_alg(PMCAlg) const;
-
-    // Are the (n,m,ms,pmcs,triangs) fields valid for graph i?
-    // Note: if the DSG didn't request PMCs, then even if valid
-    // is true the PMCs should be zero.
-    bool ms_valid() const;
-    bool pmc_valid() const;
-    bool trng_valid() const;
-
-    // Data utility methods
-    void set_ms(const NodeSetSet&);
-    void set_pmc(const NodeSetSet&);
-    void set_trng(const vector<ChordalGraph>&);
-    NodeSetSet get_ms(bool get_if_limit = true) const;
-    NodeSetSet get_subgraph_ms(int i, bool get_if_limit = true) const;
-    NodeSetSet get_pmc(bool get_if_limit = true) const;
-
-    // Graph instance
-    int get_instance() const;
-    void set_instance(int inst);
-
-    // Given a bit mask of active metrics (see the defined GRAPHSTATS_USING_X),
-    // return true iff all requested metrics are valid.
-    bool valid(int fields = GRAPHSTATS_ALL) const;
+    NodeSetSet get_ms() const;
+    NodeSetSet get_subgraph_ms(unsigned index) const;
+    long get_ms_subgraph_count(unsigned index) const;
+    vector<NodeSetSet> get_ms_subgraphs() const;
+    NodeSetSet get_pmc() const;
+    vector<ChordalGraph> get_trng() const;
 
     // Print to stream
     friend ostream& operator<<(ostream&, const GraphStats&);
+
+    // IO
+    // The first two rows are meta data -
+    // . The first row contains a single cell with the total number of nodes.
+    // . The second row either contains the value of P for random graphs, or GRAPHSTATS_TXT_NOT_RANDOM
+    //   to indicate the graph is non-random.
+    // On each of the remaining rows are two cells, representing an edge (each cell contains a node).
+
+    // dump() returns true <==> a file exists and - when read - is equal to the GS instance
+    // dumped.
+    bool dump(const string& path, bool force=false/*, bool skip_if_grp_type_exists=true*/);
+
+    // Read instance from file.
+    // If an unknown extension is encountered, use the GraphReader.
+    // The suppress_errors is here to cater to the noise generated by calls to integrity()
+    static GraphStats read(const string& path, bool suppress_errors = false);
+
+    // Returns true <==> the path is to a file containing the same GS object as *this.
+    // Uses read().
+    // If no filename is given (result of utils__get_filename() is empty) and the GS
+    // instance is invalid (not coupled to file), the default filename is assumed.
+    // If integrity() returns true for some given input and text_valid() is false, then
+    // the internal text will be updated to the given file (hence, this is a non-const
+    // method).
+    // The const version won't update an invalid text field, even if it should.
+    bool integrity(const string& path = "") const;
+    bool integrity(const string& path = "");
 
 };
 
