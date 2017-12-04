@@ -172,6 +172,7 @@ bool DatasetTester::find_by_text() const {
         ASSERT_EQ(i, ds.graph_index_by_text(filename[i]));
     }
 */
+
     CLEANUP_DATASET();
     return true;
 }

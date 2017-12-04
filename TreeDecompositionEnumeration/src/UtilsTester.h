@@ -38,7 +38,6 @@ private:
     #undef X
     UtilsTester& go() {
         //set_only_join();
-        set_only_join();
         #define X(test) \
         if (flag_##test) {DO_TEST(test);}
         UTILSTESTER_TEST_TABLE
