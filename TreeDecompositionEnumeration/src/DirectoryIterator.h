@@ -19,6 +19,9 @@ using std::vector;
 #define DATASET_DIR_DEADEASY string("DeadEasy"+string(1,SLASH))
 #define DATASET_DIR_EASY string("Easy"+string(1,SLASH)+ "Random"+string(1,SLASH))
 #define DATASET_DIR_DIFFICULT string("Difficult"+string(1,SLASH))
+#define DATASET_DIR_DIFFICULT_RANDOM_30 string(DATASET_DIR_DIFFICULT+"Random"+string(1,SLASH)+"Probability30percent"+string(1,SLASH))
+#define DATASET_DIR_DIFFICULT_RANDOM_50 string(DATASET_DIR_DIFFICULT+"Random"+string(1,SLASH)+"Probability50percent"+string(1,SLASH))
+#define DATASET_DIR_DIFFICULT_RANDOM_70 string(DATASET_DIR_DIFFICULT+"Random"+string(1,SLASH)+"Probability70percent"+string(1,SLASH))
 #define DATASET_DIR_DIFFICULT_BN string(DATASET_DIR_DIFFICULT+"BN"+string(1,SLASH))
 #define DATASET_DIR_DIFFICULT_BN_OBJDET string(DATASET_DIR_DIFFICULT_BN+"ObjectDetection"+string(1,SLASH))
 

@@ -226,6 +226,7 @@ public:
 
     // Compound tests. Check if there are any error flags on
     bool ms_no_errors() const;
+    bool pmc_no_errors() const;
     bool pmc_no_errors(const PMCAlg&) const;
     bool trng_no_errors() const;
 

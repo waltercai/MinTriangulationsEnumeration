@@ -179,16 +179,46 @@ GraphStats& GraphStats::set_mem_error_ms() { mem_error_flag_ms = true; return *t
 GraphStats& GraphStats::set_mem_error_pmc(const PMCAlg& a) { mem_error_flag_pmc[a] = true; return *this; }
 GraphStats& GraphStats::set_mem_error_trng() { mem_error_flag_trng = true; return *this; }
 bool GraphStats::reached_time_limit_ms() const { return reached_time_limit_flag_ms; }
-bool GraphStats::reached_time_limit_pmc(const PMCAlg& a) const { return reached_time_limit_flag_pmc.at(a); }
+bool GraphStats::reached_time_limit_pmc(const PMCAlg& a) const {
+    if (reached_time_limit_flag_pmc.find(a) == reached_time_limit_flag_pmc.end()) {
+        return false;
+    }
+    return reached_time_limit_flag_pmc.at(a);
+}
 bool GraphStats::reached_time_limit_trng() const { return reached_time_limit_flag_trng; }
 bool GraphStats::reached_count_limit_ms() const { return reached_count_limit_flag_ms; }
 bool GraphStats::reached_count_limit_trng() const { return reached_count_limit_flag_trng; }
 bool GraphStats::mem_error_ms() const { return mem_error_flag_ms; }
-bool GraphStats::mem_error_pmc(const PMCAlg& a) const { return mem_error_flag_pmc.at(a); }
+bool GraphStats::mem_error_pmc(const PMCAlg& a) const {
+    if (mem_error_flag_pmc.find(a) == mem_error_flag_pmc.end()) {
+        return false;
+    }
+    return mem_error_flag_pmc.at(a);
+}
 bool GraphStats::mem_error_trng() const { return mem_error_flag_trng; }
 
 bool GraphStats::ms_no_errors() const { return !reached_time_limit_ms() && !reached_count_limit_ms() && !mem_error_ms(); }
-bool GraphStats::pmc_no_errors(const PMCAlg& a) const { return !reached_time_limit_pmc(a) && !mem_error_pmc(a); }
+bool GraphStats::pmc_no_errors() const {
+    for (PMCAlg alg: PMCAlg::get_all()) {
+        if (!pmc_no_errors(alg)) {
+            return false;
+        }
+    }
+    return true;
+}
+bool GraphStats::pmc_no_errors(const PMCAlg& a) const {
+    if (reached_time_limit_flag_pmc.find(a) == reached_time_limit_flag_pmc.end() &&
+                 mem_error_flag_pmc.find(a) == mem_error_flag_pmc.end()) {
+        return true; // No calculation, no errors
+    }
+    if (reached_time_limit_flag_pmc.find(a) == reached_time_limit_flag_pmc.end()) {
+        return !mem_error_pmc(a);
+    }
+    else if (mem_error_flag_pmc.find(a) == mem_error_flag_pmc.end()) {
+        return !reached_time_limit_pmc(a);
+    }
+    return (!reached_time_limit_pmc(a) && !mem_error_pmc(a));
+}
 bool GraphStats::trng_no_errors() const { return !reached_time_limit_trng() && !reached_count_limit_trng() && !mem_error_trng(); }
 
 // Flag updating setters

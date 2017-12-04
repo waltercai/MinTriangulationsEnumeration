@@ -348,15 +348,17 @@ extern TRACE_LVL__CODES _prev_trace_lvl;
     TRACE_LVL = _prev_trace_lvl
 
 // Tracing
-#define TRACE(_lvl, _stream) do { \
+#define TRACE(_lvl, _stream) TRACE_NL(_lvl,_stream)
+#define TRACE_NO_NL(_lvl, _stream) do { \
         if (_lvl <= TRACE_LVL) { \
             UTILS__ASSERT_PRINT(_stream); \
         } \
     } while(0)
-// Trace with a preceding newline
-#define TRACE_NL(_lvl,_stream) do { \
-        if (_lvl <= TRACE_LVL) cout << endl; \
-        TRACE(_lvl,_stream); \
+#define TRACE_NL(_lvl, _stream) do { \
+        TRACE_NO_NL(_lvl, _stream); \
+        if (_lvl <= TRACE_LVL) { \
+            cout << endl; \
+        } \
     } while(0)
 
 // Actual printing
@@ -364,7 +366,8 @@ extern TRACE_LVL__CODES _prev_trace_lvl;
                                      << ":" << utils__get_filename(UTILS__FILENAME) \
                                      << ":" << __FUNCTION__ \
                                      << ":" << __LINE__ \
-                                     << ":::" << _stream << std::endl
+                                     << ":::" << _stream
+
 #define UTILS__ASSERT_PRINT(_stream) do { \
         ostringstream _oss; \
         _oss << UTILS__ASSERT_PRINT_STREAM(_stream); \
@@ -374,7 +377,7 @@ extern TRACE_LVL__CODES _prev_trace_lvl;
 
 #define UTILS__PRINT_IF(_bool, _stream) do { \
         if (_bool) { \
-            cout << _stream; \
+            cout << UTILS__ASSERT_PRINT_STREAM(_stream) << endl; \
         } \
     } while(0)
 

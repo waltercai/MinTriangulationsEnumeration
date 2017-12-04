@@ -35,7 +35,6 @@ namespace tdenum {
     X(validate_stat_load_updates_statreq_same_statreq) \
     X(validate_stat_load_updates_statreq_diverse_statreq) \
     X(validate_unavailable_stat_update_after_stat_load) \
-    X(column_sanity) \
     X(diverse_column_output)
 
 class DatasetTester : public TestInterface {

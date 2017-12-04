@@ -62,12 +62,12 @@ PMCEnumeratorTester& PMCEnumeratorTester::clear_all() {
     SETUP_SR(); \
     Graph g(_n); \
     PMCEnumerator pmce(g); \
-    pmce.set_algorithm(pmc_alg)
+    ASSERT_NO_THROW(pmce.set_algorithm(pmc_alg))
 
 #define RESET(_n) \
     g.reset(_n); \
     pmce.reset(g); \
-    pmce.set_algorithm(pmc_alg)
+    ASSERT_NO_THROW(pmce.set_algorithm(pmc_alg))
 
 PMCAlg pmc_alg = PMCAlg();
 
@@ -81,14 +81,14 @@ bool PMCEnumeratorTester::sanity() const {
 bool PMCEnumeratorTester::trivialgraphs() const {
     SETUP(0);
     ASSERT(pmce.is_pmc(NodeSet(), g));
-    ASSERT_EQ(pmce.get(sr), NodeSetSet());
+    ASSERT_EQ(pmce.get(/*sr*/), NodeSetSet());
     RESET(1);
     NodeSet nodeset = g.getNodesVector();
     ASSERT(!pmce.is_pmc(NodeSet(), g));
     ASSERT(pmce.is_pmc(nodeset, g));
     NodeSetSet nss;
     nss.insert(nodeset);
-    ASSERT_EQ(pmce.get(sr), nss);
+    ASSERT_EQ(pmce.get(/*sr*/), nss);
     return true;
 }
 
@@ -100,7 +100,7 @@ bool PMCEnumeratorTester::randomgraphs() const {
         g.randomize(0.5);
         TRACE(TRACE_LVL__TEST, "Random graph #" << i-1 << "/" << FAST_GRAPH_SIZE-2 << ":");
         TRACE(TRACE_LVL__TEST, g.str());
-        TRACE(TRACE_LVL__TEST, "Resulting PMCs:\n" << pmce.get(sr));
+        TRACE(TRACE_LVL__TEST, "Resulting PMCs:\n" << pmce.get(/*sr*/));
     }
     return true;
 }
@@ -125,14 +125,14 @@ bool PMCEnumeratorTester::smallknowngraphs() const {
     abc.push_back(2);
 
     TRACE(TRACE_LVL__TEST, "2-Graphs...");
-    G1_0_PMCs = pmce.get(sr);
+    G1_0_PMCs = pmce.get(/*sr*/);
     TRACE(TRACE_LVL__TEST, "Got PMCs " << G1_0_PMCs << " for graph " << pmce.get_graph());
     ASSERT_EQ(G1_0_PMCs.size(), (unsigned)2);
     ASSERT(G1_0_PMCs.isMember(a));
     ASSERT(G1_0_PMCs.isMember(b));
     g.addEdge(0,1);
     pmce.reset(g);
-    G1_1_PMCs = pmce.get(sr);
+    G1_1_PMCs = pmce.get(/*sr*/);
     TRACE(TRACE_LVL__TEST, "With Got PMCs: " << G1_1_PMCs);
     ASSERT_EQ(G1_1_PMCs.size(), (unsigned)1);
     ASSERT(G1_1_PMCs.isMember(ab));
@@ -147,7 +147,7 @@ bool PMCEnumeratorTester::smallknowngraphs() const {
     // m=3: {a,b,c}
     TRACE(TRACE_LVL__TEST, "3-Graphs...");
     RESET(3);
-    G2_0_PMCs = pmce.get(sr);
+    G2_0_PMCs = pmce.get(/*sr*/);
     TRACE(TRACE_LVL__TEST, "Got PMCs: " << G2_0_PMCs);
     ASSERT_EQ(G2_0_PMCs.size(), (unsigned)3);
     ASSERT(G2_0_PMCs.isMember(a));
@@ -155,7 +155,7 @@ bool PMCEnumeratorTester::smallknowngraphs() const {
     ASSERT(G2_0_PMCs.isMember(c));
     g.addEdge(0, 1);
     pmce.reset(g);
-    G2_1_PMCs = pmce.get(sr);
+    G2_1_PMCs = pmce.get(/*sr*/);
     TRACE(TRACE_LVL__TEST, "Got PMCs: " << G2_1_PMCs);
     ASSERT_EQ(G2_1_PMCs.size(), (unsigned)2);
     ASSERT(G2_1_PMCs.isMember(ab));
@@ -164,14 +164,14 @@ bool PMCEnumeratorTester::smallknowngraphs() const {
     g.addEdge(0, 2);
     pmce.reset(g);
     TRACE(TRACE_LVL__TEST, "Added. G=\n" << g);
-    G2_2_PMCs = pmce.get(sr);
+    G2_2_PMCs = pmce.get(/*sr*/);
     TRACE(TRACE_LVL__TEST, "Got PMCs: " << G2_2_PMCs);
     ASSERT_EQ(G2_2_PMCs.size(), (unsigned)2);
     ASSERT(G2_2_PMCs.isMember(ab));
     ASSERT(G2_2_PMCs.isMember(ac));
     g.addEdge(1, 2);
     pmce.reset(g);
-    G2_3_PMCs = pmce.get(sr);
+    G2_3_PMCs = pmce.get(/*sr*/);
     TRACE(TRACE_LVL__TEST, "Got PMCs: " << G2_3_PMCs);
     ASSERT_EQ(G2_3_PMCs.size(), (unsigned)1);
     ASSERT(G2_3_PMCs.isMember(abc));
@@ -227,7 +227,7 @@ bool PMCEnumeratorTester::fourgraphs() const {
 
 
     // G0 Has one variation - an independent set.
-    pmcs=pmce.get(sr);
+    pmcs=pmce.get(/*sr*/);
     ASSERT_EQ(pmcs.size(), (unsigned)4);
     ASSERT(pmcs.isMember(a));
     ASSERT(pmcs.isMember(b));
@@ -237,7 +237,7 @@ bool PMCEnumeratorTester::fourgraphs() const {
     // G1 has one variant as well.
     g.addEdge(1,2);
     pmce.reset(g);
-    pmcs=pmce.get(sr);
+    pmcs=pmce.get(/*sr*/);
     ASSERT_EQ(pmcs.size(), (unsigned)3);
     ASSERT(pmcs.isMember(a));
     ASSERT(pmcs.isMember(bc));
@@ -249,7 +249,7 @@ bool PMCEnumeratorTester::fourgraphs() const {
     g.addEdge(0,1);
     g.addEdge(2,3);
     pmce.reset(g);
-    pmcs=pmce.get(sr);
+    pmcs=pmce.get(/*sr*/);
     ASSERT_EQ(pmcs.size(), (unsigned)2);
     ASSERT(pmcs.isMember(ab));
     ASSERT(pmcs.isMember(cd));
@@ -259,7 +259,7 @@ bool PMCEnumeratorTester::fourgraphs() const {
     g.addEdge(1,2);
     g.addEdge(1,3);
     pmce.reset(g);
-    pmcs=pmce.get(sr);
+    pmcs=pmce.get(/*sr*/);
     ASSERT_EQ(pmcs.size(), (unsigned)3);
     ASSERT(pmcs.isMember(a));
     ASSERT(pmcs.isMember(bc));
@@ -272,7 +272,7 @@ bool PMCEnumeratorTester::fourgraphs() const {
     g.addEdge(1,2);
     g.addEdge(2,3);
     pmce.reset(g);
-    pmcs=pmce.get(sr);
+    pmcs=pmce.get(/*sr*/);
     ASSERT_EQ(pmcs.size(), (unsigned)3);
     ASSERT(pmcs.isMember(ab));
     ASSERT(pmcs.isMember(bc));
@@ -282,7 +282,7 @@ bool PMCEnumeratorTester::fourgraphs() const {
     g.addEdge(0,2);
     g.addEdge(0,3);
     pmce.reset(g);
-    pmcs=pmce.get(sr);
+    pmcs=pmce.get(/*sr*/);
     ASSERT_EQ(pmcs.size(), (unsigned)3);
     ASSERT(pmcs.isMember(ab));
     ASSERT(pmcs.isMember(ac));
@@ -292,7 +292,7 @@ bool PMCEnumeratorTester::fourgraphs() const {
     g.addEdge(1,2);
     g.addEdge(2,0);
     pmce.reset(g);
-    pmcs=pmce.get(sr);
+    pmcs=pmce.get(/*sr*/);
     ASSERT_EQ(pmcs.size(), (unsigned)2);
     ASSERT(pmcs.isMember(abc));
     ASSERT(pmcs.isMember(d));
@@ -310,7 +310,7 @@ bool PMCEnumeratorTester::fourgraphs() const {
     g.addEdge(2,3);
     g.addEdge(3,0);
     pmce.reset(g);
-    pmcs=pmce.get(sr);
+    pmcs=pmce.get(/*sr*/);
     TRACE(TRACE_LVL__TEST, "Got pmcs:" << pmcs);
     TRACE(TRACE_LVL__TEST, "alg=" << pmce.get_alg().str());
     ASSERT_EQ(pmcs.size(), (unsigned)4);
@@ -324,7 +324,7 @@ bool PMCEnumeratorTester::fourgraphs() const {
     g.addEdge(0,3);
     g.addEdge(1,2);
     pmce.reset(g);
-    pmcs=pmce.get(sr);
+    pmcs=pmce.get(/*sr*/);
     ASSERT_EQ(pmcs.size(), (unsigned)2);
     ASSERT(pmcs.isMember(abc));
     ASSERT(pmcs.isMember(ad));
@@ -337,7 +337,7 @@ bool PMCEnumeratorTester::fourgraphs() const {
     g.addEdge(1,2);
     g.addEdge(1,3);
     pmce.reset(g);
-    pmcs=pmce.get(sr);
+    pmcs=pmce.get(/*sr*/);
     ASSERT_EQ(pmcs.size(), (unsigned)2);
     ASSERT(pmcs.isMember(abc));
     ASSERT(pmcs.isMember(abd));
@@ -346,7 +346,7 @@ bool PMCEnumeratorTester::fourgraphs() const {
     // G6 is a clique. Only one 4-PMC
     g.addClique(abcd);
     pmce.reset(g);
-    pmcs=pmce.get(sr);
+    pmcs=pmce.get(/*sr*/);
     ASSERT_EQ(pmcs.size(), (unsigned)1);
     ASSERT(pmcs.isMember(abcd));
 
@@ -374,7 +374,7 @@ bool PMCEnumeratorTester::cliqueswithtails() const {
         g.saturateNodeSets(for_saturation);
         g.addEdge(0,1);
         pmce.reset(g);
-        pmcs = pmce.get(sr);
+        pmcs = pmce.get(/*sr*/);
         ASSERT(pmcs.isMember(always_pmc));
         ASSERT(pmcs.isMember(K));
         ASSERT_EQ(pmcs.size(),(unsigned)2);
@@ -390,7 +390,7 @@ bool PMCEnumeratorTester::independentsets() const {
     NodeSetSet pmcs;
     for (int i=1; i<5; ++i) {
         RESET(i);
-        pmcs = pmce.get(sr);
+        pmcs = pmce.get(/*sr*/);
         for (int j=0; j<i; ++j) {
             ASSERT(pmcs.isMember(NodeSet({j})));
         }
@@ -413,7 +413,7 @@ bool PMCEnumeratorTester::twoedgesindependentsubgraphs() const {
     g.addEdge(0,2);
     g.addEdge(1,2);
     pmce.reset(g);
-    NodeSetSet pmcs = pmce.get(sr);
+    NodeSetSet pmcs = pmce.get(/*sr*/);
     ASSERT(pmcs.isMember(ac));
     ASSERT(pmcs.isMember(bc));
     ASSERT_EQ(pmcs.size(), (unsigned)2);
@@ -442,7 +442,7 @@ bool PMCEnumeratorTester::triangleonstilts() const {
     g.addEdge(2,4);
     g.addEdge(1,4);
     pmce.reset(g);
-    NodeSetSet pmcs = pmce.get(sr);
+    NodeSetSet pmcs = pmce.get(/*sr*/);
     ASSERT(pmcs.isMember(ad));
     ASSERT(pmcs.isMember(cde));
     ASSERT(pmcs.isMember(ae));
@@ -452,7 +452,7 @@ bool PMCEnumeratorTester::triangleonstilts() const {
     g.randomNodeRename();
     TRACE(TRACE_LVL__TEST, "Graph After random rename:" << endl << g);
     pmce.reset(g);
-    pmcs = pmce.get(sr);
+    pmcs = pmce.get(/*sr*/);
     TRACE(TRACE_LVL__TEST, "Got pmcs:" << endl << pmcs);
     ASSERT_EQ(pmcs.size(), (unsigned)3);
     return true;
@@ -476,7 +476,7 @@ bool PMCEnumeratorTester::noamsgraphs() const {
     g.addEdge(4,2);
     g.addEdge(3,2);
     pmce.reset(g);
-    pmcs = pmce.get(sr);
+    pmcs = pmce.get(/*sr*/);
     ASSERT(pmcs.isMember(ab));
     ASSERT(pmcs.isMember(be));
     ASSERT(pmcs.isMember(ce));
@@ -489,7 +489,7 @@ bool PMCEnumeratorTester::noamsgraphs() const {
     g.addEdge(1,3);
     g.addEdge(2,3);
     pmce.reset(g);
-    pmcs = pmce.get(sr);
+    pmcs = pmce.get(/*sr*/);
     ASSERT(pmcs.isMember(ae));
     ASSERT(pmcs.isMember(be));
     ASSERT(pmcs.isMember(bd));
@@ -517,7 +517,7 @@ bool algorithmconsistency_aux(bool pmc_parallel = false) {
             if (pmc_parallel) {
                 pmce.enable_parallel();
             }
-            NodeSetSet these_pmcs = pmce.get(sr);
+            NodeSetSet these_pmcs = pmce.get(/*sr*/);
             if (found_pmcs && these_pmcs != pmcs) {
                 cout << utils__replace_string();
                 UTILS__ASSERT_PRINT("WRONG! Algorithm " << PMCAlg(alg).str() <<
@@ -546,11 +546,12 @@ bool crosscheck_aux(const GraphStats& gs) {
     // Make sure each one is in the NodeSetSet returned by the
     // PMCEnumerator, and vice-versa.
     SETUP_SR();
-    TRACE(TRACE_LVL__ALWAYS, "Cross-checking graph '" << gs.get_text() << "'... ");
+    TRACE_NO_NL(TRACE_LVL__ALWAYS, "Cross-checking graph '" << gs.get_text() << "'... ");
     NodeSetSet found;
     const Graph& g = gs.get_graph();
     PMCEnumerator pmce(g);
-    NodeSetSet pmcs = pmce.get(sr);
+    pmce.set_algorithm(PMCALG_ENUM_NORMAL);
+    NodeSetSet pmcs = pmce.get(/*sr*/);
     MinimalTriangulationsEnumerator enumerator(g, NONE, UNIFORM, SEPARATORS);
     while (enumerator.hasNext()) {
         ChordalGraph triangulation = enumerator.next();
@@ -570,7 +571,7 @@ bool crosscheck_aux(const GraphStats& gs) {
                      << pmcs);
         return false;
     }
-    cout << "PASSED   ";
+    cout << "PASSED" << endl;
     return true;
 }
 bool PMCEnumeratorTester::crosscheck() const {

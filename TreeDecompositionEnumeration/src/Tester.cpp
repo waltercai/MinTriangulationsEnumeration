@@ -64,8 +64,9 @@ int main(int argc, char** argv) {
 //            .set_GraphStatsTester()
 //            .set_GraphProducerTester()
 //            .set_PMCEnumeratorTester()
+            .set_PMCRacerTester()
 //            .set_StatisticRequestTester()
-            .set_DatasetTester()
+//            .set_DatasetTester()
             .start();
     return 0;
 }

@@ -165,8 +165,8 @@ public:
 
     // If csv_format is set to true, the returned vector is the same one as used
     // by the Dataset class for CSV output.
-    static vector<PMCAlg> get_all(bool csv_format=false);
-    static set<PMCAlg> get_all_set(bool csv_format=false);
+    static const vector<PMCAlg> get_all(bool csv_format=false);
+    static const set<PMCAlg> get_all_set(bool csv_format=false);
     static int total_algs();
 
     // Translate to string (human-readable)

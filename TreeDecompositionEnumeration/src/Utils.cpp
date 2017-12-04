@@ -43,14 +43,14 @@ bool Logger::out(const string& str) {
         try {
             outfile.open(filename, ios::out | (append ? ios::app : ios::trunc));
             if (!outfile.good()) {
-                cout << UTILS__ASSERT_PRINT_STREAM("FATAL: Couldn't open file '" << filename << "' to dump '" << str << "'");
+                cout << UTILS__ASSERT_PRINT_STREAM("FATAL: Couldn't open file '" << filename << "' to dump '" << str << "'") << endl;
                 return false;
             }
             outfile << str;
             outfile.close();
         }
         catch(...) {
-            cout << UTILS__ASSERT_PRINT_STREAM("Caught unknown exception");
+            cout << UTILS__ASSERT_PRINT_STREAM("Caught unknown exception") << endl;
             return false;
         }
         return true;

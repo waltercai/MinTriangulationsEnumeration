@@ -408,10 +408,7 @@ bool GraphStatsTester::stats_random() const {
 bool GraphStatsTester::stats_errors_compound() const {
     INIT_GNP(5,0.5,1);
 
-    #define ASSERT_PMC_NO_ERRORS(_gs) do { \
-    for (int i=PMCAlg::first(); i<PMCAlg::last(); ++i) { \
-        ASSERT(_gs.pmc_no_errors(i)); \
-    } } while(0)
+    #define ASSERT_PMC_NO_ERRORS(_gs) ASSERT((_gs).pmc_no_errors())
 
     // No errors
     ASSERT_NO_THROW(ASSERT(gs.ms_no_errors()));

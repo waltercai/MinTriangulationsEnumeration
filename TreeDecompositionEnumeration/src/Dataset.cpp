@@ -15,28 +15,26 @@ string Dataset::str(const GraphStats& gs, const StatisticRequest& sr) const {
     cells[DATASET_COL_NUM_TXT] = string("\"") + gs.get_text() + "\"";
     cells[DATASET_COL_NUM_NODES] = UTILS__TO_STRING(gs.get_n());
     cells[DATASET_COL_NUM_EDGES] = UTILS__TO_STRING(gs.get_m());
-    cells[DATASET_COL_NUM_MSS] = (sr.test_count_ms() ? UTILS__TO_STRING(gs.get_ms_count()) : DATASET_COL_CONTENT_DATA_UNAVAILABLE);
-    cells[DATASET_COL_NUM_PMCS] = (sr.test_count_pmc() ? UTILS__TO_STRING(gs.get_pmc_count()) : DATASET_COL_CONTENT_DATA_UNAVAILABLE);
-    cells[DATASET_COL_NUM_TRNG] = (sr.test_count_trng() ? UTILS__TO_STRING(gs.get_trng_count()) : DATASET_COL_CONTENT_DATA_UNAVAILABLE);
+    cells[DATASET_COL_NUM_MSS] = (sr.test_count_ms() && gs.ms_no_errors() ? UTILS__TO_STRING(gs.get_ms_count()) : DATASET_COL_CONTENT_DATA_UNAVAILABLE);
+    cells[DATASET_COL_NUM_PMCS] = (sr.test_count_pmc() && gs.pmc_no_errors() ? UTILS__TO_STRING(gs.get_pmc_count()) : DATASET_COL_CONTENT_DATA_UNAVAILABLE);
+    cells[DATASET_COL_NUM_TRNG] = (sr.test_count_trng() && gs.trng_no_errors() ? UTILS__TO_STRING(gs.get_trng_count()) : DATASET_COL_CONTENT_DATA_UNAVAILABLE);
     // Special columns
     cells[DATASET_COL_NUM_P] = (gs.is_random() ? UTILS__TO_STRING(gs.get_p()) : DATASET_COL_CONTENT_DATA_UNAVAILABLE);
     int N = gs.get_n();
     int M = gs.get_m();
     cells[DATASET_COL_NUM_RATIO] = UTILS__TO_STRING(2*M / (double(N*(N-1)))); // |E|/(|V| choose 2)
-    cells[DATASET_COL_NUM_MS_TIME] = (sr.test_has_ms_calculation() ?
+    cells[DATASET_COL_NUM_MS_TIME] = (sr.test_has_ms_calculation() && gs.ms_no_errors() ?
             utils__timestamp_to_hhmmss(gs.get_ms_calc_time()) : DATASET_COL_CONTENT_DATA_UNAVAILABLE);
-    cells[DATASET_COL_NUM_TRNG_TIME] = (sr.test_has_trng_calculation() ?
+    cells[DATASET_COL_NUM_TRNG_TIME] = (sr.test_has_trng_calculation() && gs.trng_no_errors() ?
             utils__timestamp_to_hhmmss(gs.get_trng_calc_time()) : DATASET_COL_CONTENT_DATA_UNAVAILABLE);
     // Error reporting
     cells[DATASET_COL_NUM_ERR_TIME] =
-        (gs.reached_time_limit_ms() ? DATASET_COL_CONTENT_ERR_MS+" " : string("")) +
-        (gs.reached_time_limit_trng() ? DATASET_COL_CONTENT_ERR_TRNG : string(""));
+        (sr.test_has_ms_calculation() && gs.reached_time_limit_ms() ? DATASET_COL_CONTENT_ERR_MS+" " : string("")) +
+        (sr.test_has_trng_calculation() && gs.reached_time_limit_trng() ? DATASET_COL_CONTENT_ERR_TRNG : string(""));
     cells[DATASET_COL_NUM_ERR_CNT] =
-        (gs.reached_count_limit_ms() ? DATASET_COL_CONTENT_ERR_MS+" " : string("")) +
-        (gs.reached_count_limit_trng() ? DATASET_COL_CONTENT_ERR_TRNG : string(""));
-    vector<PMCAlg> col_algs = PMCAlg::get_all(true);
-    for (unsigned i=0; i<col_algs.size(); ++i) {
-        PMCAlg alg=col_algs[i];
+        (sr.test_has_ms_calculation() && gs.reached_count_limit_ms() ? DATASET_COL_CONTENT_ERR_MS+" " : string("")) +
+        (sr.test_has_trng_calculation() && gs.reached_count_limit_trng() ? DATASET_COL_CONTENT_ERR_TRNG : string(""));
+    for (PMCAlg alg: PMCAlg::get_all(true)) {
         // Make sure this algorithm was used
         if (!sr.is_active_alg(alg)) {
             cells[DATASET_COL_ALG_TO_TIME_INT.at(alg)] = DATASET_COL_CONTENT_DATA_UNAVAILABLE;
@@ -156,7 +154,7 @@ int Dataset::graph_index_by_text(const vector<GraphStats>& vgs, const string& tx
             return i;
         }
     }
-    return -1;
+    return DATASET_INVALID_INDEX;
 }
 int Dataset::graph_index_by_text(const string& txt) const { return graph_index_by_text(get_vector_gs(), txt); }
 
@@ -228,27 +226,39 @@ Dataset& Dataset::calc_ms(GraphStats& gs, const StatisticRequest& sr) {
     // Catch memory errors
     try {
         TRACE(TRACE_LVL__TEST, "In try\{} block with the following graph:\n" << gs.get_graph());
+        time_t start_time = time(NULL);
         while(mse.hasNext()) {
             // No need to store the separators if they weren't requested.
             // We do need to advance the MS enumerator, though.
             auto next = mse.next();
             ++ms_count;
+            time_t time_taken = difftime(time(NULL), start_time);
 
-            // Update the count BEFORE updating the objects themselves - updating the object
-            // vector updates the counter as well
-            gs.set_ms_count(ms_count);
+            // Set count AFTER setting (possible) separators, as the above updates the count automatically.
             if (sr.test_ms()) {
                 gs.add_sep(next);
             }
+            gs.set_ms_count(ms_count);
+
+            // Set time
+            gs.set_ms_calc_time(time_taken);
 
             // Update progress
             update_progress(sr,gs);
             // Limit tests
             if (sr.test_count_limit_ms() && gs.get_ms_count() > sr.get_count_limit_ms()) {
+                TRACE(TRACE_LVL__WARNING, "Reached count limit in MS calculation for graph '"
+                            << gs.get_text() << "' (counted to "
+                            << gs.get_ms_count() << ", limited to "
+                            << sr.get_count_limit_ms() << ")");
                 gs.set_reached_count_limit_ms();
                 break;
             }
             if (sr.test_time_limit_ms() && gs.get_ms_calc_time() > sr.get_time_limit_ms()) {
+                TRACE(TRACE_LVL__WARNING, "Reached time limit in MS calculation for graph '"
+                            << gs.get_text() << "' (used "
+                            << gs.get_ms_calc_time() << " seconds, limited to "
+                            << sr.get_time_limit_ms() << ")");
                 gs.set_reached_time_limit_ms();
                 break;
             }
@@ -260,7 +270,7 @@ Dataset& Dataset::calc_ms(GraphStats& gs, const StatisticRequest& sr) {
     }
     // That's it.
     end_progress_report();
-    gs.set_ms_calc_time(difftime(time(NULL),t));
+    gs.set_ms_calc_time(difftime(time(NULL),t));// If there are no separators, this is never updated
     TRACE(TRACE_LVL__TEST, "Timestamp difference: " << gs.get_ms_calc_time());
     TRACE(TRACE_LVL__TEST, "Timestamp in hhmmss format: " << utils__timestamp_to_hhmmss(gs.get_ms_calc_time()));
     TRACE(TRACE_LVL__TEST,"SET MS COUNT TO " << gs.get_ms_count());
@@ -271,8 +281,6 @@ Dataset& Dataset::calc_pmc(GraphStats& gs, const StatisticRequest& sr) {
     CALC_SANITY(pmc_calculation);
 
     PMCRacer pmcr("tmp", false);
-    pmcr.clear_algs();
-    pmcr.add_algs(sr.get_active_pmc_algs());
     pmcr.add(gs);
     TRACE(TRACE_LVL__TEST, "In");
     pmcr.go(sr, TRACE_LVL >= TRACE_LVL__WARNING);
@@ -366,10 +374,18 @@ Dataset& Dataset::calc_trng(GraphStats& gs, const StatisticRequest& sr) {
             TRACE(TRACE_LVL__TEST, "Set trng count to " << trng_count);
             // Check for problems
             if (sr.test_count_limit_trng() && sr.get_count_limit_trng() < trng_count) {
+                TRACE(TRACE_LVL__WARNING, "Reached count limit in TRNG calculation for graph '"
+                                << gs.get_text() << "' (counted to "
+                                << trng_count << ", limited to "
+                                << sr.get_count_limit_trng() << ")");
                 gs.set_reached_count_limit_trng();
                 return *this;
             }
             if (sr.test_time_limit_trng() && sr.get_time_limit_trng() < time_taken) {
+                TRACE(TRACE_LVL__WARNING, "Reached time limit in TRNG calculation for graph '"
+                                << gs.get_text() << "' (took "
+                                << time_taken << " seconds, limited to "
+                                << sr.get_time_limit_trng() << ")");
                 gs.set_reached_time_limit_trng();
                 return *this;
             }

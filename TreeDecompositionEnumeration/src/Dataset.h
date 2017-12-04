@@ -31,6 +31,8 @@ namespace tdenum {
  */
 // The number of rows of the CSV file the header requires
 #define DATASET_HEADER_ROWS (1)
+// Invalid graph index
+#define DATASET_INVALID_INDEX (-1)
 
 /**
  * For examples on usage of the macros defined bellow, take a look at the str() method,

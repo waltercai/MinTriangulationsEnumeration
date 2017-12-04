@@ -11,11 +11,12 @@ namespace tdenum {
 
 		// Calculate PMCs
 		PMCEnumerator pmcEnum(g);
-		StatisticRequest sr;
+		pmcEnum.set_algorithm(PMCALG_ENUM_DESCENDING_REVERSE_MS);
+		/*StatisticRequest sr;
 		sr.set_single_pmc_alg(PMCALG_ENUM_DESCENDING_REVERSE_MS)
 		  .set_pmc()
-		  .set_ms();
-		pmcs = pmcEnum.get(sr);
+		  .set_ms();*/
+		pmcs = pmcEnum.get(/*sr*/);
 		minSeps = pmcEnum.get_ms();
 		calculateBlockInfos();
 	}

@@ -101,24 +101,24 @@ public:
     ~PMCEnumerator();
 
     // Resets the instance to use a new graph (allows re-use of variable name).
-    void reset(const Graph& g, time_t time_limit = 0);
+    PMCEnumerator& reset(const Graph& g, time_t time_limit = 0);
 
     // Setters / getters
-    void set_algorithm(PMCAlg a);
+    PMCEnumerator& set_algorithm(PMCAlg a);
     PMCAlg get_alg() const;
-    void set_time_limit(time_t);
-    void unset_time_limit();
-    void enable_parallel();
-    void suppress_parallel();
+    PMCEnumerator& set_time_limit(time_t);
+    PMCEnumerator& unset_time_limit();
+    PMCEnumerator& enable_parallel();
+    PMCEnumerator& suppress_parallel();
 
     // If the minimal separators for the original graph has already been
     // calculated, inform the enumerator.
     // This also saves some time.
-    void set_minimal_separators(const NodeSetSet& ms);
+    PMCEnumerator& set_minimal_separators(const NodeSetSet& ms);
 
     // Returns the set of PMCs (calculates if need be).
     // Uses the algorithm specified by the user.
-    NodeSetSet get(const StatisticRequest&);
+    NodeSetSet get(/*const StatisticRequest&*/);
 
     // Return the set of minimal separators.
     NodeSetSet get_ms();

@@ -37,7 +37,7 @@ DatasetTester& DatasetTester::clear_all() {
     return *this;
 }
 DatasetTester& DatasetTester::go() {
-    set_only_several_pmc_algorithms_check_times_and_errors_per_alg();
+    //set_only_generate_count_and_time_errors_test_text_and_gs_fields();
     #define X(test) if (flag_##test) {DO_TEST(test);}
     DATASETTESTER_TEST_TABLE
     #undef X
@@ -68,8 +68,8 @@ DatasetTester& DatasetTester::go() {
 #define INIT_GRAPH_META(id) \
     MinimalSeparatorsEnumerator(g[id], UNIFORM).getAll(ms[id]); \
     ms_count[id] = ms[id].size(); \
-    pmce.push_back(PMCEnumerator(g[id])); \
-    pmc[id] = pmce[id].get(sr_all_pmc); \
+    pmce.push_back(PMCEnumerator(g[id]).set_algorithm(PMCAlg())); \
+    pmc[id] = pmce[id].get(/*sr_all_pmc*/); \
     pmc_count[id] = pmc[id].size(); \
     ms_sub[id] = pmce[id].get_ms_subgraphs(); \
     ms_sub_count[id] = pmce[id].get_ms_count_subgraphs(); \
@@ -750,15 +750,14 @@ bool DatasetTester::several_pmc_algorithms_check_times_and_errors_per_alg() cons
 
     // Load large graphs, each with its own time limit and PMC algorithms.
     // Add some small graphs, so we can see some completion.
-    TODO: Choose harder graphs! these take 1~5 seconds to compute...
-    const vector<string> graph_paths({DATASET_DIR_BASE+DATASET_DIR_DIFFICULT_BN_OBJDET+"deer_rescaled_0034.K20.F1.5.model.uai",
-                                      DATASET_DIR_BASE+DATASET_DIR_DIFFICULT_BN_OBJDET+"deer_rescaled_0034.K10.F2.model.uai",
+    const vector<string> graph_paths({DATASET_DIR_BASE+DATASET_DIR_DIFFICULT_RANDOM_70+"80.csv",
+                                      DATASET_DIR_BASE+DATASET_DIR_DIFFICULT_RANDOM_70+"40.csv",
                                       filename[0],
-                                      DATASET_DIR_BASE+DATASET_DIR_DIFFICULT_BN_OBJDET+"deer_rescaled_0034.K15.F1.5.model.uai",
+                                      DATASET_DIR_BASE+DATASET_DIR_DIFFICULT_RANDOM_70+"50.csv",
                                       filename[1],
-                                      DATASET_DIR_BASE+DATASET_DIR_DIFFICULT_BN_OBJDET+"deer_rescaled_1002.K15.F1.75.model.uai",
+                                      DATASET_DIR_BASE+DATASET_DIR_DIFFICULT_RANDOM_70+"60.csv",
                                       filename[3],
-                                      DATASET_DIR_BASE+DATASET_DIR_DIFFICULT_BN_OBJDET+"deer_rescaled_1002.K20.F1.5.model.uai"});
+                                      DATASET_DIR_BASE+DATASET_DIR_DIFFICULT_RANDOM_70+"70.csv"});
 
     // Set diverse PMC algorithms
     vector<set<PMCAlg> > alg_sets({PMCALG_CREATE_SET(PMCALG_ENUM_DESCENDING,PMCALG_ENUM_ASCENDING_REVERSE_MS),
@@ -779,8 +778,7 @@ bool DatasetTester::several_pmc_algorithms_check_times_and_errors_per_alg() cons
         total_runs += alg_set.size();
     }
 
-    // Sanity.
-    ASSERT_EQ(alg_sets.size(), graph_paths.size());
+    // More sanity
     for (unsigned i=0; i<graph_paths.size(); ++i) {
         ASSERT(utils__file_exists(graph_paths[i]));
     }
@@ -790,7 +788,7 @@ bool DatasetTester::several_pmc_algorithms_check_times_and_errors_per_alg() cons
 
     // Indicate this should take some time.
     // Two runs (one for error marking, one for testing), running at most time_limit seconds.
-    cout << "\b\b\b\b (should take at most ~" << 2*total_runs*time_limit << " seconds) ";
+    cout << "\b\b\b\b (should take at most ~" << 2*total_runs*time_limit << " seconds)... ";
 
     // Make sure the actual calculation time of each of the hard graphs is actually long.
     // Take note of graphs that are 'easy' and add the indexes to the relevant set.
@@ -800,7 +798,7 @@ bool DatasetTester::several_pmc_algorithms_check_times_and_errors_per_alg() cons
             cout << endl << "Running PMCE on graph #" << (i+1) << ", algorithm " << alg.str() << "... ";
             PMCEnumerator tmp_pmce = PMCEnumerator(gs.get_graph(), time_limit);
             tmp_pmce.set_algorithm(alg);
-            tmp_pmce.get(StatisticRequest().set_single_pmc_alg(alg).set_count_pmc());
+            tmp_pmce.get(/*StatisticRequest().set_single_pmc_alg(alg).set_count_pmc()*/);
             expected_error[pair<unsigned,PMCAlg>(i,alg)] = tmp_pmce.is_out_of_time();
             cout << (tmp_pmce.is_out_of_time() ? "TIME ERROR" : "no time error");
         }
@@ -833,17 +831,17 @@ bool DatasetTester::several_pmc_algorithms_check_times_and_errors_per_alg() cons
     for (unsigned i=0; i<graph_paths.size(); ++i) {
         int row_index = i+1;
         for (PMCAlg alg=PMCAlg::first(); alg<PMCAlg::last(); ++alg) {
-            //cout << endl << "Validating graph #" << row_index << ", algorithm " << alg.str();
+            cout << endl << "Validating graph #" << row_index << ", algorithm " << alg.str();
             string err_column_contents = utils__strip_char(csv_contents[row_index][DATASET_COL_ALG_TO_ERR_INT.at(alg)], ' ');
             string time_column_contents = utils__strip_char(csv_contents[row_index][DATASET_COL_ALG_TO_TIME_INT.at(alg)], ' ');
             if (!utils__is_in_set(alg, alg_sets[i])) {
-                //cout << ". Should have no data...";
+                cout << ". Should have no data...";
                 ASSERT_EQ(time_column_contents, DATASET_COL_CONTENT_DATA_UNAVAILABLE);
                 ASSERT_EQ(err_column_contents, DATASET_COL_CONTENT_DATA_UNAVAILABLE);
             }
             else {
                 bool time_err;
-                //cout << ", " << (expected_error.at(pair<unsigned,PMCAlg>(i,alg)) ? "reached timeout" : "completed successfully");
+                cout << ", " << (expected_error.at(pair<unsigned,PMCAlg>(i,alg)) ? "reached timeout" : "completed successfully");
                 ASSERT_NO_THROW(time_err = expected_error.at(pair<unsigned,PMCAlg>(i,alg)));
                 cout << endl << "Checking graph #" << row_index << ", algorithm " << alg.str() << "...";
                 ASSERT_NEQ(time_column_contents, DATASET_COL_CONTENT_DATA_UNAVAILABLE);
@@ -856,8 +854,295 @@ bool DatasetTester::several_pmc_algorithms_check_times_and_errors_per_alg() cons
     return true;
 }
 bool DatasetTester::generate_count_and_time_errors_test_text_and_gs_fields() const {
-    INIT_DATASET();
 
+    INIT();
+    int count_limit_ms = 5;
+    int count_limit_trng = 5;
+    time_t time_limit_ms = 3;
+    time_t time_limit_trng = 3;
+
+    // Clean slate.
+    // If previous tests didn't delete the dataset file, the file is
+    // needed for debugging
+    ASSERT(!utils__file_exists(dataset_filename));
+
+    // We have 6 distinct binary choices:
+    // TRNG
+    // MS
+    // CNT LIMIT TRNG
+    // CNT LIMIT MS
+    // TIME LIMIT TRNG
+    // TIME LIMIT MS
+    // However, each graph is required to have some limit... otherwise this'll take forever.
+    // That's 64-(8+8-1)=49 tests. We have 54+8=62 graphs to choose from.
+    // Load a lot, and discard unused graphs.
+    // Add some small graphs, so we can see some completion.
+    vector<string> graph_paths;
+    for (unsigned i=0; i<total_graphs; ++i) {
+        graph_paths.push_back(filename[i]);
+    }
+    for (int i=30; i<=200; i+=10) {
+        graph_paths.push_back(DATASET_DIR_BASE+DATASET_DIR_DIFFICULT_RANDOM_30+UTILS__TO_STRING(i)+".csv");
+        graph_paths.push_back(DATASET_DIR_BASE+DATASET_DIR_DIFFICULT_RANDOM_50+UTILS__TO_STRING(i)+".csv");
+        graph_paths.push_back(DATASET_DIR_BASE+DATASET_DIR_DIFFICULT_RANDOM_70+UTILS__TO_STRING(i)+".csv");
+    }
+    std::random_shuffle(graph_paths.begin(), graph_paths.end());
+
+    // Sanity
+    for (unsigned i=0; i<graph_paths.size(); ++i) {
+        ASSERT(utils__file_exists(graph_paths[i]));
+    }
+
+    // Specific requests.
+    // Choose as many (of the 49) combinations as possible
+    vector<StatisticRequest> requests;
+    const int mask_ms = 1;
+    const int mask_trng = 2;
+    const int mask_cnt_ms = 4;
+    const int mask_cnt_trng = 8;
+    const int mask_time_ms = 16;
+    const int mask_time_trng = 32;
+    for (int mask=63; mask>=0; --mask) {
+        if(requests.size() >= graph_paths.size()) {
+            break;
+        }
+        StatisticRequest sr;
+        if (mask & mask_ms) {
+            sr.set_count_ms();
+        }
+        if (mask & mask_trng) {
+            sr.set_count_trng();
+        }
+        if (mask & mask_cnt_ms) {
+            sr.set_count_limit_ms(count_limit_ms);
+        }
+        if (mask & mask_cnt_trng) {
+            sr.set_count_limit_trng(count_limit_trng);
+        }
+        if (mask & mask_time_ms) {
+            sr.set_time_limit_ms(time_limit_ms);
+        }
+        if (mask & mask_time_trng) {
+            sr.set_time_limit_trng(time_limit_trng);
+        }
+        // Sanity (need a limit per calculation)
+        if (sr.test_count_ms() && !sr.test_count_limit_ms() && !sr.test_time_limit_ms()) {
+            continue;
+        }
+        if (sr.test_count_trng() && !sr.test_count_limit_trng() && !sr.test_time_limit_trng()) {
+            continue;
+        }
+        requests.push_back(sr);
+    }
+/*    for (int choose_ms=1; choose_ms>=0; --choose_ms) {
+        for (int choose_trng=1; choose_trng>=0; --choose_trng) {
+            for (int choose_cnt_limit_ms=1; choose_cnt_limit_ms>=0; --choose_cnt_limit_ms) {
+                for (int choose_cnt_limit_trng=1; choose_cnt_limit_trng>=0; --choose_cnt_limit_trng) {
+                    for (int choose_time_limit_ms=1; choose_time_limit_ms>=0; --choose_time_limit_ms) {
+                        for (int choose_time_limit_trng=1; choose_time_limit_trng>=0; --choose_time_limit_trng) {
+                            // Stop if we're out of graphs
+                            if(requests.size() >= graph_paths.size()) {
+                                // It's this or cascading breaks..
+                                goto out_of_req_loop;
+                            }
+                            StatisticRequest sr;
+                            if (choose_ms) {
+                                sr.set_count_ms();
+                            }
+                            if (choose_trng) {
+                                sr.set_count_trng();
+                            }
+                            if (choose_cnt_limit_ms) {
+                                sr.set_count_limit_ms(count_limit_ms);
+                            }
+                            if (choose_cnt_limit_trng) {
+                                sr.set_count_limit_trng(count_limit_trng);
+                            }
+                            if (choose_time_limit_ms) {
+                                sr.set_time_limit_ms(time_limit_ms);
+                            }
+                            if (choose_time_limit_trng) {
+                                sr.set_time_limit_trng(time_limit_trng);
+                            }
+                            // Sanity
+                            if (sr.test_count_ms() && !sr.test_count_limit_ms() && !sr.test_time_limit_ms()) {
+                                continue;
+                            }
+                            if (sr.test_count_trng() && !sr.test_count_limit_trng() && !sr.test_time_limit_trng()) {
+                                continue;
+                            }
+                            requests.push_back(sr);
+                        }
+                    }
+                }
+            }
+        }
+    }
+out_of_req_loop:*/
+
+    // Sanity
+    ASSERT_LEQ(requests.size(), 49/*(2*2*2*2*2*2) - (8+8-1)*/);
+
+    // Cut off the useless graphs, assert sanity
+    ASSERT_GEQ(graph_paths.size(), requests.size());
+    if (graph_paths.size() > requests.size()) {
+        graph_paths.resize(requests.size());
+    }
+    ASSERT_EQ(graph_paths.size(), requests.size());
+
+    // Indicate this should take some time
+    cout << "\b\b\b\b (running " << graph_paths.size() << " MS and TRNG calculations. Count limits are "
+         << count_limit_ms << "/" << count_limit_trng << ", time limits are "
+         << time_limit_ms << "/" << time_limit_trng << ", at least one limit will be active per calculation)... ";
+
+    // Set the expected error state for each algorithm for each graph.
+    vector<bool> expected_cnt_error_ms(graph_paths.size(), false);
+    vector<bool> expected_cnt_error_trng(graph_paths.size(), false);
+    vector<bool> expected_time_error_ms(graph_paths.size(), false);
+    vector<bool> expected_time_error_trng(graph_paths.size(), false);
+
+    // Validate some limits are reached.
+    // Take note of graphs that are 'easy' and add the indexes to the relevant set.
+    vector<long> total_ms(graph_paths.size(), 0);
+    vector<long> total_trng(graph_paths.size(), 0);
+    bool ms_cnt_limit_reached = false;
+    bool trng_cnt_limit_reached = false;
+    bool ms_time_limit_reached = false;
+    bool trng_time_limit_reached = false;
+    for (unsigned i=0; i<graph_paths.size(); ++i) {
+        StatisticRequest sr = requests[i];
+        GraphStats gs = GraphStats::read(graph_paths[i]);
+        // MS
+        if (sr.test_count_ms()) {
+            ASSERT(sr.test_count_limit_ms() || sr.test_time_limit_ms());
+            MinimalSeparatorsEnumerator mse(gs.get_graph(), UNIFORM);
+            time_t start_time_ms = time(NULL);
+            for (total_ms[i]=0; mse.hasNext(); ++total_ms[i]) {
+                mse.next();
+                if (sr.test_count_limit_ms() && total_ms[i] >= sr.get_count_limit_ms()) {
+                    expected_cnt_error_ms[i] = ms_cnt_limit_reached = true;
+                    break;
+                }
+                if (sr.test_time_limit_ms() && difftime(time(NULL), start_time_ms)) {
+                    expected_time_error_ms[i] = ms_time_limit_reached = true;
+                    break;
+                }
+            }
+        }
+        // TRNG
+        if (sr.test_count_trng()) {
+            ASSERT(sr.test_count_limit_trng() || sr.test_time_limit_trng());
+            time_t start_time_trng = time(NULL);
+            MinimalTriangulationsEnumerator mte(gs.get_graph(), NONE, UNIFORM, SEPARATORS);
+            for (total_trng[i]=0; mte.hasNext(); ++total_trng[i]) {
+                mte.next();
+                if (sr.test_count_limit_trng() && total_trng[i] >= sr.get_count_limit_trng()) {
+                    expected_cnt_error_trng[i] = trng_cnt_limit_reached = true;
+                    break;
+                }
+                if (sr.test_time_limit_trng() && difftime(time(NULL), start_time_trng)) {
+                    expected_time_error_trng[i] = trng_time_limit_reached = true;
+                    break;
+                }
+            }
+        }
+        TRACE(TRACE_LVL__OFF, "Done with graph #" << (i+1) << ", "
+                    << endl << "cnt_ms=" << (sr.test_count_ms() ? "true" : "false") << ", "
+                    << endl << "cnt_trng=" << (sr.test_count_trng() ? "true" : "false") << ", "
+                    << endl << "time_limit_ms=" << (sr.test_count_limit_ms() ? "true" : "false") << ", "
+                    << endl << "time_limit_trng=" << (sr.test_count_limit_trng() ? "true" : "false") << ", "
+                    << endl << "cnt_limit_ms=" << (sr.test_time_limit_ms() ? "true" : "false") << ", "
+                    << endl << "cnt_limit_trng=" << (sr.test_time_limit_trng() ? "true" : "false") << ", "
+                    << endl << "ms_cnt_err=" << (expected_cnt_error_ms[i] ? "true" : "false") << ", "
+                    << endl << "ms_time_err=" << (expected_time_error_ms[i] ? "true" : "false") << ", "
+                    << endl << "trng_cnt_err=" << (expected_cnt_error_trng[i] ? "true" : "false") << ", "
+                    << endl << "trng_time_err=" << (expected_time_error_trng[i] ? "true" : "false") << ", "
+                    << endl << "ms_cnt=" << total_ms[i] << ", "
+                    << endl << "trng_cnt=" << total_trng[i]
+            );
+    }
+    // Otherwise, this test isn't doing its job
+    ASSERT(ms_cnt_limit_reached);
+    ASSERT(trng_cnt_limit_reached);
+    ASSERT(ms_time_limit_reached);
+    ASSERT(trng_time_limit_reached);
+
+    // Construct a dataset with the graph, set requests.
+    // Allow five seconds per graph - should be enough for the small graphs
+    Dataset ds = Dataset(dataset_filename, graph_paths);
+    ASSERT_EQ(ds.dataset.size(), graph_paths.size());
+    for (unsigned i=0; i<graph_paths.size(); ++i) {
+        ASSERT_NEQ(DATASET_INVALID_INDEX, ds.graph_index_by_text(graph_paths[i]));
+        ds.set_request(ds.graph_index_by_text(graph_paths[i]), requests[i]);
+    }
+
+    // Calculate, read the columns of the output file and make sure the OOT errors exist in the right places
+    ASSERT(!utils__file_exists(dataset_filename));
+    ASSERT_NO_THROW(ds.calc().dump());
+    ASSERT(utils__file_exists(dataset_filename));
+    vector<vector<string> > csv_contents = utils__read_csv(dataset_filename);
+
+    // Make sure the total number of rows is the number of graphs minus the header row(s)
+    ASSERT_EQ(ds.dataset.size(), csv_contents.size() - DATASET_HEADER_ROWS);
+
+    // Make sure the number of columns is DATASET_COL_TOTAL on each row
+    for (auto row: csv_contents) {
+        ASSERT_EQ(row.size(), DATASET_COL_TOTAL);
+    }
+
+    // Validate column contents
+    ASSERT_EQ(csv_contents.size(), 1+graph_paths.size());   // 1 metadata line, and one line for each graph
+    for (unsigned i=0; i<graph_paths.size(); ++i) {
+        int row_index = i+1;
+        string ms_column_contents = utils__strip_char(csv_contents[row_index][DATASET_COL_NUM_MSS], ' ');
+        string trng_column_contents = utils__strip_char(csv_contents[row_index][DATASET_COL_NUM_TRNG], ' ');
+        string ms_time_column_contents = utils__strip_char(csv_contents[row_index][DATASET_COL_NUM_MS_TIME], ' ');
+        string trng_time_column_contents = utils__strip_char(csv_contents[row_index][DATASET_COL_NUM_TRNG_TIME], ' ');
+        string cnt_err_column_contents = utils__strip_char(csv_contents[row_index][DATASET_COL_NUM_ERR_CNT], ' ');
+        string time_err_column_contents = utils__strip_char(csv_contents[row_index][DATASET_COL_NUM_ERR_TIME], ' ');
+        // MS
+        if (!requests[i].test_count_ms() || expected_cnt_error_ms[i] || expected_time_error_ms[i]) {
+            ASSERT_EQ(ms_column_contents, DATASET_COL_CONTENT_DATA_UNAVAILABLE);
+            ASSERT_EQ(ms_time_column_contents, DATASET_COL_CONTENT_DATA_UNAVAILABLE);
+        }
+        else {
+            ASSERT_EQ(ms_column_contents, UTILS__TO_STRING(total_ms[i]));
+            ASSERT_EQ(ms_time_column_contents, UTILS__TO_STRING(ds.dataset[i].first.get_ms_calc_time()));
+        }
+        if (requests[i].test_count_ms() && expected_cnt_error_ms[i]) {
+            ASSERT_SUBSTR(DATASET_COL_CONTENT_ERR_MS, cnt_err_column_contents);
+        }
+        else {
+            ASSERT_NOT_SUBSTR(DATASET_COL_CONTENT_ERR_MS, cnt_err_column_contents);
+        }
+        if (requests[i].test_count_ms() && expected_time_error_ms[i]) {
+            ASSERT_SUBSTR(DATASET_COL_CONTENT_ERR_MS, time_err_column_contents);
+        }
+        else {
+            ASSERT_NOT_SUBSTR(DATASET_COL_CONTENT_ERR_MS, time_err_column_contents);
+        }
+        // TRNG
+        if (!requests[i].test_count_trng() || expected_cnt_error_trng[i] || expected_time_error_trng[i]) {
+            ASSERT_EQ(trng_column_contents, DATASET_COL_CONTENT_DATA_UNAVAILABLE);
+            ASSERT_EQ(trng_time_column_contents, DATASET_COL_CONTENT_DATA_UNAVAILABLE);
+        }
+        else {
+            ASSERT_EQ(trng_column_contents, UTILS__TO_STRING(total_trng[i]));
+            ASSERT_EQ(trng_time_column_contents, UTILS__TO_STRING(ds.dataset[i].first.get_trng_calc_time()));
+        }
+        if (requests[i].test_count_trng() && expected_cnt_error_trng[i]) {
+            ASSERT_SUBSTR(DATASET_COL_CONTENT_ERR_TRNG, cnt_err_column_contents);
+        }
+        else {
+            ASSERT_NOT_SUBSTR(DATASET_COL_CONTENT_ERR_TRNG, cnt_err_column_contents);
+        }
+        if (requests[i].test_count_trng() && expected_time_error_trng[i]) {
+            ASSERT_SUBSTR(DATASET_COL_CONTENT_ERR_TRNG, time_err_column_contents);
+        }
+        else {
+            ASSERT_NOT_SUBSTR(DATASET_COL_CONTENT_ERR_TRNG, time_err_column_contents);
+        }
+    }
 
     CLEANUP_DATASET();
     return true;
@@ -887,10 +1172,6 @@ bool DatasetTester::validate_stat_load_updates_statreq_diverse_statreq() const {
     return true;
 }
 bool DatasetTester::validate_unavailable_stat_update_after_stat_load() const {
-
-    return true;
-}
-bool DatasetTester::column_sanity() const {
 
     return true;
 }

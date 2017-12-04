@@ -129,10 +129,10 @@ int PMCAlg::last() {
     return PMCALG_ENUM_LAST;
 }
 int PMCAlg::total_algs() { return last(); }
-vector<PMCAlg> PMCAlg::get_all(bool csv_format) {
+const vector<PMCAlg> PMCAlg::get_all(bool csv_format) {
     vector<PMCAlg> v;
     if (!csv_format) {
-        for (int i=first(); i<=last(); ++i) {
+        for (int i=first(); i<last(); ++i) {
             v.push_back(PMCAlg(i));
         }
     }
@@ -143,7 +143,7 @@ vector<PMCAlg> PMCAlg::get_all(bool csv_format) {
     }
     return v;
 }
-set<PMCAlg> PMCAlg::get_all_set(bool csv_format) {
+const set<PMCAlg> PMCAlg::get_all_set(bool csv_format) {
     vector<PMCAlg> v = get_all(csv_format);
     return set<PMCAlg>(v.begin(), v.end());
 }

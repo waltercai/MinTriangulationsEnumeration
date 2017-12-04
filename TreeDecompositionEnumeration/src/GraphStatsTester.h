@@ -1,3 +1,7 @@
+#ifndef GRAPHSTATSTESTER_H_INCLUDED
+#define GRAPHSTATSTESTER_H_INCLUDED
+
+
 #include "TestInterface.h"
 
 namespace tdenum {
@@ -94,3 +98,5 @@ public:
 };
 
 }
+
+#endif // GRAPHSTATSTESTER_H_INCLUDED

@@ -71,29 +71,30 @@ PMCEnumerator::~PMCEnumerator() {
     omp_destroy_lock(&lock);
 }
 
-void PMCEnumerator::reset(const Graph& g, time_t time_limit) { *this = PMCEnumerator(g, time_limit); }
+PMCEnumerator& PMCEnumerator::reset(const Graph& g, time_t time_limit) { return (*this = PMCEnumerator(g, time_limit)); }
 
-void PMCEnumerator::set_algorithm(PMCAlg a) { alg = a; }
+PMCEnumerator& PMCEnumerator::set_algorithm(PMCAlg a) { alg = a; return *this; }
 PMCAlg PMCEnumerator::get_alg() const { return alg; }
 
-void PMCEnumerator::set_time_limit(time_t t) { limit = t; }
-void PMCEnumerator::unset_time_limit() { limit = 0; }
+PMCEnumerator& PMCEnumerator::set_time_limit(time_t t) { limit = t; return *this; }
+PMCEnumerator& PMCEnumerator::unset_time_limit() { limit = 0; return *this; }
 
-void PMCEnumerator::enable_parallel() { allow_parallel = true; }
-void PMCEnumerator::suppress_parallel() { allow_parallel = false; }
+PMCEnumerator& PMCEnumerator::enable_parallel() { allow_parallel = true; return *this; }
+PMCEnumerator& PMCEnumerator::suppress_parallel() { allow_parallel = false; return *this; }
 
 /**
  * Allows caller to report the minimal separators of the graph.
  * Remember to map the sets to the new node names!
  */
-void PMCEnumerator::set_minimal_separators(const NodeSetSet& min_seps) {
+PMCEnumerator& PMCEnumerator::set_minimal_separators(const NodeSetSet& min_seps) {
     ms = graph.getNewNames(min_seps);
     has_ms = true;
     if (graph.getNumberOfNodes() == 0) {
         TRACE(TRACE_LVL__ERROR, "No nodes (empty graph)! Can't set MS count");
-        return;
+        return *this;
     }
     ms_subgraph_count[graph.getNumberOfNodes()-1] = ms.size();
+    return *this;
 }
 
 /**
@@ -147,7 +148,7 @@ void PMCEnumerator::read_ms_subgraph_count_from_vector(const vector<NodeSetSet>&
  * The REVERSE_MS_PRECALC algorithm starts by calculating all sets of minimal
  * separators - in reverse order - before starting the PMC algorithm.
  */
-NodeSetSet PMCEnumerator::get(const StatisticRequest& sr) {
+NodeSetSet PMCEnumerator::get(/*const StatisticRequest& sr*/) {
 
     if (!done) {
 
@@ -318,12 +319,12 @@ NodeSetSet PMCEnumerator::get(const StatisticRequest& sr) {
             ms_subgraph_count[n-1] = ms.size();
             has_ms = true;
         }
-        if (sr.test_ms_subgraphs()) {
+        if (/*sr.test_ms_subgraphs()*/true) {
             TRACE(TRACE_LVL__TEST, "Setting MS subgraphs to " << sub_ms);
             ms_subgraphs = sub_ms;
             update_ms_subgraph_count();
         }
-        else if (sr.test_ms_subgraph_count()) {
+        /*else */if (true/*sr.test_ms_subgraph_count()*/) {
             read_ms_subgraph_count_from_vector(sub_ms);
         }
 

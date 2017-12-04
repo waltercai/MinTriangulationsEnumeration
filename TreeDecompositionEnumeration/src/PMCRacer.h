@@ -29,12 +29,17 @@ namespace tdenum {
 class PMCRacer {
 private:
 
+    friend class PMCRacerTester;
+
     // The output file name
     string outfilename;
     bool dump_to_file_when_done;
 
+    // Flag for debugging (inner crosscheck functionality)
+    bool debug;
+
     // The algorithms to use
-    vector<PMCAlg> algs;
+//    vector<PMCAlg> algs;
 
     // Input graph statistics objects.
     vector<GraphStats> gs;
@@ -53,7 +58,7 @@ public:
     void add(const GraphStats&);
     void add(const vector<GraphStats>&);
 
-    // Add / remove algorithms
+/*    // Add / remove algorithms
     void add_alg(const PMCAlg&);
     void add_algs(const vector<PMCAlg>&);
     void add_algs(const set<PMCAlg>&);
@@ -62,12 +67,17 @@ public:
     void remove_algs(const set<PMCAlg>&);
     void clear_algs();
     void add_all_algs();
+*/
+    // Set / unset debug mode
+    void set_debug();
+    void unset_debug();
 
     // Race! Optionally, print stuff to console.
     // If append_results is set to true, results will be appended
     // as new rows in the CSV file.
     // The StatisticRequest object will contain the required algorithms.
-    void go(const StatisticRequest& sr, bool verbose = false/*, bool append_results = false*/);
+    // Returns true on success
+    bool go(const StatisticRequest& sr, bool verbose = false/*, bool append_results = false*/);
 
     // Return the vector of GraphStats
     vector<GraphStats> get_stats() const;
