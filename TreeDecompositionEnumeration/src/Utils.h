@@ -6,6 +6,7 @@
 #include <iomanip>
 #include <iostream>
 #include <iterator>
+#include <limits>
 #include <map>
 #include <set>
 #include <sstream>
@@ -46,6 +47,7 @@ namespace tdenum {
 #define UTILS__EQ_FLOAT(_x,_y) ((_x) + EPSILON >= (_y) && (_x) - EPSILON <= (_y))
 
 extern unsigned UTILS__MAX_RECURSION_DEPTH;
+const time_t UTILS__MAX_LONG = std::numeric_limits<long>::max();
 
 /**
  * Logger class.
@@ -143,11 +145,16 @@ string utils__replace_string();
 #define UTILS__REPLACE_STREAM(_stream) \
         utils__replace_string(UTILS__TO_STRING(_stream))
 
+/**
+ * Time utilities
+ */
 // Convert time stamp (in seconds) to / from readable time
 string utils__timestamp_to_hhmmss(time_t t);
 string utils__timestamp_to_fulldate(time_t t);
 time_t utils__hhmmss_to_timestamp(const string& hhmmss);
 
+// Max time_t value
+const time_t UTILS__MAX_TIME = std::numeric_limits<time_t>::max();
 
 /**
  * Useful container wrappers / utilities

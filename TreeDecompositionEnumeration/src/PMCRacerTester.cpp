@@ -5,6 +5,13 @@
 
 namespace tdenum {
 
+PMCRacerTester::PMCRacerTester() :
+    TestInterface("PMCRacer Tester")
+    #define X(test) , flag_##test(true)
+    PMCRACERTESTER_TEST_TABLE
+    #undef X
+    {}
+
 PMCRacerTester& PMCRacerTester::go() {
     unset_crosscheck_insanity();
     #define X(test) if (flag_##test) {DO_TEST(test);}
@@ -12,12 +19,6 @@ PMCRacerTester& PMCRacerTester::go() {
     #undef X
     return *this;
 }
-PMCRacerTester::PMCRacerTester() :
-    TestInterface("PMCRacer Tester")
-    #define X(test) , flag_##test(true)
-    PMCRACERTESTER_TEST_TABLE
-    #undef X
-    {}
 
 // Setters / getters
 #define X(test) \
@@ -159,9 +160,11 @@ bool PMCRacerTester::validate_accurate_times() const {
      * Take hard graphs, run with specific algorithms using the PMCEnumerator
      * and then with the PMCRacer (use the batch-algorithm mode of the PMCRacer).
      *
-     * Make sure the resulting times (as long as they are more than 10 seconds, or
-     * some threshold) deviate by no more then 10%.
+     * Make sure the resulting times (as long as they are more than the threshold)
+     * deviate by no more then allowed_deviation.
      */
+    cout << "(this could take ~13 hours! verbose by default) ";
+
     const int threshold = 20;
     const double allowed_deviation = 0.2; // 10% is too low..
     time_t test_start_time = time(NULL);
@@ -246,14 +249,8 @@ bool PMCRacerTester::validate_accurate_times() const {
     return true;
 }
 bool PMCRacerTester::validate_accurate_times_batch_mode() const {
+    cout << "(this could take ~13 hours! verbose by default) ";
 
-    /**
-     * Take hard graphs, run with specific algorithms using the PMCEnumerator
-     * and then with the PMCRacer (use the batch-algorithm mode of the PMCRacer).
-     *
-     * Make sure the resulting times (as long as they are more than 10 seconds, or
-     * some threshold) deviate by no more then 10%.
-     */
     const int threshold = 60;
     const double deviance = 0.1;
 

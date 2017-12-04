@@ -19,7 +19,7 @@ namespace tdenum {
  * To test something new, inherit from the TestInterface class and
  * add the new class name to the X macro bellow.
  *
- * The order define in the table defines the order they're run!
+ * The order of tests in the table defines the order they're run!
  */
 #define TESTER_TEST_TABLE \
     X(UtilsTester) \
@@ -27,8 +27,8 @@ namespace tdenum {
     X(GraphStatsTester) \
     X(GraphProducerTester) \
     X(PMCEnumeratorTester) \
-    X(PMCRacerTester) \
     X(StatisticRequestTester) \
+    X(PMCRacerTester) \
     X(DatasetTester)
 
 // Static (compile-time) sanity check

@@ -37,7 +37,7 @@ DatasetTester& DatasetTester::clear_all() {
     return *this;
 }
 DatasetTester& DatasetTester::go() {
-    //set_only_generate_count_and_time_errors_test_text_and_gs_fields();
+    //set_only_find_by_text();
     #define X(test) if (flag_##test) {DO_TEST(test);}
     DATASETTESTER_TEST_TABLE
     #undef X
@@ -159,7 +159,7 @@ DatasetTester& DatasetTester::go() {
  */
 bool DatasetTester::find_by_text() const {
     INIT_DATASET();
-
+/*
     int i;
     auto vgs = gp.get();
     ASSERT_NO_THROW(i = Dataset::graph_index_by_text(vgs, "i dont exist"));
@@ -171,7 +171,7 @@ bool DatasetTester::find_by_text() const {
         ASSERT_EQ(i, Dataset::graph_index_by_text(vgs, filename[i]));
         ASSERT_EQ(i, ds.graph_index_by_text(filename[i]));
     }
-
+*/
     CLEANUP_DATASET();
     return true;
 }
@@ -785,6 +785,7 @@ bool DatasetTester::several_pmc_algorithms_check_times_and_errors_per_alg() cons
 
     // Set the expected error state for each algorithm for each graph.
     map<pair<unsigned,PMCAlg>, bool> expected_error;
+    map<pair<unsigned,PMCAlg>, bool> expected_time;
 
     // Indicate this should take some time.
     // Two runs (one for error marking, one for testing), running at most time_limit seconds.
@@ -798,9 +799,13 @@ bool DatasetTester::several_pmc_algorithms_check_times_and_errors_per_alg() cons
             cout << endl << "Running PMCE on graph #" << (i+1) << ", algorithm " << alg.str() << "... ";
             PMCEnumerator tmp_pmce = PMCEnumerator(gs.get_graph(), time_limit);
             tmp_pmce.set_algorithm(alg);
+            time_t start_time = time(NULL);
             tmp_pmce.get(/*StatisticRequest().set_single_pmc_alg(alg).set_count_pmc()*/);
+            time_t time_taken = difftime(time(NULL), start_time);
             expected_error[pair<unsigned,PMCAlg>(i,alg)] = tmp_pmce.is_out_of_time();
-            cout << (tmp_pmce.is_out_of_time() ? "TIME ERROR" : "no time error");
+            expected_time[pair<unsigned,PMCAlg>(i,alg)] = time_taken;
+            cout << (tmp_pmce.is_out_of_time() ? string("TIME ERROR") :
+                     string("no time error, took ")+utils__timestamp_to_hhmmss(time_taken));
         }
     }
 
@@ -821,31 +826,42 @@ bool DatasetTester::several_pmc_algorithms_check_times_and_errors_per_alg() cons
     // Make sure the total number of rows is the number of graphs minus the header row(s)
     ASSERT_EQ(ds.dataset.size(), csv_contents.size() - DATASET_HEADER_ROWS);
 
-    // Make sure the number of columns is DATASET_COL_TOTAL on each row
+    // Sanity
+    ASSERT_EQ(csv_contents.size(), DATASET_HEADER_ROWS+graph_paths.size());
     for (auto row: csv_contents) {
         ASSERT_EQ(row.size(), DATASET_COL_TOTAL);
     }
 
     // Validate column contents
-    ASSERT_EQ(csv_contents.size(), 1+graph_paths.size());   // 1 metadata line, and one line for each graph
-    for (unsigned i=0; i<graph_paths.size(); ++i) {
+    vector<GraphStats> vgs = ds.get_vector_gs();
+    for (unsigned i=0; i<ds.dataset.size(); ++i) {
         int row_index = i+1;
+        GraphStats& gs = vgs[i];
         for (PMCAlg alg=PMCAlg::first(); alg<PMCAlg::last(); ++alg) {
             cout << endl << "Validating graph #" << row_index << ", algorithm " << alg.str();
-            string err_column_contents = utils__strip_char(csv_contents[row_index][DATASET_COL_ALG_TO_ERR_INT.at(alg)], ' ');
-            string time_column_contents = utils__strip_char(csv_contents[row_index][DATASET_COL_ALG_TO_TIME_INT.at(alg)], ' ');
+            string err_column_str = utils__strip_char(csv_contents[row_index][DATASET_COL_ALG_TO_ERR_INT.at(alg)], ' ');
+            string time_column_str = utils__strip_char(csv_contents[row_index][DATASET_COL_ALG_TO_TIME_INT.at(alg)], ' ');
             if (!utils__is_in_set(alg, alg_sets[i])) {
                 cout << ". Should have no data...";
-                ASSERT_EQ(time_column_contents, DATASET_COL_CONTENT_DATA_UNAVAILABLE);
-                ASSERT_EQ(err_column_contents, DATASET_COL_CONTENT_DATA_UNAVAILABLE);
+                ASSERT_EQ(time_column_str, DATASET_COL_CONTENT_DATA_UNAVAILABLE);
+                ASSERT_EQ(err_column_str, DATASET_COL_CONTENT_DATA_UNAVAILABLE);
             }
             else {
                 bool time_err;
-                cout << ", " << (expected_error.at(pair<unsigned,PMCAlg>(i,alg)) ? "reached timeout" : "completed successfully");
+                time_t current_expected_time;
+                cout << ", " << (gs.pmc_no_errors(alg) ? string("reached timeout") : string("completed successfully in ") +
+                            utils__timestamp_to_hhmmss(gs.get_pmc_calc_time(alg)));
                 ASSERT_NO_THROW(time_err = expected_error.at(pair<unsigned,PMCAlg>(i,alg)));
+                ASSERT_NO_THROW(current_expected_time = expected_time.at(pair<unsigned,PMCAlg>(i,alg)));
                 cout << endl << "Checking graph #" << row_index << ", algorithm " << alg.str() << "...";
-                ASSERT_NEQ(time_column_contents, DATASET_COL_CONTENT_DATA_UNAVAILABLE);
-                ASSERT_EQ(err_column_contents, (time_err ? DATASET_COL_CONTENT_TIME_ERR : ""));
+                ASSERT_NEQ(time_column_str, DATASET_COL_CONTENT_DATA_UNAVAILABLE);
+                time_t time_column_val;
+                ASSERT_NO_THROW(time_column_val = utils__hhmmss_to_timestamp(time_column_str));
+                if (std::abs(time_column_val-current_expected_time>5)) {
+                    ASSERT_GEQ(1.2*time_column_val, current_expected_time);
+                    ASSERT_LEQ(0.8*time_column_val, current_expected_time);
+                }
+                ASSERT_EQ(err_column_str, (time_err ? DATASET_COL_CONTENT_TIME_ERR : ""));
             }
         }
     }
