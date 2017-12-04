@@ -7,10 +7,10 @@ StatisticRequest::StatisticRequest() :
     #define X(calculation,...) flag_##calculation(false),
     STATISTICREQUEST_FLAG_TABLE
     #undef X
-    #define X(calculation) time_limit_##calculation(0),
+    #define X(calculation) time_limit_##calculation(invalid_time_limit),
     STATISTICREQUEST_TIME_LIMITS
     #undef X
-    #define X(calculation) count_limit_##calculation(0),
+    #define X(calculation) count_limit_##calculation(invalid_count_limit),
     STATISTICREQUEST_COUNT_LIMITS
     #undef X
     pmc_algs_to_race()
@@ -47,6 +47,11 @@ string StatisticRequest::str() const {
 ostream& operator<<(ostream& os, const StatisticRequest& sr) { return (os << sr.str()); }
 
 bool StatisticRequest::has_valid_pmc_alg() const { return !pmc_algs_to_race.empty(); }
+bool StatisticRequest::valid_time_ms() const { return time_limit_ms != invalid_time_limit; }
+bool StatisticRequest::valid_time_pmc() const { return time_limit_pmc != invalid_time_limit; }
+bool StatisticRequest::valid_time_trng() const { return time_limit_trng != invalid_time_limit; }
+bool StatisticRequest::valid_count_ms() const { return count_limit_ms != invalid_count_limit; }
+bool StatisticRequest::valid_count_trng() const { return count_limit_trng != invalid_count_limit; }
 
 // Manually set/unset calculations, and query the object.
 // Each calculation has a set, unset and test method.
@@ -113,18 +118,28 @@ bool StatisticRequest::test_has_trng_calculation() const { return test_trng() ||
 // Time limit handlers
 #define X(calculation) \
     StatisticRequest& StatisticRequest::set_time_limit_##calculation(time_t t) { time_limit_##calculation = t; return *this; } \
-    StatisticRequest& StatisticRequest::unset_time_limit_##calculation(){ time_limit_##calculation = 0; return *this; } \
-    time_t StatisticRequest::get_time_limit_##calculation() const { return time_limit_##calculation; } \
-    bool StatisticRequest::test_time_limit_##calculation() const { return time_limit_##calculation != 0; }
+    StatisticRequest& StatisticRequest::unset_time_limit_##calculation(){ time_limit_##calculation = invalid_time_limit; return *this; } \
+    bool StatisticRequest::test_time_limit_##calculation() const { return valid_time_##calculation(); } \
+    time_t StatisticRequest::get_time_limit_##calculation() const { \
+        if (!valid_time_##calculation()) { \
+            TRACE(TRACE_LVL__WARNING, "Time limit value read, but no time limit set!"); \
+        } \
+        return time_limit_##calculation; \
+    }
 STATISTICREQUEST_TIME_LIMITS
 #undef X
 
 // Count limit handlers
 #define X(calculation) \
     StatisticRequest& StatisticRequest::set_count_limit_##calculation(long c) { count_limit_##calculation = c; return *this; } \
-    StatisticRequest& StatisticRequest::unset_count_limit_##calculation() { count_limit_##calculation = 0; return *this; } \
-    long StatisticRequest::get_count_limit_##calculation() const { return count_limit_##calculation;} \
-    bool StatisticRequest::test_count_limit_##calculation() const { return count_limit_##calculation != 0; }
+    StatisticRequest& StatisticRequest::unset_count_limit_##calculation() { count_limit_##calculation = invalid_count_limit; return *this; } \
+    bool StatisticRequest::test_count_limit_##calculation() const { return valid_count_##calculation(); } \
+    long StatisticRequest::get_count_limit_##calculation() const { \
+        if (!valid_count_##calculation()) { \
+            TRACE(TRACE_LVL__WARNING, "Count limit value read, but no count limit set!"); \
+        } \
+        return count_limit_##calculation; \
+    }
 STATISTICREQUEST_COUNT_LIMITS
 #undef X
 

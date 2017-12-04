@@ -4,6 +4,7 @@
 #include <ostream>
 #include <set>
 #include "PMCAlg.h"
+#include "Utils.h"
 using std::ostream;
 using std::set;
 
@@ -100,10 +101,18 @@ private:
     // Hence, we need this vector.
     set<PMCAlg> pmc_algs_to_race;
 
-    // Utility method
+    // Utility methods
     bool has_valid_pmc_alg() const;
+    bool valid_time_ms() const;
+    bool valid_time_pmc() const;
+    bool valid_time_trng() const;
+    bool valid_count_ms() const;
+    bool valid_count_trng() const;
 
 public:
+
+    static const time_t invalid_time_limit = UTILS__MAX_TIME;
+    static const long invalid_count_limit = UTILS__MAX_LONG;
 
     StatisticRequest();
 
