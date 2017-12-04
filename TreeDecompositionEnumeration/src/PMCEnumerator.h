@@ -1,10 +1,11 @@
 #ifndef POTENTIALMAXIMALCLIQUESENUMERATOR_H
 #define POTENTIALMAXIMALCLIQUESENUMERATOR_H
 
-#include "Graph.h"
-#include "SubGraph.h"
 #include "DataStructures.h"
+#include "Graph.h"
 #include "PMCAlg.h"
+#include "StatisticRequest.h"
+#include "SubGraph.h"
 #include <omp.h>
 #include <vector>
 
@@ -16,7 +17,7 @@ typedef enum PMCERunMode {
     PMCE_RUNMODE_FAST,
     PMCE_RUNMODE_VERIFY_SORT
 } PMCERunMode;
-#define PMCE_RUNMODE PMCE_RUNMODE_VERIFY_SORT
+extern int PMCE_RUNMODE;
 
 /**
  * Constructs a list of potential maximal cliques, given a graph.
@@ -52,7 +53,8 @@ private:
     // This is calculated anyway, however this may be useful information
     // as different orderings of subgraphs may yield different amounts
     // of separators/
-    vector<int> ms_subgraph_count;
+    vector<NodeSetSet> ms_subgraphs;
+    vector<long> ms_subgraph_count;
 
     // If this is set to true, OMP #pragmas will be activated.
     bool allow_parallel;
@@ -85,6 +87,12 @@ private:
                                const NodeSetSet& D2,
                                const NodeSetSet& P2);
 
+    // Reads the totals, given an updated ms_subgraphs field
+    void update_ms_subgraph_count();
+
+    // Doesn't read from ms_subgraphs
+    void read_ms_subgraph_count_from_vector(const vector<NodeSetSet>&);
+
 public:
 
     // Construct the enumerator with the given graph.
@@ -93,27 +101,29 @@ public:
     ~PMCEnumerator();
 
     // Resets the instance to use a new graph (allows re-use of variable name).
-    void reset(const Graph& g, time_t time_limit = 0);
+    PMCEnumerator& reset(const Graph& g, time_t time_limit = 0);
 
-    // Sets / gets the algorithm to be used.
-    void set_algorithm(PMCAlg a);
+    // Setters / getters
+    PMCEnumerator& set_algorithm(PMCAlg a);
     PMCAlg get_alg() const;
-
-    // Toggle parallelization
-    void enable_parallel();
-    void suppress_parallel();
+    PMCEnumerator& set_time_limit(time_t);
+    PMCEnumerator& unset_time_limit();
+    PMCEnumerator& enable_parallel();
+    PMCEnumerator& suppress_parallel();
 
     // If the minimal separators for the original graph has already been
     // calculated, inform the enumerator.
     // This also saves some time.
-    void set_minimal_separators(const NodeSetSet& ms);
+    PMCEnumerator& set_minimal_separators(const NodeSetSet& ms);
 
     // Returns the set of PMCs (calculates if need be).
     // Uses the algorithm specified by the user.
-    NodeSetSet get();
+    NodeSetSet get(/*const StatisticRequest&*/);
 
     // Return the set of minimal separators.
     NodeSetSet get_ms();
+    vector<NodeSetSet> get_ms_subgraphs();
+    vector<long> get_ms_count_subgraphs();
 
     // Returns the underlying graph
     Graph get_graph() const;

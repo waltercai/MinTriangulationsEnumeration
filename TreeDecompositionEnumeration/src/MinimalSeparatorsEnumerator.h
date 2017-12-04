@@ -27,8 +27,10 @@ public:
 	bool hasNext();
 	// Returns another minimal separator
 	MinimalSeparator next();
-	// Returns all minimal separators as a NodeSetSet
-	NodeSetSet getAll();
+	// Returns all minimal separators as a NodeSetSet.
+	// If a non-zero time limit is given and the algorithm takes too long,
+	// returns false and sets the output to an empty NodeSetSet.
+	bool getAll(NodeSetSet& out, time_t limit = 0);
 };
 
 } /* namespace tdenum */

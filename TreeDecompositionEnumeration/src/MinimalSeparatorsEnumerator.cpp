@@ -1,4 +1,5 @@
 #include "MinimalSeparatorsEnumerator.h"
+#include <ctime>
 
 namespace tdenum {
 
@@ -65,12 +66,16 @@ MinimalSeparator MinimalSeparatorsEnumerator::next() {
 	return s;
 }
 
-NodeSetSet MinimalSeparatorsEnumerator::getAll() {
-    NodeSetSet ms;
+bool MinimalSeparatorsEnumerator::getAll(NodeSetSet& out, time_t limit) {
+    time_t t = time(NULL);
     while (hasNext()) {
-        ms.insert(next());
+        out.insert(next());
+        if (limit > 0 && difftime(time(NULL),t) > limit) {
+            out = NodeSetSet();
+            return false;
+        }
     }
-    return ms;
+    return true;
 }
 
 } /* namespace tdenum */

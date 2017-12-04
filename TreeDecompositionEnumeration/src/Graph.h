@@ -31,6 +31,7 @@ class Graph {
 	// If the graph is randomized, update these
 	bool isRandomGraph;
 	double p;
+	int instance;
 
 	// If node names were permuted, keep a mapping from new node
 	// names to old ones.
@@ -57,20 +58,25 @@ class Graph {
         bool operator()(Node a, Node b) const;
     };
 
+    // Returns true <==> (u is v's neighbor <==> v is u's neighbor)
+    bool nodeSanity() const;
+
 public:
 	// Constructs an empty graph
 	Graph();
 	// Constructs a graph with nodes and without edges
 	Graph(int numberOfNodes);
 	// Resets the graph (call constructor again)
-	void reset(int numberOfNodes = 0);
+	Graph& reset(int numberOfNodes = 0);
 	// Removes all but the first k nodes from the graph/
-	void removeAllButFirstK(int k);
+	Graph& removeAllButFirstK(int k);
 
 	// Given a graph with n vertices and no edges, creates a random graph
 	// from G(p,n).
 	// Assumes the user has called srand()
-	void randomize(double p);
+	Graph& derandomize();   // Declares the graph non-random
+	Graph& randomize(double pr, int inst = 1);
+	Graph& declareRandom(double pr, int inst = 1); // Indicate the graph was constructed as a random graph manually
 	// Used to rename nodes (sort them) randomly or by degree.
 	// Returns the mapping from old names to new.
 	vector<Node> randomNodeRename();
@@ -85,18 +91,18 @@ public:
 	NodeSetSet getNewNames(const NodeSetSet&) const;
 	// If this is called, the current node names are treated as
 	// the original node names
-	void forgetOriginalNames();
+	Graph& forgetOriginalNames();
 
 	// Connects the given two nodes by a edge
-	void addEdge(Node u, Node v);
+	Graph& addEdge(Node u, Node v);
 	// Adds edges that will make that given node set a clique
-	void addClique(const set<Node>& s);
+	Graph& addClique(const set<Node>& s);
 	// Adds edges that will make that given node set a clique
-	void addClique(const vector<Node>& s);
+	Graph& addClique(const vector<Node>& s);
 	// Adds edges that will make the given node sets cliques
-	void saturateNodeSets(const set< set<Node> >& s);
+	Graph& saturateNodeSets(const set< set<Node> >& s);
 	// Adds edges that will make the given node sets cliques
-	void saturateNodeSets(const set< vector<Node> >& s);
+	Graph& saturateNodeSets(const set< vector<Node> >& s);
 
 	// Returns the nodes of the graph
 	set<Node> getNodes() const;
@@ -106,9 +112,13 @@ public:
 	int getNumberOfEdges() const;
 	// Returns the number of nodes in the graph
 	int getNumberOfNodes() const;
-	// Self explanatory
+	// Returns m/(n choose 2), or 0 if n<=1
+	double getEdgeRatio() const;
+	// Self explanatory.
+	// getP() alerts user if called when isRandom() is false
 	bool isRandom() const;
 	double getP() const;
+	int getInstance() const;
 	// Returns the degree of the node. Returns -1 on invalid node
 	int d(Node i) const;
 	// Returns the neighbors of the given node
@@ -144,6 +154,8 @@ public:
 	string str() const;
 	void print() const;
 	friend ostream& operator<<(ostream&, const Graph&);
+	bool operator==(const Graph&) const;
+	bool operator!=(const Graph&) const;
 };
 
 

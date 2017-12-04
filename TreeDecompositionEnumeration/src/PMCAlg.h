@@ -1,29 +1,113 @@
 #ifndef PMCALG_H_INCLUDED
 #define PMCALG_H_INCLUDED
 
+#include <map>
+#include <set>
 #include <string>
+#include <vector>
+using std::map;
+using std::set;
 using std::string;
-
-#define PMCALG_ALGORITHM_TABLE \
-    X(PMCALG_ALGORITHM_NORMAL, 0) \
-    X(PMCALG_ALGORITHM_REVERSE_MS, (PMCAlg::reverse_ms_mask)) \
-    X(PMCALG_ALGORITHM_ASCENDING, (PMCAlg::ascending_deg_mask)) \
-    X(PMCALG_ALGORITHM_ASCENDING_REVERSE_MS, (PMCAlg::reverse_ms_mask | PMCAlg::ascending_deg_mask)) \
-    X(PMCALG_ALGORITHM_DESCENDING, (PMCAlg::descending_deg_mask)) \
-    X(PMCALG_ALGORITHM_DESCENDING_REVERSE_MS, (PMCAlg::descending_deg_mask | PMCAlg::reverse_ms_mask)) \
-    X(PMCALG_ALGORITHM_RANDOM_RENAME, (PMCAlg::random_rename_mask)) \
-    X(PMCALG_ALGORITHM_RANDOM_RENAME_REVERSE_MS, (PMCAlg::reverse_ms_mask | PMCAlg::random_rename_mask)) \
-    X(PMCALG_ALGORITHM_PARALLEL_OMV, (PMCAlg::parallel_omv_mask)) \
-    X(PMCALG_ALGORITHM_PARALLEL_OMV_REVERSE_MS, (PMCAlg::parallel_omv_mask | PMCAlg::reverse_ms_mask)) \
-    X(PMCALG_ALGORITHM_PARALLEL_OMV_ASCENDING, (PMCAlg::parallel_omv_mask | PMCAlg::ascending_deg_mask)) \
-    X(PMCALG_ALGORITHM_PARALLEL_OMV_ASCENDING_REVERSE_MS, (PMCAlg::parallel_omv_mask | PMCAlg::reverse_ms_mask | PMCAlg::ascending_deg_mask)) \
-    X(PMCALG_ALGORITHM_PARALLEL_OMV_DESCENDING, (PMCAlg::parallel_omv_mask | PMCAlg::descending_deg_mask)) \
-    X(PMCALG_ALGORITHM_PARALLEL_OMV_DESCENDING_REVERSE_MS, (PMCAlg::parallel_omv_mask | PMCAlg::descending_deg_mask | PMCAlg::reverse_ms_mask)) \
-    X(PMCALG_ALGORITHM_PARALLEL_OMV_RANDOM_RENAME, (PMCAlg::parallel_omv_mask | PMCAlg::random_rename_mask)) \
-    X(PMCALG_ALGORITHM_PARALLEL_OMV_RANDOM_RENAME_REVERSE_MS, (PMCAlg::parallel_omv_mask | PMCAlg::reverse_ms_mask | PMCAlg::random_rename_mask))
-
+using std::vector;
 
 namespace tdenum {
+
+// Bitmask values
+#define PMCALG_MASK_ALL (-1)
+#define PMCALG_MASK_REVERSE (1)
+#define PMCALG_MASK_ASCENDING (2)
+#define PMCALG_MASK_DESCENDING (4)
+#define PMCALG_MASK_RANDOM_RENAME (8)
+#define PMCALG_MASK_PARALLEL_OMV (16)
+
+// Define these as Y macros, as they are used in conjunction with
+// X macros in Dataset.h
+#define PMCALG_ALGORITHM_TABLE \
+    Y(NORMAL) \
+    Y(REVERSE_MS/*(PMCALG_MASK_REVERSE)*/) \
+    Y(ASCENDING/*(PMCALG_MASK_ASCENDING)*/) \
+    Y(ASCENDING_REVERSE_MS/*(PMCALG_MASK_REVERSE | PMCALG_MASK_ASCENDING)*/) \
+    Y(DESCENDING/*(PMCALG_MASK_DESCENDING)*/) \
+    Y(DESCENDING_REVERSE_MS/*(PMCALG_MASK_DESCENDING | PMCALG_MASK_REVERSE)*/) \
+    Y(RANDOM_RENAME/*(PMCALG_MASK_RANDOM_RENAME)*/) \
+    Y(RANDOM_RENAME_REVERSE_MS/*(PMCALG_MASK_REVERSE | PMCALG_MASK_RANDOM_RENAME)*/) \
+    Y(PARALLEL_OMV/*(PMCALG_MASK_PARALLEL_OMV)*/) \
+    Y(PARALLEL_OMV_REVERSE_MS/*(PMCALG_MASK_PARALLEL_OMV | PMCALG_MASK_REVERSE)*/) \
+    Y(PARALLEL_OMV_ASCENDING/*(PMCALG_MASK_PARALLEL_OMV | PMCALG_MASK_ASCENDING)*/) \
+    Y(PARALLEL_OMV_ASCENDING_REVERSE_MS/*(PMCALG_MASK_PARALLEL_OMV | PMCALG_MASK_REVERSE | PMCALG_MASK_ASCENDING)*/) \
+    Y(PARALLEL_OMV_DESCENDING/*(PMCALG_MASK_PARALLEL_OMV | PMCALG_MASK_DESCENDING)*/) \
+    Y(PARALLEL_OMV_DESCENDING_REVERSE_MS/*(PMCALG_MASK_PARALLEL_OMV | PMCALG_MASK_DESCENDING | PMCALG_MASK_REVERSE)*/) \
+    Y(PARALLEL_OMV_RANDOM_RENAME/*(PMCALG_MASK_PARALLEL_OMV | PMCALG_MASK_RANDOM_RENAME)*/) \
+    Y(PARALLEL_OMV_RANDOM_RENAME_REVERSE_MS/*(PMCALG_MASK_PARALLEL_OMV | PMCALG_MASK_REVERSE | PMCALG_MASK_RANDOM_RENAME)*/)
+
+// Basic const values
+typedef enum _PMCALG_ENUM {
+    #define Y(ID) PMCALG_ENUM_##ID,
+    PMCALG_ALGORITHM_TABLE
+    #undef Y
+    PMCALG_ENUM_LAST
+} PMCALG_ENUM;
+
+#define Y(ID) {PMCALG_ENUM_##ID, "PMCALG_" #ID},
+const map<PMCALG_ENUM,string> PMCALG_NUM_TO_STR_MAP = { PMCALG_ALGORITHM_TABLE };
+#undef Y
+
+// Bitmask set/clear/test
+#define PMCALG_IS_REVERSE(num) ( \
+    num == PMCALG_ENUM_REVERSE_MS || \
+    num == PMCALG_ENUM_ASCENDING_REVERSE_MS || \
+    num == PMCALG_ENUM_DESCENDING_REVERSE_MS || \
+    num == PMCALG_ENUM_RANDOM_RENAME_REVERSE_MS || \
+    num == PMCALG_ENUM_PARALLEL_OMV_REVERSE_MS || \
+    num == PMCALG_ENUM_PARALLEL_OMV_ASCENDING_REVERSE_MS || \
+    num == PMCALG_ENUM_PARALLEL_OMV_DESCENDING_REVERSE_MS || \
+    num == PMCALG_ENUM_PARALLEL_OMV_RANDOM_RENAME_REVERSE_MS \
+    )
+#define PMCALG_IS_ASCENDING(num) ( \
+    num == PMCALG_ENUM_ASCENDING_REVERSE_MS || \
+    num == PMCALG_ENUM_PARALLEL_OMV_ASCENDING_REVERSE_MS || \
+    num == PMCALG_ENUM_ASCENDING || \
+    num == PMCALG_ENUM_PARALLEL_OMV_ASCENDING \
+    )
+#define PMCALG_IS_DESCENDING(num) ( \
+    num == PMCALG_ENUM_DESCENDING_REVERSE_MS || \
+    num == PMCALG_ENUM_PARALLEL_OMV_DESCENDING_REVERSE_MS || \
+    num == PMCALG_ENUM_DESCENDING || \
+    num == PMCALG_ENUM_PARALLEL_OMV_DESCENDING \
+    )
+#define PMCALG_IS_RANDOM_RENAME(num) ( \
+    num == PMCALG_ENUM_RANDOM_RENAME || \
+    num == PMCALG_ENUM_RANDOM_RENAME_REVERSE_MS || \
+    num == PMCALG_ENUM_PARALLEL_OMV_RANDOM_RENAME || \
+    num == PMCALG_ENUM_PARALLEL_OMV_RANDOM_RENAME_REVERSE_MS \
+    )
+#define PMCALG_IS_PARALLEL_OMV(num) ( \
+    num == PMCALG_ENUM_PARALLEL_OMV || \
+    num == PMCALG_ENUM_PARALLEL_OMV_REVERSE_MS || \
+    num == PMCALG_ENUM_PARALLEL_OMV_ASCENDING || \
+    num == PMCALG_ENUM_PARALLEL_OMV_ASCENDING_REVERSE_MS || \
+    num == PMCALG_ENUM_PARALLEL_OMV_DESCENDING || \
+    num == PMCALG_ENUM_PARALLEL_OMV_DESCENDING_REVERSE_MS || \
+    num == PMCALG_ENUM_PARALLEL_OMV_RANDOM_RENAME || \
+    num == PMCALG_ENUM_PARALLEL_OMV_RANDOM_RENAME_REVERSE_MS \
+    )
+/*
+#define PMCALG_SET_REVERSE(_mask) do { (_mask |= PMCALG_MASK_REVERSE); } while(0)
+#define PMCALG_SET_ASCENDING(_mask) do { (_mask |= PMCALG_MASK_ASCENDING); } while(0)
+#define PMCALG_SET_DESCENDING(_mask) do { (_mask |= PMCALG_MASK_DESCENDING); } while(0)
+#define PMCALG_SET_RANDOM_RENAME(_mask) do { (_mask |= PMCALG_MASK_RANDOM_RENAME); } while(0)
+#define PMCALG_SET_PARALLEL_OMV(_mask) do { (_mask |= PMCALG_MASK_PARALLEL_OMV); } while(0)
+
+#define PMCALG_UNSET_REVERSE(_mask) do { (_mask &= (PMCALG_MASK_ALL ^ PMCALG_MASK_REVERSE)); } while(0)
+#define PMCALG_UNSET_ASCENDING(_mask) do { (_mask &= (PMCALG_MASK_ALL ^ PMCALG_MASK_ASCENDING)); } while(0)
+#define PMCALG_UNSET_DESCENDING(_mask) do { (_mask &= (PMCALG_MASK_ALL ^ PMCALG_MASK_DESCENDING)); } while(0)
+#define PMCALG_UNSET_RANDOM_RENAME(_mask) do { (_mask &= (PMCALG_MASK_ALL ^ PMCALG_MASK_RANDOM_RENAME)); } while(0)
+#define PMCALG_UNSET_PARALLEL_OMV(_mask) do { (_mask &= (PMCALG_MASK_ALL ^ PMCALG_MASK_PARALLEL_OMV)); } while(0)
+*/
+/**
+ * Useful utility (algorithm set:
+ */
+#define PMCALG_CREATE_SET(...) UTILS__CREATE_SET(PMCAlg, __VA_ARGS__ )
 
 /**
  * Algorithms used by the PMC enumerator.
@@ -32,31 +116,24 @@ class PMCAlg {
 private:
 
     // The actual algorithm
-    int alg;
+    PMCALG_ENUM alg;
 
 public:
-
-    // Different algorithm strains are allowed.
-    // The all_mask value doubles as an invalid algorithm value.
-    static const int all_mask = -1;            // (all bits are 1)
-    static const int reverse_ms_mask = 1;      // Noam & Dori's heuristic
-    static const int ascending_deg_mask = 2*reverse_ms_mask;     // These three are
-    static const int descending_deg_mask = 2*ascending_deg_mask; // mutually
-    static const int random_rename_mask = 2*descending_deg_mask; // exclusive
-    static const int parallel_omv_mask = 2*random_rename_mask;   // Async version of one_more_vertex
 
     // If more than one of the node-rename modes is true, prefer descending, then ascending,
     // then random.
     // Print a warning anyway.
     // Also allow construction via the integer returned by operator int() (NOT by bitmask!)
-    PMCAlg(bool reverse_ms = false,
+/*    PMCAlg(bool reverse_ms = false,
            bool parallel = false,
            bool descending = false,
            bool ascending = false,
-           bool random_rename = false);
+           bool random_rename = false);*/
+    PMCAlg(PMCALG_ENUM a = static_cast<PMCALG_ENUM>(0));
     PMCAlg(int int_alg);
+//    static PMCAlg from_bitmask(int mask);
 
-    // Edit the algorithm
+/*    // Edit the algorithm
     void set_reverse();
     void unset_reverse();
     void set_ascending();
@@ -65,7 +142,7 @@ public:
     void unset_node_rename();
     void set_parallel();
     void unset_parallel();
-
+*/
     // Query the algorithms
     bool is_ascending() const;
     bool is_descending() const;
@@ -81,8 +158,16 @@ public:
     // To allow iteration, add static methods indicating first and last values
     // (return 0 and n, respectively).
     operator int() const;
+    PMCAlg& operator++();
+    PMCAlg operator++(int);
     static int first();
     static int last();
+
+    // If csv_format is set to true, the returned vector is the same one as used
+    // by the Dataset class for CSV output.
+    static const vector<PMCAlg> get_all(bool csv_format=false);
+    static const set<PMCAlg> get_all_set(bool csv_format=false);
+    static int total_algs();
 
     // Translate to string (human-readable)
     string str() const;

@@ -1,4 +1,4 @@
-#include "DatasetStatisticsGenerator.h"
+//#include "DatasetStatisticsGenerator.h"
 #include "GraphProducer.h"
 #include "GraphReader.h"
 #include <string>
@@ -6,48 +6,37 @@
 
 namespace tdenum {
 
-string GraphProducer::rand_str(unsigned n, double p, int instance) const {
-    ostringstream oss;
-    oss << "G(" << n << ":" << p << "); instance " << instance;
-    return oss.str();
-}
-string GraphProducer::rand_filename(unsigned n, double p, int instance) const {
-    string filename = GRAPHPRODUCER_RANDFILE_EXPR;
-    filename = utils__replace_substr_with_substr(filename, GRAPHPRODUCER_RANDFILE_TOKEN_N, UTILS__TO_STRING(n));
-    filename = utils__replace_substr_with_substr(filename, GRAPHPRODUCER_RANDFILE_TOKEN_P, UTILS__TO_STRING(p));
-    filename = utils__replace_substr_with_substr(filename, GRAPHPRODUCER_RANDFILE_TOKEN_INST, UTILS__TO_STRING(instance));
-    return filename;
-}
+GraphProducer::GraphProducer(const string& dir, bool v) :
+            verbose(v),
+            output_dir(utils__str_empty(dir) ? string(".") : dir)
+            {}
+GraphProducer& GraphProducer::reset(const string& dir, bool v) { return (*this = GraphProducer(dir,v)); }
+
 
 // Add graphs directly, by filename (default text is the filename),
 // in batch by providing a directory iterator (text will be the filenames),
 // random graphs and batch random graphs (each with text defined by rand_txt()).
-GraphProducer& GraphProducer::add(const Graph& g,
-                                  const string& text,
-                                  bool is_random,
-                                  double p,
-                                  int instance,
-                                  bool from_file) {
-    if (verbose) {
-        cout << "Adding graph '" << text << "'..." << endl;
+GraphProducer& GraphProducer::add(const GraphStats& gs) {
+    graphs.push_back(gs);
+    return *this;
+}
+GraphProducer& GraphProducer::add(const vector<GraphStats>& vgs) {
+    for (auto gs: vgs) {
+        add(gs);
     }
-    graphs.push_back(GraphStats(g,text,is_random,p,instance,from_file));
     return *this;
 }
-GraphProducer& GraphProducer::add(const string& filename, const string& txt) {
-    Graph g = GraphReader::read(filename);
-    add(g,
-        txt == "" ? filename : txt,
-        false,
-        0,
-        1,
-        true);
-    return *this;
-}
-
-GraphProducer& GraphProducer::import(const string& csv_filename) {
-    graphs = DatasetStatisticsGenerator::read_stats(csv_filename);
-    return *this;
+GraphProducer& GraphProducer::add(const string& filepath) {
+    GraphStats gs = GraphStats::read(filepath);
+    if (!gs.integrity()) {
+        TRACE(TRACE_LVL__ERROR, "Error reading '" << filepath << "', no GS object added");
+        if (utils__dir_exists(filepath)) {
+            TRACE(TRACE_LVL__ERROR, "Called add('" << filepath << "'), but the path points to a directory... " <<
+                                    "Did you mean to call add_dir()?");
+        }
+        return *this;
+    }
+    return add(gs);
 }
 
 // Recursive search.
@@ -56,23 +45,14 @@ GraphProducer& GraphProducer::import(const string& csv_filename) {
 // and adds all graphs found. Optionally add filters to the path strings
 // (graphs with at least one filter as a substring of the path won't be
 // added).
-GraphProducer& GraphProducer::add_by_dir(DirectoryIterator di) {
+GraphProducer& GraphProducer::add(DirectoryIterator di) {
     string dataset_filename;
-    while(di.next_file(&dataset_filename)) {
+    while(di.next_file(dataset_filename)) {
         add(dataset_filename);
     }
     return *this;
 }
-GraphProducer& GraphProducer::add_by_dir(const string& dir,
-                               const vector<string>& filters)
-{
-    DirectoryIterator di(dir);
-    for (unsigned i=0; i<filters.size(); ++i) {
-        di.skip(filters[i]);
-    }
-    add_by_dir(di);
-    return *this;
-}
+GraphProducer& GraphProducer::add_dir(const string& dirpath) { return add(DirectoryIterator(dirpath)); }
 
 
 // Adds random graphs. The inputs are:
@@ -85,8 +65,9 @@ GraphProducer& GraphProducer::add_by_dir(const string& dir,
 GraphProducer& GraphProducer::add_random(int n, double p, int instances) {
     for (int i=0; i<instances; ++i) {
         Graph g(n);
-        g.randomize(p);
-        add(g, rand_str(n,p,i+1), true, p, i+1);
+        g.randomize(p, i+1);
+        GraphStats gs(g);
+        add(gs);
     }
     return *this;
 }
@@ -154,36 +135,33 @@ GraphProducer& GraphProducer::add_random_pstep(const vector<int>& n,
     return add_random_pstep_range(n, step, 1, step, instances);
 }
 
-GraphProducer& GraphProducer::hard_graphs(int instances) {
-    // p=0.2~0.4
-    for (int n: utils__vector_range(25,35)) {
-        add_random(n,0.2,instances);
-        add_random(n,0.3,instances);
-        add_random(n,0.4,instances);
+vector<GraphStats> GraphProducer::get() const { return graphs; }
+vector<string> GraphProducer::get_paths() const {
+    vector<string> paths;
+    for (const GraphStats& gs: graphs) {
+        if (gs.text_valid()) {
+            paths.push_back(gs.get_text());
+        }
     }
-    // p=0.1, 0.6~0.9
-    for (int n: utils__vector_range(50,60)) {
-        add_random(n,0.1,instances);
-        add_random(n,0.6,instances);
-        add_random(n,0.7,instances);
-        add_random(n,0.8,instances);
-        add_random(n,0.9,instances);
-    }
-    return *this;
-}
-
-// Returns the vector of graph statistic objects
-vector<GraphStats> GraphProducer::get() const {
-    return graphs;
+    return paths;
 }
 
 GraphProducer& GraphProducer::dump_graphs(bool skip_graphs_from_files) {
-    for (GraphStats gs: graphs) {
-        if (skip_graphs_from_files && gs.is_from_file()) {
+    // Iterate using NON CONST references to make sure the text fields are updated
+    // in the GS objects.
+    // Each call to dump() may update the GS internal data
+    for (GraphStats& gs: graphs) {
+        string out_file = gs.get_dump_filepath(output_dir);
+        if (skip_graphs_from_files && (gs.integrity(out_file) || gs.integrity())) {
+            TRACE(TRACE_LVL__TEST, "File '" << out_file << "' exists and is consistent, skipping...");
             continue;
         }
-        string filename = gs.is_random() ? output_dir + rand_filename(gs.get_n(), gs.get_p(), gs.get_instance()) : gs.get_text();
-        GraphReader::dump(gs.get_graph(), filename);
+        else {
+            TRACE(TRACE_LVL__TEST, "Dumping graph '" << gs << "'");
+            if (!gs.dump(out_file)) {
+                TRACE(TRACE_LVL__ERROR, "Couldn't dump graph to '" << out_file << "'... should be:" << endl << gs);
+            }
+        }
     }
     return *this;
 }

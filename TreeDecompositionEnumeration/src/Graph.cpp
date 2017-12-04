@@ -10,18 +10,14 @@
 
 namespace tdenum {
 
-Graph::Graph() :
-            numberOfNodes(0),
-            numberOfEdges(0),
-            isRandomGraph(false),
-            newToOldNames(0)
-{}
-
+Graph::Graph() : Graph(0) {}
 Graph::Graph(int numNodes) :
             numberOfNodes(numNodes),
             numberOfEdges(0),
             neighborSets(numberOfNodes),
             isRandomGraph(false),
+            p(-1),
+            instance(1),
             newToOldNames(numNodes)
 {
     for (int i=0; i<numNodes; ++i) {
@@ -29,15 +25,32 @@ Graph::Graph(int numNodes) :
     }
 }
 
-void Graph::reset(int n) {
+Graph& Graph::reset(int n) {
     *this = Graph(n);
+    return *this;
 }
 
-void Graph::randomize(double pr) {
+bool Graph::nodeSanity() const {
+    TRACE(TRACE_LVL__WARNING, "Called nodeSanity(), this will take " << numberOfNodes*(numberOfNodes-1)/2 << " steps!");
+    for (Node u=0; u<numberOfNodes; ++u) {
+        for (Node v=0; v<numberOfNodes; ++v) {
+            if (areNeighbors(v,u) != areNeighbors(u,v)) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+#define ASSERT_NODESANE_OR_RET(_ret) do { \
+        if (!nodeSanity()) { \
+            TRACE(TRACE_LVL__ERROR, "The following graph isn't node-sane:" << endl << *this); \
+            return _ret; \
+        } \
+    } while(0)
 
-    // I need to know if I'm a random graph!
-    isRandomGraph = true;
-    p = pr;
+
+Graph& Graph::derandomize() { isRandomGraph = false; return *this; }
+Graph& Graph::randomize(double pr, int inst) {
 
     // Remove all edges
     for (int i=0; i<numberOfNodes; ++i) {
@@ -47,30 +60,39 @@ void Graph::randomize(double pr) {
     NodeSet nodes = getNodesVector();
     double d;
     TRACE(TRACE_LVL__NOISE, "In, p=" << pr);
-    pr *= RAND_MAX;
+    double rand_num = pr * RAND_MAX;
     for (int i=0; i<numberOfNodes; ++i) {
         for (int j=i+1; j<numberOfNodes; ++j) {
             d = rand();
             TRACE(TRACE_LVL__NOISE, "Got d=" << (double)d/RAND_MAX);
-            if (d <= pr) {
+            if (d <= rand_num) {
                 TRACE(TRACE_LVL__NOISE, "Adding edge..");
                 addEdge(nodes[i],nodes[j]);
             }
         }
     }
+
+    // I need to know if I'm a random graph!
+    declareRandom(pr, inst);
+
+    return *this;
 }
-bool Graph::isRandom() const {
-    return isRandomGraph;
+Graph& Graph::declareRandom(double pr, int inst) {
+    isRandomGraph = true;
+    p = pr;
+    instance = inst;
+    return *this;
 }
+bool Graph::isRandom() const { return isRandomGraph; }
 double Graph::getP() const {
     if (!isRandom()) {
-        TRACE(TRACE_LVL__ERROR, "Called getP() on non-random graph!");
-        return -1;
+        TRACE(TRACE_LVL__WARNING, "Called getP() on non-random graph!");
     }
     return p;
 }
+int Graph::getInstance() const { return instance; }
 
-void Graph::removeAllButFirstK(int k) {
+Graph& Graph::removeAllButFirstK(int k) {
     // Remove respective edges from neighbor sets.
     // While doing so, recalculate the number of edges using the formula:
     // sum_v(d(v))=2E
@@ -87,6 +109,7 @@ void Graph::removeAllButFirstK(int k) {
     }
     numberOfNodes = k;
     numberOfEdges = E/2;
+    return *this;
 }
 
 void Graph::composeNewToOld(vector<Node> oldToNew) {
@@ -175,13 +198,14 @@ vector<Node> Graph::getNewNames(const vector<Node>& nodes) const {
 NodeSetSet Graph::getNewNames(const NodeSetSet& nss) const {
     return getNamesAux(nss, true);
 }
-void Graph::forgetOriginalNames() {
+Graph& Graph::forgetOriginalNames() {
     for(unsigned i=0; i<newToOldNames.size(); ++i) {
         newToOldNames[i] = i;
     }
+    return *this;
 }
 
-void Graph::addClique(const set<Node>& newClique) {
+Graph& Graph::addClique(const set<Node>& newClique) {
 	for (set<Node>::iterator i = newClique.begin(); i != newClique.end(); ++i) {
 		Node v = *i;
 		for (set<Node>::iterator j = newClique.begin(); j != newClique.end(); ++j) {
@@ -191,9 +215,10 @@ void Graph::addClique(const set<Node>& newClique) {
 			}
 		}
 	}
+    return *this;
 }
 
-void Graph::addClique(const vector<Node>& newClique) {
+Graph& Graph::addClique(const vector<Node>& newClique) {
 	for (vector<Node>::const_iterator i = newClique.begin(); i != newClique.end(); ++i) {
 		Node v = *i;
 		for (vector<Node>::const_iterator j = newClique.begin(); j != newClique.end(); ++j) {
@@ -203,33 +228,37 @@ void Graph::addClique(const vector<Node>& newClique) {
 			}
 		}
 	}
+    return *this;
 }
 
-void Graph::addEdge(Node u, Node v) {
+Graph& Graph::addEdge(Node u, Node v) {
 	if (!isValidNode(u) || !isValidNode(v) || neighborSets[u].count(v)>0) {
-		return;
+		return *this;
 	}
 	neighborSets[u].insert(v);
 	neighborSets[v].insert(u);
 	numberOfEdges++;
+    return *this;
 }
 
-void Graph::saturateNodeSets(const set< set<Node> >& s) {
+Graph& Graph::saturateNodeSets(const set< set<Node> >& s) {
 	for (set< set<Node> >::iterator i = s.begin(); i != s.end(); ++i) {
 		addClique(*i);
 	}
+    return *this;
 }
 
 // Adds edges that will make the given node sets cliques
-void Graph::saturateNodeSets(const set< vector<Node> >& s) {
+Graph& Graph::saturateNodeSets(const set< vector<Node> >& s) {
 	for (set< vector<Node> >::iterator i = s.begin(); i != s.end(); ++i) {
 		addClique(*i);
 	}
+    return *this;
 }
 
 bool Graph::isValidNode(Node v) const {
 	if (v<0 || v>=numberOfNodes) {
-		cout << "Invalid input" << endl;
+		TRACE(TRACE_LVL__ERROR, "Invalid node '" << v << "'");
 		return false;
 	}
 	return true;
@@ -270,6 +299,15 @@ int Graph::getNumberOfEdges() const {
  */
 int Graph::getNumberOfNodes() const {
 	return numberOfNodes;
+}
+
+double Graph::getEdgeRatio() const {
+    if (getNumberOfNodes() <= 1) {
+        return 0;
+    }
+    double N = (double)getNumberOfNodes();
+    double M = (double)getNumberOfEdges();
+    return 2*M / (N*(N-1));
 }
 
 int Graph::d(Node v) const {
@@ -581,14 +619,8 @@ string Graph::str() const {
 	}
 	return oss.str();
 }
-void Graph::print() const {
-    cout << str();
-}
-
-ostream& operator<<(ostream& os, const Graph& g) {
-    os << g.str();
-    return os;
-}
+void Graph::print() const { cout << *this; }
+ostream& operator<<(ostream& os, const Graph& g) { return (os << g.str()); }
 
 const NodeSet Block::getNodeSetUnion(const NodeSet& sep, const NodeSet& comp) {
 	NodeSet result(sep.size() + comp.size());
@@ -622,7 +654,12 @@ bool Graph::NodeCompare::operator()(Node a, Node b) const {
         ns[a].size() < ns[b].size() :
         ns[a].size() > ns[b].size();
 }
-
+bool Graph::operator==(const Graph& g) const {
+    return neighborSets == g.neighborSets; // Good enough
+}
+bool Graph::operator!=(const Graph& g) const {
+    return !(*this == g);
+}
 
 } /* namespace tdenum */
 

@@ -46,7 +46,7 @@ typedef vector<BlockPtr> BlockVec;
 /**
  * Utility functions
  */
-string str(const NodeSet&);
+string str_nodeset(const NodeSet&);
 void print(const NodeSet&);
 
 /*
@@ -88,6 +88,7 @@ public:
 class NodeSetSet {
 	set< NodeSet > sets;
 public:
+    NodeSetSet(const set<NodeSet>& = set<NodeSet>());
     // True if the structure contains the given node set.
 	bool isMember(const NodeSet& nodeSet) const;
 	bool operator==(const NodeSetSet& nss) const;
@@ -105,6 +106,7 @@ public:
 	set<NodeSet>::iterator begin() const;
 	set<NodeSet>::iterator end() const;
 	set<NodeSet>::iterator find(const NodeSet& nodeSet) const;
+	operator set<NodeSet>() const { return sets; }
 	friend ostream& operator<<(ostream& os, const NodeSetSet&);
 };
 

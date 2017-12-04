@@ -6,7 +6,17 @@
 namespace tdenum {
 
 class GraphReader {
+private:
+    static bool fail_flag;
+    static void set_fail_flag();
+    static void unset_fail_flag();
 public:
+
+    /**
+     * Use this to test whether or not the last read was successful
+     */
+    static bool last_read_failed();
+
 	/**
 	 * Reads a graph from the specified file. Supported options:
 	 * 1. DIMACS format

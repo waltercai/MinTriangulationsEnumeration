@@ -36,5 +36,13 @@ int MinimalTriangulationsEnumerator::getNumberOfMinimalSeperatorsGenerated() {
 	return separatorGraph.getNumberOfNodesGenerated();
 }
 
+vector<ChordalGraph> MinimalTriangulationsEnumerator::getAll() {
+    vector<ChordalGraph> vcg;
+    while(hasNext()) {
+        vcg.push_back(next());
+    }
+    return vcg;
+}
+
 } /* namespace tdenum */
 

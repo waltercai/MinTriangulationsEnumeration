@@ -1,18 +1,18 @@
-#include "DatasetStatisticsGenerator.h"
+//#include "DatasetStatisticsGenerator.h"
+#include "ChordalGraph.h"
 #include "DataStructures.h"
+#include "DirectoryIterator.h"
 #include "Graph.h"
 #include "GraphProducer.h"
-#include "DirectoryIterator.h"
-#include "Utils.h"
-#include "TestUtils.h"
-#include "PMCEnumeratorTester.h"
-#include "GraphTester.h"
 #include "GraphReader.h"
-#include "ChordalGraph.h"
+#include "GraphTester.h"
 #include "MinimalTriangulationsEnumerator.h"
 #include "MinTriangulationsEnumeration.h"
-#include "ResultsHandler.h"
+#include "PMCEnumeratorTester.h"
 #include "PMCRacer.h"
+#include "ResultsHandler.h"
+#include "TestInterface.h"
+#include "Utils.h"
 #include <iostream>
 #include <fstream>
 #include <iomanip>
@@ -199,9 +199,9 @@ private:
         // Allow 20 minutes per graph
         PMCRacer pmcr(RESULT_DIR_BASE+"PMCRace.csv", 20*60);
         pmcr.add(GraphProducer().add_random_pstep(utils__vector_range(26,37),0.1,1).get());
-        pmcr.add(GraphProducer().add_by_dir(DATASET_DIR_BASE+DATASET_DIR_DEADEASY).get());
-        pmcr.add(GraphProducer().add_by_dir(DATASET_DIR_BASE+DATASET_DIR_EASY).get());
-        pmcr.add(GraphProducer().add_by_dir(DATASET_DIR_BASE+DATASET_DIR_DIFFICULT_BN, {"Grid"}).get());
+        pmcr.add(GraphProducer().add(DATASET_DIR_BASE+DATASET_DIR_DEADEASY).get());
+        pmcr.add(GraphProducer().add(DATASET_DIR_BASE+DATASET_DIR_EASY).get());
+        pmcr.add(GraphProducer().add(DATASET_DIR_BASE+DATASET_DIR_DIFFICULT_BN, {"Grid"}).get());
         pmcr.go(true, true);
         return 0;
     }

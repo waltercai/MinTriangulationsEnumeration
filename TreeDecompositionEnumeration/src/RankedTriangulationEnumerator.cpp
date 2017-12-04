@@ -33,7 +33,7 @@ namespace tdenum {
 			TriangulationEvaluator* newEval = next.eval->extendEvaluator(newInclusions, newExclusions);
 
 			// Push result of the new constraint set into queue if it is legal
-			TriangulationResult& newResult = triangulator.triangulate(newEval);
+			TriangulationResult newResult = triangulator.triangulate(newEval);
 			if (newResult.cost != CONSTRAINT_VIOLATION) {
 				resultQueue.push_back(newResult);
 				//cout << "Pushed cost is " << resultQueue.back().cost << endl;

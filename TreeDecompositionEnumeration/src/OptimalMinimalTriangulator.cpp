@@ -1,6 +1,7 @@
 
 #include "OptimalMinimalTriangulator.h"
 #include "PMCEnumerator.h"
+#include "StatisticRequest.h"
 #include <queue>
 
 namespace tdenum {
@@ -10,7 +11,12 @@ namespace tdenum {
 
 		// Calculate PMCs
 		PMCEnumerator pmcEnum(g);
-		pmcs = pmcEnum.get();
+		pmcEnum.set_algorithm(PMCALG_ENUM_DESCENDING_REVERSE_MS);
+		/*StatisticRequest sr;
+		sr.set_single_pmc_alg(PMCALG_ENUM_DESCENDING_REVERSE_MS)
+		  .set_pmc()
+		  .set_ms();*/
+		pmcs = pmcEnum.get(/*sr*/);
 		minSeps = pmcEnum.get_ms();
 		calculateBlockInfos();
 	}

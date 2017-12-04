@@ -2,13 +2,14 @@
 #define GRAPHTESTER_H_INCLUDED
 
 #include "Graph.h"
-#include "TestUtils.h"
+#include "TestInterface.h"
 
 namespace tdenum {
 
 #define GRAPH_TEST_TABLE \
     X(sort_nodes_by_deg) \
-    X(map_back_to_original)
+    X(map_back_to_original) \
+    X(creating_random)
 
 #define X(func) GRAPH_TEST_NAME__##func,
 typedef enum {
@@ -17,7 +18,11 @@ typedef enum {
 } GraphTesterFunctions;
 #undef X
 
-class GraphTester {
+class GraphTester : public TestInterface {
+private:
+    // Calls all tests with flag_ values set to true.
+    GraphTester& go();
+
 public:
 
     // Declare all functions and their on/off flags.
@@ -28,14 +33,11 @@ public:
     #undef X
 
     // Calls all test functions, unless start=false.
-    GraphTester(bool start);
-
-    // Calls all tests with flag_ values set to true.
-    void go() const;
+    GraphTester();
 
     // Sets / clears all flags
-    void setAll();
-    void clearAll();
+    GraphTester& set_all();
+    GraphTester& clear_all();
 
 };
 

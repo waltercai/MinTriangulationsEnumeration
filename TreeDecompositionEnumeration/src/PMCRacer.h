@@ -1,9 +1,14 @@
 #ifndef PMCRACER_H_INCLUDED
 #define PMCRACER_H_INCLUDED
 
-#include "DatasetStatisticsGenerator.h"
+//#include "DatasetStatisticsGenerator.h"
 #include "GraphStats.h"
 #include "PMCEnumerator.h"
+#include "StatisticRequest.h"
+#include <map>
+#include <set>
+using std::map;
+using std::set;
 
 namespace tdenum {
 
@@ -24,22 +29,19 @@ namespace tdenum {
 class PMCRacer {
 private:
 
+    friend class PMCRacerTester;
+
     // The output file name
     string outfilename;
     bool dump_to_file_when_done;
 
-    // Time limit for calculation
-    bool has_time_limit;
-    time_t time_limit;
+    // Flag for debugging (inner crosscheck functionality)
+    bool debug;
 
-    // The graph statistics for each algorithm.
-    // alg_gs[alg][i] the GraphStats object of graph i, after calculation
-    // using alg.
-    vector<vector<GraphStats> > alg_gs;
+    // The algorithms to use
+//    vector<PMCAlg> algs;
 
     // Input graph statistics objects.
-    // May have redundant data, but nothing too bad... we need graphs
-    // and graph text.
     vector<GraphStats> gs;
 
     // Helper functions
@@ -50,24 +52,35 @@ public:
 
     // Construct the PMCR with an output filename and an optional time limit
     // per graph.
-    PMCRacer(const string& out, time_t limit = 0);
+    PMCRacer(const string& out, bool dump = true);
 
     // Adds graphs to race, given the graph statistics object.
-    void add(const Graph&, const string&);
+    void add(const GraphStats&);
     void add(const vector<GraphStats>&);
 
-    // If calculating PMCs takes too long, stop and move on.
-    void set_time_limit(time_t);
-    void remove_time_limit();
-
-    // Prevent dumping to file
-    void suppress_dump();
-    void allow_dump();
+/*    // Add / remove algorithms
+    void add_alg(const PMCAlg&);
+    void add_algs(const vector<PMCAlg>&);
+    void add_algs(const set<PMCAlg>&);
+    void remove_alg(const PMCAlg&);
+    void remove_algs(const vector<PMCAlg>&);
+    void remove_algs(const set<PMCAlg>&);
+    void clear_algs();
+    void add_all_algs();
+*/
+    // Set / unset debug mode
+    void set_debug();
+    void unset_debug();
 
     // Race! Optionally, print stuff to console.
     // If append_results is set to true, results will be appended
     // as new rows in the CSV file.
-    void go(bool verbose = false, bool append_results = false);
+    // The StatisticRequest object will contain the required algorithms.
+    // Returns true on success
+    bool go(const StatisticRequest& sr, bool verbose = false/*, bool append_results = false*/);
+
+    // Return the vector of GraphStats
+    vector<GraphStats> get_stats() const;
 
 };
 
