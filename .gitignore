@@ -1,0 +1,10 @@
+*.grp
+*.bak
+*.csv
+*.swp
+*.o
+main
+dori_main
+tester
+log.txt
+NewDatasets/
