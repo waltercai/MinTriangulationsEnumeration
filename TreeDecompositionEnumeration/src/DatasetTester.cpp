@@ -130,6 +130,7 @@ DatasetTester& DatasetTester::go() {
 
 #define INIT_DATASET() \
     INIT(); \
+    ASSERT(!utils__file_exists(dataset_filename));/*Previous test terminated in error, keep the file!*/ \
     ASSERT(Dataset::dump_barren_stat_file(dataset_filename, gp.get())); \
     Dataset ds = Dataset(dataset_filename); \
     ASSERT_EQ(ds.get_vector_gs().size(), total_graphs)
