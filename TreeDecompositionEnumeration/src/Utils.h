@@ -384,7 +384,7 @@ extern TRACE_LVL__CODES _prev_trace_lvl;
 
 #define UTILS__PRINT_IF(_bool, _stream) do { \
         if (_bool) { \
-            cout << UTILS__ASSERT_PRINT_STREAM(_stream) << endl; \
+            cout << UTILS__ASSERT_PRINT_STREAM(_stream); \
         } \
     } while(0)
 

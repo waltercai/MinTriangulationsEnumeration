@@ -1064,7 +1064,7 @@ out_of_req_loop:*/
                 }
             }
         }
-        TRACE(TRACE_LVL__OFF, "Done with graph #" << (i+1) << ", "
+        UTILS__PRINT_IF(verbose, "Done with graph #" << (i+1) << ", "
                     << endl << "cnt_ms=" << (sr.test_count_ms() ? "true" : "false") << ", "
                     << endl << "cnt_trng=" << (sr.test_count_trng() ? "true" : "false") << ", "
                     << endl << "time_limit_ms=" << (sr.test_count_limit_ms() ? "true" : "false") << ", "

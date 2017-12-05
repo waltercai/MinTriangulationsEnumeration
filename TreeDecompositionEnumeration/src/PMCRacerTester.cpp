@@ -50,11 +50,11 @@ bool crosscheck_aux(vector<GraphStats>& vgs) {
 
     // Calculate PMCs with the enumerator
     for (unsigned i=0; i<vgs.size(); ++i) {
-        TRACE(TRACE_LVL__OFF, "Precalculating graph #" << (i+1) << "...");
+        UTILS__PRINT_IF(verbose, "Precalculating graph #" << (i+1) << "...");
         PMCEnumerator pmce(vgs[i].get_graph());
         pmce.set_algorithm(PMCALG_ENUM_DESCENDING_REVERSE_MS);
         vgs[i].set_pmc(pmce.get(/*sr*/));
-        TRACE(TRACE_LVL__OFF, "Got " << vgs[i].get_pmc() << endl);
+        UTILS__PRINT_IF(verbose, "Got " << vgs[i].get_pmc() << endl);
     }
 
 
@@ -80,10 +80,10 @@ bool PMCRacerTester::crosscheck_sanity() const {
         vgs.push_back(GraphStats(Graph(10).randomize(0.3)));
     }
 
+    unset_verbose();
     return crosscheck_aux(vgs);
 }
 bool PMCRacerTester::crosscheck_insanity() const {
-
     vector<string> paths({
             DATASET_DIR_BASE+DATASET_DIR_DIFFICULT_RANDOM_70+"30.csv",
             DATASET_DIR_BASE+DATASET_DIR_DIFFICULT_RANDOM_70+"40.csv",
@@ -98,9 +98,11 @@ bool PMCRacerTester::crosscheck_insanity() const {
         vgs.push_back(GraphStats::read(paths[i]));
     }
 
+    set_verbose(); // This should take a while, we should see output
     return crosscheck_aux(vgs);
 }
 bool PMCRacerTester::validate_accurate_times_basic() const {
+    unset_verbose();
     GraphStats gs = GraphStats::read(DATASET_DIR_BASE+DATASET_DIR_DIFFICULT_RANDOM_70+"40.csv");
     StatisticRequest sr = StatisticRequest().set_single_pmc_alg(PMCALG_ENUM_NORMAL).set_pmc().set_count_pmc();
     PMCEnumerator pmce(gs.get_graph());
@@ -108,12 +110,12 @@ bool PMCRacerTester::validate_accurate_times_basic() const {
     time_t start_time = time(NULL);
     NodeSetSet pmcs = pmce.get(/*sr*/);
     time_t expected_pmc_time = difftime(time(NULL), start_time);
-    TRACE(TRACE_LVL__ALWAYS, "PMCEnumerator time: " << utils__timestamp_to_hhmmss(expected_pmc_time));
+    UTILS__PRINT_IF(verbose, "PMCEnumerator time: " << utils__timestamp_to_hhmmss(expected_pmc_time));
     PMCRacer pmcr("",false);
     pmcr.add(gs);
-    pmcr.go(sr);
+    pmcr.go(sr, verbose);
     time_t racer_time = pmcr.get_stats()[0].get_pmc_calc_time(PMCALG_ENUM_NORMAL);
-    TRACE(TRACE_LVL__ALWAYS, "PMCRacer time: " << utils__timestamp_to_hhmmss(racer_time));
+    UTILS__PRINT_IF(verbose, "PMCRacer time: " << utils__timestamp_to_hhmmss(racer_time));
 
     ASSERT_GEQ(1.2*expected_pmc_time, racer_time);
     ASSERT_LEQ(0.8*expected_pmc_time, racer_time);
@@ -121,6 +123,7 @@ bool PMCRacerTester::validate_accurate_times_basic() const {
     return true;
 }
 bool PMCRacerTester::validate_accurate_times_basic_twoalgs() const {
+    set_verbose();
     GraphStats gs = GraphStats::read(DATASET_DIR_BASE+DATASET_DIR_DIFFICULT_RANDOM_70+"40.csv");
     StatisticRequest sr = StatisticRequest().set_single_pmc_alg(PMCALG_ENUM_NORMAL)
                                             .add_alg_to_pmc_race(PMCALG_ENUM_REVERSE_MS)
@@ -134,7 +137,7 @@ bool PMCRacerTester::validate_accurate_times_basic_twoalgs() const {
         time_t start_time = time(NULL);
         NodeSetSet pmcs = pmce.get(/*sr*/);
         pmce_times[alg] = difftime(time(NULL), start_time);
-        TRACE(TRACE_LVL__ALWAYS, "PMCEnumerator time: " << utils__timestamp_to_hhmmss(pmce_times.at(alg)) << " for alg " << alg.str());
+        UTILS__PRINT_IF(verbose, "PMCEnumerator time: " << utils__timestamp_to_hhmmss(pmce_times.at(alg)) << " for alg " << alg.str());
     }
     PMCRacer pmcr("",false);
     pmcr.add(gs);
@@ -143,7 +146,7 @@ bool PMCRacerTester::validate_accurate_times_basic_twoalgs() const {
     map<PMCAlg, time_t> racer_times;
     for (PMCAlg alg: sr.get_active_pmc_algs_vector()) {
         racer_times[alg] = out.get_pmc_calc_time(alg);
-        TRACE(TRACE_LVL__ALWAYS, "PMCRacer time: " << utils__timestamp_to_hhmmss(racer_times[alg]) << " for alg " << alg.str());
+        UTILS__PRINT_IF(verbose, "PMCRacer time: " << utils__timestamp_to_hhmmss(racer_times[alg]) << " for alg " << alg.str());
     }
 
 
@@ -163,6 +166,7 @@ bool PMCRacerTester::validate_accurate_times() const {
      * Make sure the resulting times (as long as they are more than the threshold)
      * deviate by no more then allowed_deviation.
      */
+    set_verbose();
     cout << "(this could take ~13 hours! verbose by default) ";
 
     const int threshold = 20;
@@ -184,9 +188,9 @@ bool PMCRacerTester::validate_accurate_times() const {
     // Calculate PMCs with the enumerator
     map<pair<unsigned,PMCAlg>, time_t> calc_times;
     for (unsigned i=0; i<vgs.size(); ++i) {
-        TRACE(TRACE_LVL__ALWAYS, "Precalculating graph #" << (i+1) << "...");
+        UTILS__PRINT_IF(verbose, "Precalculating graph #" << (i+1) << "...");
         for (PMCAlg alg: PMCAlg::get_all()) {
-            TRACE(TRACE_LVL__OFF, "Algorithm: " << alg.str());
+            UTILS__PRINT_IF(verbose, "Algorithm: " << alg.str());
             /*StatisticRequest sr = StatisticRequest()
                 .set_single_pmc_alg(alg)
                 .set_pmc()
@@ -197,14 +201,14 @@ bool PMCRacerTester::validate_accurate_times() const {
             pmce.get(/*sr*/);
             time_t calc_time = difftime(time(NULL), start_time);
             calc_times[pair<unsigned,PMCAlg>(i,alg)] = calc_time;
-            TRACE(TRACE_LVL__ALWAYS, "Got a time of "
+            UTILS__PRINT_IF(verbose, "Got a time of "
                 << utils__timestamp_to_hhmmss(calc_time)
                 << " with algorithm " << alg.str());
         }
         // Filter out those graphs that have quick times..
         bool cont = false;
         for (PMCAlg alg: PMCAlg::get_all()) {
-            TRACE(TRACE_LVL__ALWAYS, "Checking skip level for algorithm " << alg.str());
+            UTILS__PRINT_IF(verbose, "Checking skip level for algorithm " << alg.str());
             pair<unsigned,PMCAlg> k(i,alg);
             if (calc_times.at(k) < threshold) {
                 TRACE(TRACE_LVL__WARNING, "Graph #" << (i+1) << " is too easy "
@@ -218,7 +222,7 @@ bool PMCRacerTester::validate_accurate_times() const {
             continue;
         }
         // Crosscheck with all algorithms
-        TRACE(TRACE_LVL__ALWAYS, "Starting cross-check with the PMCR, should be done at ~"
+        UTILS__PRINT_IF(verbose, "Starting cross-check with the PMCR, should be done at ~"
               << utils__timestamp_to_fulldate(time(NULL)+difftime(time(NULL),test_start_time))
               << "...");
         StatisticRequest sr = StatisticRequest()
@@ -231,14 +235,14 @@ bool PMCRacerTester::validate_accurate_times() const {
         ASSERT(pmcr.go(sr));
         ASSERT_EQ(pmcr.get_stats().size(), 1);
         GraphStats out = pmcr.get_stats()[0];
-        TRACE(TRACE_LVL__ALWAYS, "Done. got the following times:");
+        UTILS__PRINT_IF(verbose, "Done. got the following times:");
         for (PMCAlg alg: PMCAlg::get_all()) {
-            TRACE(TRACE_LVL__ALWAYS, utils__timestamp_to_hhmmss(out.get_pmc_calc_time(alg)) << " for algorithm " << alg.str());
+            UTILS__PRINT_IF(verbose, utils__timestamp_to_hhmmss(out.get_pmc_calc_time(alg)) << " for algorithm " << alg.str());
         }
         ASSERT_EQ(vgs[i].get_graph(), out.get_graph());
         for (PMCAlg alg: PMCAlg::get_all()) {
             time_t pmce_time = calc_times.at(pair<unsigned,PMCAlg>(i,alg));
-            TRACE(TRACE_LVL__ALWAYS, "Do " << utils__timestamp_to_hhmmss(pmce_time)
+            UTILS__PRINT_IF(verbose, "Do " << utils__timestamp_to_hhmmss(pmce_time)
                   << " and " << utils__timestamp_to_hhmmss(out.get_pmc_calc_time(alg))
                   << " deviate at most " << (int)(allowed_deviation*100) << "\%?");
             ASSERT_LEQ((double(1)-allowed_deviation)*calc_times.at(pair<unsigned,PMCAlg>(i,alg)), out.get_pmc_calc_time(alg));
@@ -249,6 +253,7 @@ bool PMCRacerTester::validate_accurate_times() const {
     return true;
 }
 bool PMCRacerTester::validate_accurate_times_batch_mode() const {
+    set_verbose();
     cout << "(this could take ~13 hours! verbose by default) ";
 
     const int threshold = 60;
@@ -269,9 +274,9 @@ bool PMCRacerTester::validate_accurate_times_batch_mode() const {
     // Calculate PMCs with the enumerator
     map<pair<unsigned,PMCAlg>, time_t> calc_times;
     for (unsigned i=0; i<vgs.size(); ++i) {
-        TRACE(TRACE_LVL__ALWAYS, "Precalculating graph #" << (i+1) << "...");
+        UTILS__PRINT_IF(verbose, "Precalculating graph #" << (i+1) << "...");
         for (PMCAlg alg: PMCAlg::get_all()) {
-            TRACE(TRACE_LVL__OFF, "Algorithm: " << alg.str());
+            UTILS__PRINT_IF(verbose, "Algorithm: " << alg.str());
             /*StatisticRequest sr = StatisticRequest()
                 .set_single_pmc_alg(alg)
                 .set_pmc()
@@ -282,7 +287,7 @@ bool PMCRacerTester::validate_accurate_times_batch_mode() const {
             pmce.get(/*sr*/);
             time_t calc_time = difftime(time(NULL), start_time);
             calc_times[pair<unsigned,PMCAlg>(i,alg)] = calc_time;
-            TRACE(TRACE_LVL__ALWAYS, "Got a time of "
+            UTILS__PRINT_IF(verbose, "Got a time of "
                 << utils__timestamp_to_hhmmss(calc_time)
                 << " with algorithm " << alg.str());
         }
@@ -291,9 +296,9 @@ bool PMCRacerTester::validate_accurate_times_batch_mode() const {
     // Filter out those graphs that have quick times..
     vector<unsigned> skip_list;
     for (unsigned i=0; i<vgs.size(); ++i) {
-        TRACE(TRACE_LVL__ALWAYS, "Checking skip level for graph #" << (i+1));
+        UTILS__PRINT_IF(verbose, "Checking skip level for graph #" << (i+1));
         for (PMCAlg alg: PMCAlg::get_all()) {
-            TRACE(TRACE_LVL__ALWAYS, "Checking skip level for algorithm " << alg.str());
+            UTILS__PRINT_IF(verbose, "Checking skip level for algorithm " << alg.str());
             pair<unsigned,PMCAlg> k(i,alg);
             if (calc_times.at(k) < threshold) {
                 skip_list.push_back(i);
@@ -310,7 +315,8 @@ bool PMCRacerTester::validate_accurate_times_batch_mode() const {
     PMCRacer pmcr("", false);
     pmcr.set_debug();
     pmcr.add(vgs);
-    ASSERT(pmcr.go(sr));
+    UTILS__PRINT_IF(verbose, "Starting PMC race (should require the amount of time needed to precalculate the " << vgs.size() << " graphs)");
+    ASSERT(pmcr.go(sr, verbose));
     vector<GraphStats> out = pmcr.get_stats();
     ASSERT_EQ(out.size(), vgs.size());
     for (unsigned i=0; i<vgs.size(); ++i) {

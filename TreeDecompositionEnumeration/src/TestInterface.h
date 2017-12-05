@@ -202,6 +202,9 @@ protected:
     // testing directory
     static bool cleanup;
 
+    // Tests may implement more verbose output
+    bool verbose;
+
     // Test pass counter
     int total_passed;
     int total_tests;
@@ -226,6 +229,9 @@ public:
     TestInterface& start();
     bool test_failed() const;
     bool test_passed() const;
+
+    TestInterface& set_verbose();
+    TestInterface& unset_verbose();
 
     // May be useful in macros
     operator bool();

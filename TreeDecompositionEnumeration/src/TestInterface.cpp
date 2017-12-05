@@ -20,6 +20,7 @@ TestInterface::TestInterface(const string& t_name) :
               tmp_dir_name(string(".tmp_") + utils__replace_substr_with_substr(t_name, " ", "_")),
               failed(false),
               done(false),
+              verbose(false),
               total_passed(0),
               total_tests(0)
 {
@@ -45,6 +46,9 @@ TestInterface& TestInterface::start() {
 }
 bool TestInterface::test_failed() const { return failed; }
 bool TestInterface::test_passed() const { return !test_failed(); }
+TestInterface& TestInterface::set_verbose() { verbose = true; return *this; }
+TestInterface& TestInterface::unset_verbose() { verbose = false; return *this; }
+
 
 // May be useful in macros (see DO_TEST)
 TestInterface::operator bool() { return (done ? test_passed() : start().test_passed()); }
