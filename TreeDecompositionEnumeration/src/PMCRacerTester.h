@@ -21,6 +21,8 @@ private:
     static const int total_tests_defined;
     PMCRacerTester& set_range(int first, int last);
 
+    bool crosscheck_aux(vector<GraphStats>&);
+
     #define X(test) bool flag_##test;
     PMCRACERTESTER_TEST_TABLE
     #undef X
@@ -31,7 +33,7 @@ public:
     PMCRacerTester& set_##test(); \
     PMCRacerTester& unset_##test(); \
     PMCRacerTester& set_only_##test(); \
-    bool test() const;
+    bool test();
     PMCRACERTESTER_TEST_TABLE
     #undef X
     PMCRacerTester& set_all();

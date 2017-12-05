@@ -41,7 +41,7 @@ PMCRacerTester& PMCRacerTester::clear_all() {
     return *this;
 }
 
-bool crosscheck_aux(vector<GraphStats>& vgs) {
+bool PMCRacerTester::crosscheck_aux(vector<GraphStats>& vgs) {
 
     StatisticRequest sr = StatisticRequest()
         .set_all_algs_to_pmc_race()
@@ -72,7 +72,7 @@ bool crosscheck_aux(vector<GraphStats>& vgs) {
 
     return true;
 }
-bool PMCRacerTester::crosscheck_sanity() const {
+bool PMCRacerTester::crosscheck_sanity() {
 
     vector<GraphStats> vgs;
     for (unsigned i=0; i<10; ++i) {
@@ -83,7 +83,7 @@ bool PMCRacerTester::crosscheck_sanity() const {
     unset_verbose();
     return crosscheck_aux(vgs);
 }
-bool PMCRacerTester::crosscheck_insanity() const {
+bool PMCRacerTester::crosscheck_insanity() {
     vector<string> paths({
             DATASET_DIR_BASE+DATASET_DIR_DIFFICULT_RANDOM_70+"30.csv",
             DATASET_DIR_BASE+DATASET_DIR_DIFFICULT_RANDOM_70+"40.csv",
@@ -101,7 +101,7 @@ bool PMCRacerTester::crosscheck_insanity() const {
     set_verbose(); // This should take a while, we should see output
     return crosscheck_aux(vgs);
 }
-bool PMCRacerTester::validate_accurate_times_basic() const {
+bool PMCRacerTester::validate_accurate_times_basic() {
     unset_verbose();
     GraphStats gs = GraphStats::read(DATASET_DIR_BASE+DATASET_DIR_DIFFICULT_RANDOM_70+"40.csv");
     StatisticRequest sr = StatisticRequest().set_single_pmc_alg(PMCALG_ENUM_NORMAL).set_pmc().set_count_pmc();
@@ -122,7 +122,7 @@ bool PMCRacerTester::validate_accurate_times_basic() const {
 
     return true;
 }
-bool PMCRacerTester::validate_accurate_times_basic_twoalgs() const {
+bool PMCRacerTester::validate_accurate_times_basic_twoalgs() {
     set_verbose();
     GraphStats gs = GraphStats::read(DATASET_DIR_BASE+DATASET_DIR_DIFFICULT_RANDOM_70+"40.csv");
     StatisticRequest sr = StatisticRequest().set_single_pmc_alg(PMCALG_ENUM_NORMAL)
@@ -157,7 +157,7 @@ bool PMCRacerTester::validate_accurate_times_basic_twoalgs() const {
 
     return true;
 }
-bool PMCRacerTester::validate_accurate_times() const {
+bool PMCRacerTester::validate_accurate_times() {
 
     /**
      * Take hard graphs, run with specific algorithms using the PMCEnumerator
@@ -252,7 +252,7 @@ bool PMCRacerTester::validate_accurate_times() const {
 
     return true;
 }
-bool PMCRacerTester::validate_accurate_times_batch_mode() const {
+bool PMCRacerTester::validate_accurate_times_batch_mode() {
     set_verbose();
     cout << "(this could take ~13 hours! verbose by default) ";
 
