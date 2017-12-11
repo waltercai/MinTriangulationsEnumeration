@@ -153,6 +153,7 @@ bool PMCRacer::go(const StatisticRequest& sr, bool verbose) {
                         pmce.is_out_of_time() ||
                         (sr.test_time_limit_pmc() && gs[i].get_pmc_calc_time(alg) > sr.get_time_limit_pmc())) {
                 gs[i].set_reached_time_limit_pmc(alg);  // This may be the first time we set this
+                UTILS__PRINT_IF(verbose, "Time limit reached in algorithm " << alg.str());
                 continue;
             }
             TRACE(TRACE_LVL__TEST, "Not out of time");

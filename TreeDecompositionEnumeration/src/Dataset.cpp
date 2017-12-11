@@ -20,9 +20,7 @@ string Dataset::str(const GraphStats& gs, const StatisticRequest& sr) const {
     cells[DATASET_COL_NUM_TRNG] = (sr.test_count_trng() && gs.trng_no_errors() ? UTILS__TO_STRING(gs.get_trng_count()) : DATASET_COL_CONTENT_DATA_UNAVAILABLE);
     // Special columns
     cells[DATASET_COL_NUM_P] = (gs.is_random() ? UTILS__TO_STRING(gs.get_p()) : DATASET_COL_CONTENT_DATA_UNAVAILABLE);
-    int N = gs.get_n();
-    int M = gs.get_m();
-    cells[DATASET_COL_NUM_RATIO] = UTILS__TO_STRING(2*M / (double(N*(N-1)))); // |E|/(|V| choose 2)
+    cells[DATASET_COL_NUM_RATIO] = UTILS__TO_STRING(gs.get_ratio());
     cells[DATASET_COL_NUM_MS_TIME] = (sr.test_has_ms_calculation() && gs.ms_no_errors() ?
             utils__timestamp_to_hhmmss(gs.get_ms_calc_time()) : DATASET_COL_CONTENT_DATA_UNAVAILABLE);
     cells[DATASET_COL_NUM_TRNG_TIME] = (sr.test_has_trng_calculation() && gs.trng_no_errors() ?
@@ -49,76 +47,6 @@ string Dataset::str(const GraphStats& gs, const StatisticRequest& sr) const {
 
     // CSVify
     return utils__join(cells, ',');
-/*OLD CODE
-    ostringstream oss;
-    string delim(",");
-    oss.setf(std::ios_base::left, std::ios_base::adjustfield);
-
-    // Identifying text
-    // Use quotes to escape commas and such, for CSV.
-    // If the user sends opening quotes this won't work but
-    // danger is my middle name
-    oss << "\"" << gs.get_text() << "\"";
-
-    // Fields
-    oss << delim << gs.get_n();
-    oss << delim << gs.get_m();
-    oss << delim << (sr.test_count_ms() ? UTILS__TO_STRING(gs.get_ms_count()) : DATASET_COL_CONTENT_DATA_UNAVAILABLE);
-    oss << delim << (sr.test_count_pmc() ? UTILS__TO_STRING(gs.get_pmc_count()) : DATASET_COL_CONTENT_DATA_UNAVAILABLE);
-    oss << delim << (sr.test_count_trng() ? UTILS__TO_STRING(gs.get_trng_count()) : DATASET_COL_CONTENT_DATA_UNAVAILABLE);
-    // Special columns
-    oss << delim << (gs.is_random() ? UTILS__TO_STRING(gs.get_p()) : DATASET_COL_CONTENT_DATA_UNAVAILABLE);
-    int N = gs.get_n();
-    int M = gs.get_m();
-    double rat = 2*M / (double(N*(N-1))); // |E|/(|V| choose 2)
-    oss << delim << rat;
-    // Time for each calculation.
-    // If the resulting data is invalid, report that the data is unavailable.
-    oss << delim << (sr.test_has_ms_calculation() ?
-            utils__timestamp_to_hhmmss(gs.get_ms_calc_time()) : DATASET_COL_CONTENT_DATA_UNAVAILABLE);
-    oss << delim << (sr.test_has_trng_calculation() ?
-            utils__timestamp_to_hhmmss(gs.get_trng_calc_time()) : DATASET_COL_CONTENT_DATA_UNAVAILABLE);
-    // Error reporting
-    oss << delim;
-    if (gs.reached_time_limit_ms()) {
-        oss << string(DATASET_COL_CONTENT_ERR_MS) << " ";
-    }
-    if (gs.reached_time_limit_trng()) {
-        oss << string(DATASET_COL_CONTENT_ERR_TRNG);
-    }
-    oss << delim;
-    if (gs.reached_count_limit_ms()) {
-        oss << string(DATASET_COL_CONTENT_ERR_MS) << " ";
-    }
-    if (gs.reached_count_limit_trng()) {
-        oss << string(DATASET_COL_CONTENT_ERR_TRNG);
-    }
-    // Add per-algorithm data.
-    // To comply with the header() method (as of now), each algorithm consists
-    // of a column representing time taken and a column for errors.
-    // See Dataset.h for definition of the header string.
-    // The PMCALG_ALGORITHM_TABLE defines macros Y(ID,bitmask).
-    // Hacky, but it works
-    vector<PMCAlg> col_algs = PMCAlg::get_all(true);
-    for (unsigned i=0; i<col_algs.size(); ++i) {
-        PMCAlg alg=col_algs[i];
-        // Make sure this algorithm was used
-        if (!sr.is_active_alg(alg)) {
-            oss << delim << DATASET_COL_CONTENT_DATA_UNAVAILABLE << delim << DATASET_COL_CONTENT_DATA_UNAVAILABLE;
-            continue;
-        }
-        oss << delim << utils__timestamp_to_hhmmss(gs.get_pmc_calc_time(alg));
-        oss << delim;
-        if (gs.reached_time_limit_pmc(alg)) {
-            oss << DATASET_COL_CONTENT_TIME_ERR << " ";
-        }
-        if (gs.mem_error_pmc(alg)) {
-            oss << DATASET_COL_CONTENT_MEM_ERR;
-        }
-    }
-
-    // Done
-    return oss.str();*/
 }
 string Dataset::str() const {
     string out;
@@ -337,6 +265,7 @@ Dataset& Dataset::calc_pmc(GraphStats& gs, const StatisticRequest& sr) {
             // Some error occurred
             if (out_gs.reached_time_limit_pmc(alg)) {
                 gs.set_reached_time_limit_pmc(alg);
+                TRACE(TRACE_LVL__DEBUG, "Time limit reached in algorithm " << alg.str());
             }
             if (out_gs.mem_error_pmc(alg)) {
                 gs.set_mem_error_pmc(alg);
@@ -398,6 +327,11 @@ Dataset& Dataset::calc_trng(GraphStats& gs, const StatisticRequest& sr) {
     }
     // If we're here, the calculated data is valid
     TRACE(TRACE_LVL__TEST, "Done, trng count is finally " << trng_count);
+    UTILS__PRINT_IF(utils__has_substr(gs.get_text(), "Probability30percent/70.csv"),
+                    "Got " << (gs.reached_count_limit_trng() ? "" : "no ") <<
+                    "count error, limit " <<
+                    (sr.test_count_limit_trng() ? string("is ") + UTILS__TO_STRING(sr.get_count_limit_trng()) : "doesn't exist") << ", " <<
+                    (gs.trng_no_errors() ? string("counted to ") + UTILS__TO_STRING(gs.get_trng_count()) : string("no count (error state)")));
 	return *this;
 }
 Dataset& Dataset::calc() {
@@ -600,6 +534,7 @@ Dataset& Dataset::load_stats() {
                 gs.set_pmc_calc_time(alg,utils__hhmmss_to_timestamp(time_cell));
                 if (HAS_TIME_ERR(err_cell)) {
                     gs.set_reached_time_limit_pmc(alg);
+                    TRACE(TRACE_LVL__DEBUG, "Time limit reached in algorithm " << alg.str());
                 }
                 if (HAS_MEM_ERR(err_cell)) {
                     gs.set_mem_error_pmc(alg);

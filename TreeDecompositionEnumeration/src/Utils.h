@@ -57,6 +57,7 @@ const time_t UTILS__MAX_LONG = std::numeric_limits<long>::max();
 class Logger {
 private:
     static string filename;
+    static const string dirname;
     static bool state;
     static bool append;
 public:
@@ -343,7 +344,8 @@ typedef enum TRACE_LVL__CODES {
     TRACE_LVL__NOISE,   // General info in live code
     TRACE_LVL__OFF      // Never print (turn this trace off)
 } TRACE_LVL__CODES;
-#define TRACE_LVL__DEFAULT TRACE_LVL__ERROR /* Change this to display more/less errors */
+//#define TRACE_LVL__DEFAULT TRACE_LVL__WARNING /* Change this to display more/less errors */
+#define TRACE_LVL__DEFAULT TRACE_LVL__DEBUG
 
 // Trace level handlers
 extern TRACE_LVL__CODES TRACE_LVL;  // Init: TRACE_LVL__DEFAULT
@@ -382,7 +384,8 @@ extern TRACE_LVL__CODES _prev_trace_lvl;
         Logger::out(_oss); \
     } while(0)
 
-#define UTILS__PRINT_IF(_bool, _stream) do { \
+#define UTILS__PRINT_IF(_bool, _stream) UTILS__PRINT_IF_NONL(_bool, _stream << endl)
+#define UTILS__PRINT_IF_NONL(_bool, _stream) do { \
         if (_bool) { \
             cout << UTILS__ASSERT_PRINT_STREAM(_stream); \
         } \

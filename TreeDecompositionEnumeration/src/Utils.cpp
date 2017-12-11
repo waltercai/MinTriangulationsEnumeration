@@ -28,9 +28,14 @@ TRACE_LVL__CODES TRACE_LVL = TRACE_LVL__DEFAULT;
 //TRACE_LVL__CODES TRACE_LVL = TRACE_LVL__TEST;
 TRACE_LVL__CODES _prev_trace_lvl = TRACE_LVL;
 
+const string Logger::dirname = "logs";
 void Logger::stop() { state = false; }
 void Logger::start(const string& f, bool appnd) {
-    filename = f;
+    if (!utils__mkdir(Logger::dirname)) {
+        cout << "FATAL ERROR: Couldn't create log file!";
+        exit(1);
+    }
+    filename = Logger::dirname + "/" + f;
     append = appnd;
     state = true;
 }

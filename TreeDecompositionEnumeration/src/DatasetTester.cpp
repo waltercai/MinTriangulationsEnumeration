@@ -37,6 +37,7 @@ DatasetTester& DatasetTester::clear_all() {
     return *this;
 }
 DatasetTester& DatasetTester::go() {
+    set_only_generate_count_and_time_errors_test_text_and_gs_fields_no_shuffle();
     //set_only_find_by_text();
     #define X(test) if (flag_##test) {DO_TEST(test);}
     DATASETTESTER_TEST_TABLE
@@ -158,9 +159,9 @@ DatasetTester& DatasetTester::go() {
 /**
  * TESTS!
  */
-bool DatasetTester::find_by_text() const {
+bool DatasetTester::find_by_text() {
     INIT_DATASET();
-/*
+
     int i;
     auto vgs = gp.get();
     ASSERT_NO_THROW(i = Dataset::graph_index_by_text(vgs, "i dont exist"));
@@ -172,12 +173,11 @@ bool DatasetTester::find_by_text() const {
         ASSERT_EQ(i, Dataset::graph_index_by_text(vgs, filename[i]));
         ASSERT_EQ(i, ds.graph_index_by_text(filename[i]));
     }
-*/
 
     CLEANUP_DATASET();
     return true;
 }
-bool DatasetTester::validate_unique_text() const {
+bool DatasetTester::validate_unique_text() {
     INIT_DATASET();
 
     ASSERT(ds.unique_graph_text());
@@ -185,7 +185,7 @@ bool DatasetTester::validate_unique_text() const {
     CLEANUP_DATASET();
     return true;
 }
-bool DatasetTester::load_empty_dir() const {
+bool DatasetTester::load_empty_dir() {
 
     ASSERT(utils__dir_is_empty(tmp_dir_name));
     string file = tmp_dir_name+"/dataset_out.csv";
@@ -197,7 +197,7 @@ bool DatasetTester::load_empty_dir() const {
     ASSERT(utils__delete_file(file));
     return true;
 }
-bool DatasetTester::calc_trng_correct_order() const {
+bool DatasetTester::calc_trng_correct_order() {
     INIT_DATASET();
 
     ASSERT_NO_THROW(ds.set_request(ds.graph_index_by_text(filename[2]), sr_trng));
@@ -207,7 +207,7 @@ bool DatasetTester::calc_trng_correct_order() const {
     CLEANUP_DATASET();
     return true;
 }
-bool DatasetTester::calc_ms_varying_statreqs() const {
+bool DatasetTester::calc_ms_varying_statreqs() {
     INIT_DATASET();
 
     vector<StatisticRequest> vsr({
@@ -265,7 +265,7 @@ bool DatasetTester::calc_ms_varying_statreqs() const {
     CLEANUP_DATASET();
     return true;
 }
-bool DatasetTester::calc_pmc_varying_statreqs() const {
+bool DatasetTester::calc_pmc_varying_statreqs() {
     INIT_DATASET();
 
     vector<StatisticRequest> vsr({
@@ -340,7 +340,7 @@ bool DatasetTester::calc_pmc_varying_statreqs() const {
     CLEANUP_DATASET();
     return true;
 }
-bool DatasetTester::calc_trng_varying_statreqs() const {
+bool DatasetTester::calc_trng_varying_statreqs() {
     INIT_DATASET();
 
     vector<StatisticRequest> vsr({
@@ -397,7 +397,7 @@ bool DatasetTester::calc_trng_varying_statreqs() const {
     CLEANUP_DATASET();
     return true;
 }
-bool DatasetTester::stupid_GS_dump_no_preexisting_flag_true() const {
+bool DatasetTester::stupid_GS_dump_no_preexisting_flag_true() {
     INIT();
 
     vector<GraphStats> vgs0({gs[1],gs[3]});
@@ -413,7 +413,7 @@ bool DatasetTester::stupid_GS_dump_no_preexisting_flag_true() const {
     CLEANUP_DATASET();
     return true;
 }
-bool DatasetTester::stupid_GS_dump_no_preexisting_flag_false() const {
+bool DatasetTester::stupid_GS_dump_no_preexisting_flag_false() {
     INIT();
 
     vector<GraphStats> vgs0({gs[1],gs[3]});
@@ -429,7 +429,7 @@ bool DatasetTester::stupid_GS_dump_no_preexisting_flag_false() const {
     CLEANUP_DATASET();
     return true;
 }
-bool DatasetTester::stupid_GS_dump_with_preexisting_flag_true() const {
+bool DatasetTester::stupid_GS_dump_with_preexisting_flag_true() {
     INIT_DATASET();
 
     vector<GraphStats> vgs0({gs[1],gs[3]});
@@ -445,7 +445,7 @@ bool DatasetTester::stupid_GS_dump_with_preexisting_flag_true() const {
     CLEANUP_DATASET();
     return true;
 }
-bool DatasetTester::stupid_GS_dump_with_preexisting_flag_false() const {
+bool DatasetTester::stupid_GS_dump_with_preexisting_flag_false() {
     INIT_DATASET();
 
     vector<GraphStats> vgs0({gs[1],gs[3]});
@@ -463,7 +463,7 @@ bool DatasetTester::stupid_GS_dump_with_preexisting_flag_false() const {
     CLEANUP_DATASET();
     return true;
 }
-bool DatasetTester::construct_via_load_no_statfile_exists() const {
+bool DatasetTester::construct_via_load_no_statfile_exists() {
     string nonexistent = tmp_dir_name+"/i_dont_exist.csv";
     ASSERT_NO_THROW(Dataset ds(nonexistent));
     Dataset ds(nonexistent);
@@ -471,7 +471,7 @@ bool DatasetTester::construct_via_load_no_statfile_exists() const {
     ASSERT(!utils__file_exists(nonexistent));
     return true;
 }
-bool DatasetTester::construct_via_load_statfile_exists() const {
+bool DatasetTester::construct_via_load_statfile_exists() {
     INIT();
     ASSERT(Dataset::dump_barren_stat_file(dataset_filename, gp.get()));
     Dataset ds(dataset_filename);
@@ -479,7 +479,7 @@ bool DatasetTester::construct_via_load_statfile_exists() const {
     CLEANUP_DATASET();
     return true;
 }
-bool DatasetTester::construct_via_load_missing_sources() const {
+bool DatasetTester::construct_via_load_missing_sources() {
     INIT();
     ASSERT(Dataset::dump_barren_stat_file(dataset_filename, gp.get()));
     ASSERT(utils__delete_file(filename[1]));
@@ -489,7 +489,7 @@ bool DatasetTester::construct_via_load_missing_sources() const {
     CLEANUP_DATASET();
     return true;
 }
-bool DatasetTester::construct_via_GS_paths_all_valid() const {
+bool DatasetTester::construct_via_GS_paths_all_valid() {
     INIT();
 
     ASSERT(!utils__file_exists(dataset_filename));
@@ -506,7 +506,7 @@ bool DatasetTester::construct_via_GS_paths_all_valid() const {
     CLEANUP_DATASET();
     return true;
 }
-bool DatasetTester::construct_via_GS_paths_some_invalid() const {
+bool DatasetTester::construct_via_GS_paths_some_invalid() {
     INIT();
 
     ASSERT(!utils__file_exists(dataset_filename));
@@ -523,7 +523,7 @@ bool DatasetTester::construct_via_GS_paths_some_invalid() const {
     CLEANUP_DATASET();
     return true;
 }
-bool DatasetTester::basic_calc_same_statreq() const {
+bool DatasetTester::basic_calc_same_statreq() {
     INIT_DATASET();
 
     StatisticRequest sr = StatisticRequest().set_single_pmc_alg().set_ms_subgraphs().set_trng();
@@ -548,7 +548,7 @@ bool DatasetTester::basic_calc_same_statreq() const {
     CLEANUP_DATASET();
     return true;
 }
-bool DatasetTester::permute_stat_request_fields_check_output_columns() const {
+bool DatasetTester::permute_stat_request_fields_check_output_columns() {
     INIT_DATASET();
 
     // Calculate, read and validate the stats
@@ -588,7 +588,7 @@ bool DatasetTester::permute_stat_request_fields_check_output_columns() const {
     CLEANUP_DATASET();
     return true;
 }
-bool DatasetTester::column_indexes_correct() const {
+bool DatasetTester::column_indexes_correct() {
     /**
      * Dump an empty dataset file, read the columns and make sure the PMC algorithms names
      * are substrings of the column contents.
@@ -745,14 +745,14 @@ bool DatasetTester::column_indexes_correct() const {
     CLEANUP_DATASET();
     return true;
 }
-bool DatasetTester::several_pmc_algorithms_check_times_and_errors_per_alg() const {
+bool DatasetTester::several_pmc_algorithms_check_times_and_errors_per_alg() {
 
     INIT();
     int time_limit = 3;
 
     // Load large graphs, each with its own time limit and PMC algorithms.
     // Add some small graphs, so we can see some completion.
-    const vector<string> graph_paths({DATASET_DIR_BASE+DATASET_DIR_DIFFICULT_RANDOM_70+"80.csv",
+    vector<string> graph_paths({DATASET_DIR_BASE+DATASET_DIR_DIFFICULT_RANDOM_70+"80.csv",
                                       DATASET_DIR_BASE+DATASET_DIR_DIFFICULT_RANDOM_70+"40.csv",
                                       filename[0],
                                       DATASET_DIR_BASE+DATASET_DIR_DIFFICULT_RANDOM_70+"50.csv",
@@ -871,13 +871,14 @@ bool DatasetTester::several_pmc_algorithms_check_times_and_errors_per_alg() cons
     CLEANUP_DATASET();
     return true;
 }
-bool DatasetTester::generate_count_and_time_errors_test_text_and_gs_fields() const {
+bool DatasetTester::generate_count_and_time_errors_test_text_and_gs_fields_aux(bool shuffle) {
 
     INIT();
     int count_limit_ms = 5;
     int count_limit_trng = 5;
     time_t time_limit_ms = 3;
     time_t time_limit_trng = 3;
+    set_verbose();
 
     // Clean slate.
     // If previous tests didn't delete the dataset file, the file is
@@ -904,7 +905,9 @@ bool DatasetTester::generate_count_and_time_errors_test_text_and_gs_fields() con
         graph_paths.push_back(DATASET_DIR_BASE+DATASET_DIR_DIFFICULT_RANDOM_50+UTILS__TO_STRING(i)+".csv");
         graph_paths.push_back(DATASET_DIR_BASE+DATASET_DIR_DIFFICULT_RANDOM_70+UTILS__TO_STRING(i)+".csv");
     }
-    std::random_shuffle(graph_paths.begin(), graph_paths.end());
+    if (shuffle) {
+        std::random_shuffle(graph_paths.begin(), graph_paths.end());
+    }
 
     // Sanity
     for (unsigned i=0; i<graph_paths.size(); ++i) {
@@ -952,51 +955,6 @@ bool DatasetTester::generate_count_and_time_errors_test_text_and_gs_fields() con
         }
         requests.push_back(sr);
     }
-/*    for (int choose_ms=1; choose_ms>=0; --choose_ms) {
-        for (int choose_trng=1; choose_trng>=0; --choose_trng) {
-            for (int choose_cnt_limit_ms=1; choose_cnt_limit_ms>=0; --choose_cnt_limit_ms) {
-                for (int choose_cnt_limit_trng=1; choose_cnt_limit_trng>=0; --choose_cnt_limit_trng) {
-                    for (int choose_time_limit_ms=1; choose_time_limit_ms>=0; --choose_time_limit_ms) {
-                        for (int choose_time_limit_trng=1; choose_time_limit_trng>=0; --choose_time_limit_trng) {
-                            // Stop if we're out of graphs
-                            if(requests.size() >= graph_paths.size()) {
-                                // It's this or cascading breaks..
-                                goto out_of_req_loop;
-                            }
-                            StatisticRequest sr;
-                            if (choose_ms) {
-                                sr.set_count_ms();
-                            }
-                            if (choose_trng) {
-                                sr.set_count_trng();
-                            }
-                            if (choose_cnt_limit_ms) {
-                                sr.set_count_limit_ms(count_limit_ms);
-                            }
-                            if (choose_cnt_limit_trng) {
-                                sr.set_count_limit_trng(count_limit_trng);
-                            }
-                            if (choose_time_limit_ms) {
-                                sr.set_time_limit_ms(time_limit_ms);
-                            }
-                            if (choose_time_limit_trng) {
-                                sr.set_time_limit_trng(time_limit_trng);
-                            }
-                            // Sanity
-                            if (sr.test_count_ms() && !sr.test_count_limit_ms() && !sr.test_time_limit_ms()) {
-                                continue;
-                            }
-                            if (sr.test_count_trng() && !sr.test_count_limit_trng() && !sr.test_time_limit_trng()) {
-                                continue;
-                            }
-                            requests.push_back(sr);
-                        }
-                    }
-                }
-            }
-        }
-    }
-out_of_req_loop:*/
 
     // Sanity
     ASSERT_LEQ(requests.size(), 49/*(2*2*2*2*2*2) - (8+8-1)*/);
@@ -1111,6 +1069,7 @@ out_of_req_loop:*/
     // Validate column contents
     ASSERT_EQ(csv_contents.size(), 1+graph_paths.size());   // 1 metadata line, and one line for each graph
     for (unsigned i=0; i<graph_paths.size(); ++i) {
+        UTILS__PRINT_IF(verbose, "Verifying graph #" << i+1);
         int row_index = i+1;
         string ms_column_contents = utils__strip_char(csv_contents[row_index][DATASET_COL_NUM_MSS], ' ');
         string trng_column_contents = utils__strip_char(csv_contents[row_index][DATASET_COL_NUM_TRNG], ' ');
@@ -1125,7 +1084,7 @@ out_of_req_loop:*/
         }
         else {
             ASSERT_EQ(ms_column_contents, UTILS__TO_STRING(total_ms[i]));
-            ASSERT_EQ(ms_time_column_contents, UTILS__TO_STRING(ds.dataset[i].first.get_ms_calc_time()));
+            ASSERT_EQ(ms_time_column_contents, utils__timestamp_to_hhmmss(ds.dataset[i].first.get_ms_calc_time()));
         }
         if (requests[i].test_count_ms() && expected_cnt_error_ms[i]) {
             ASSERT_SUBSTR(DATASET_COL_CONTENT_ERR_MS, cnt_err_column_contents);
@@ -1146,7 +1105,7 @@ out_of_req_loop:*/
         }
         else {
             ASSERT_EQ(trng_column_contents, UTILS__TO_STRING(total_trng[i]));
-            ASSERT_EQ(trng_time_column_contents, UTILS__TO_STRING(ds.dataset[i].first.get_trng_calc_time()));
+            ASSERT_EQ(trng_time_column_contents, utils__timestamp_to_hhmmss(ds.dataset[i].first.get_trng_calc_time()));
         }
         if (requests[i].test_count_trng() && expected_cnt_error_trng[i]) {
             ASSERT_SUBSTR(DATASET_COL_CONTENT_ERR_TRNG, cnt_err_column_contents);
@@ -1165,35 +1124,41 @@ out_of_req_loop:*/
     CLEANUP_DATASET();
     return true;
 }
-bool DatasetTester::load_stat_files_same_statreq() const {
+bool DatasetTester::generate_count_and_time_errors_test_text_and_gs_fields_no_shuffle() {
+    return generate_count_and_time_errors_test_text_and_gs_fields_aux(false);
+}
+bool DatasetTester::generate_count_and_time_errors_test_text_and_gs_fields() {
+    return generate_count_and_time_errors_test_text_and_gs_fields_aux(true);
+}
+bool DatasetTester::load_stat_files_same_statreq() {
 
     return true;
 }
-bool DatasetTester::load_stat_files_diverse_statreq() const {
+bool DatasetTester::load_stat_files_diverse_statreq() {
 
     return true;
 }
-bool DatasetTester::load_stat_files_diverse_statreq_diverse_valid_cells() const {
+bool DatasetTester::load_stat_files_diverse_statreq_diverse_valid_cells() {
 
     return true;
 }
-bool DatasetTester::validate_stat_load_before_calc() const {
+bool DatasetTester::validate_stat_load_before_calc() {
 
     return true;
 }
-bool DatasetTester::validate_stat_load_updates_statreq_same_statreq() const {
+bool DatasetTester::validate_stat_load_updates_statreq_same_statreq() {
 
     return true;
 }
-bool DatasetTester::validate_stat_load_updates_statreq_diverse_statreq() const {
+bool DatasetTester::validate_stat_load_updates_statreq_diverse_statreq() {
 
     return true;
 }
-bool DatasetTester::validate_unavailable_stat_update_after_stat_load() const {
+bool DatasetTester::validate_unavailable_stat_update_after_stat_load() {
 
     return true;
 }
-bool DatasetTester::diverse_column_output() const {
+bool DatasetTester::diverse_column_output() {
 
     return true;
 }

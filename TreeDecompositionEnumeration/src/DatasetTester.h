@@ -27,6 +27,7 @@ namespace tdenum {
     X(permute_stat_request_fields_check_output_columns) \
     X(column_indexes_correct) \
     X(several_pmc_algorithms_check_times_and_errors_per_alg) \
+    X(generate_count_and_time_errors_test_text_and_gs_fields_no_shuffle) \
     X(generate_count_and_time_errors_test_text_and_gs_fields) \
     X(load_stat_files_same_statreq) \
     X(load_stat_files_diverse_statreq) \
@@ -43,7 +44,7 @@ class DatasetTester : public TestInterface {
     #define X(test) \
     private: \
         bool flag_##test; \
-        bool test() const; \
+        bool test(); \
     public: \
         DatasetTester& set_##test(); \
         DatasetTester& unset_##test(); \
@@ -53,6 +54,9 @@ class DatasetTester : public TestInterface {
 
 private:
     DatasetTester& go();
+
+    // Aux methods
+    bool generate_count_and_time_errors_test_text_and_gs_fields_aux(bool shuffle);
 
 public:
 
