@@ -874,11 +874,21 @@ bool DatasetTester::several_pmc_algorithms_check_times_and_errors_per_alg() {
 bool DatasetTester::generate_count_and_time_errors_test_text_and_gs_fields_aux(bool shuffle) {
 
     INIT();
+    set_verbose();
+
+    // Choose these limits carefully:
+    // If time_limit_X is around the time required to calculate cnt_limit_X objects
+    // of type X, then the errors may be inconsistent! We may get time errors on the first
+    // run, and then count errors on the second run...
     int count_limit_ms = 5;
     int count_limit_trng = 5;
-    time_t time_limit_ms = 3;
-    time_t time_limit_trng = 3;
-    set_verbose();
+    time_t time_limit_ms = 20;
+    time_t time_limit_trng = 20;
+
+    // Set these to check specific graphs.
+    // A value of -1 will ensure all graphs are checked.
+    int invalid_graph_index = -1;
+    int specific_graph_index = invalid_graph_index;
 
     // Clean slate.
     // If previous tests didn't delete the dataset file, the file is
@@ -896,7 +906,13 @@ bool DatasetTester::generate_count_and_time_errors_test_text_and_gs_fields_aux(b
     // That's 64-(8+8-1)=49 tests. We have 54+8=62 graphs to choose from.
     // Load a lot, and discard unused graphs.
     // Add some small graphs, so we can see some completion.
+    // Also note that some graphs are problematic to test for error consistency: graphs where the calculation
+    // time limit is close to the time required to calculate the count limit number of objects
     vector<string> graph_paths;
+    vector<string> problematic_graphs({
+//            DATASET_DIR_BASE+DATASET_DIR_DIFFICULT_RANDOM_30+"60.csv",
+//            DATASET_DIR_BASE+DATASET_DIR_DIFFICULT_RANDOM_30+"70.csv",
+        });
     for (unsigned i=0; i<total_graphs; ++i) {
         graph_paths.push_back(filename[i]);
     }
@@ -904,6 +920,9 @@ bool DatasetTester::generate_count_and_time_errors_test_text_and_gs_fields_aux(b
         graph_paths.push_back(DATASET_DIR_BASE+DATASET_DIR_DIFFICULT_RANDOM_30+UTILS__TO_STRING(i)+".csv");
         graph_paths.push_back(DATASET_DIR_BASE+DATASET_DIR_DIFFICULT_RANDOM_50+UTILS__TO_STRING(i)+".csv");
         graph_paths.push_back(DATASET_DIR_BASE+DATASET_DIR_DIFFICULT_RANDOM_70+UTILS__TO_STRING(i)+".csv");
+    }
+    for (auto bad_filename: problematic_graphs) {
+        graph_paths.erase(std::remove(graph_paths.begin(), graph_paths.end(), bad_filename), graph_paths.end());
     }
     if (shuffle) {
         std::random_shuffle(graph_paths.begin(), graph_paths.end());
@@ -971,6 +990,11 @@ bool DatasetTester::generate_count_and_time_errors_test_text_and_gs_fields_aux(b
          << count_limit_ms << "/" << count_limit_trng << ", time limits are "
          << time_limit_ms << "/" << time_limit_trng << ", at least one limit will be active per calculation)... ";
 
+    // If only one graph is being tested, report it's name
+    if (specific_graph_index != invalid_graph_index) {
+        UTILS__PRINT_IF(verbose, "Calculating only #" << specific_graph_index+1 << " (" << graph_paths[specific_graph_index] << ")");
+    }
+
     // Set the expected error state for each algorithm for each graph.
     vector<bool> expected_cnt_error_ms(graph_paths.size(), false);
     vector<bool> expected_cnt_error_trng(graph_paths.size(), false);
@@ -985,11 +1009,15 @@ bool DatasetTester::generate_count_and_time_errors_test_text_and_gs_fields_aux(b
     bool trng_cnt_limit_reached = false;
     bool ms_time_limit_reached = false;
     bool trng_time_limit_reached = false;
-    for (unsigned i=0; i<graph_paths.size(); ++i) {
+    for (int i=0; i<(int)graph_paths.size(); ++i) {
+        if (specific_graph_index != invalid_graph_index && i != specific_graph_index) {
+            continue;
+        }
         StatisticRequest sr = requests[i];
         GraphStats gs = GraphStats::read(graph_paths[i]);
         // MS
         if (sr.test_count_ms()) {
+            UTILS__PRINT_IF(verbose, "Counting graph #" << i+1 << "'s MSs...");
             ASSERT(sr.test_count_limit_ms() || sr.test_time_limit_ms());
             MinimalSeparatorsEnumerator mse(gs.get_graph(), UNIFORM);
             time_t start_time_ms = time(NULL);
@@ -997,13 +1025,19 @@ bool DatasetTester::generate_count_and_time_errors_test_text_and_gs_fields_aux(b
                 mse.next();
                 if (sr.test_count_limit_ms() && total_ms[i] >= sr.get_count_limit_ms()) {
                     expected_cnt_error_ms[i] = ms_cnt_limit_reached = true;
-                    break;
                 }
                 if (sr.test_time_limit_ms() && difftime(time(NULL), start_time_ms)) {
                     expected_time_error_ms[i] = ms_time_limit_reached = true;
+                }
+                if (expected_cnt_error_ms[i] || expected_time_error_ms[i]) {
                     break;
                 }
             }
+            UTILS__PRINT_IF(verbose, "Graph #" << i+1 << " got ms_cnt_err="
+                            << (expected_cnt_error_ms[i] ? "true" : "false")
+                            << " and ms_time_err="
+                            << (expected_time_error_ms[i] ? "true" : "false")
+                            << " with a total of " << total_ms[i] << " MSs");
         }
         // TRNG
         if (sr.test_count_trng()) {
@@ -1011,16 +1045,23 @@ bool DatasetTester::generate_count_and_time_errors_test_text_and_gs_fields_aux(b
             time_t start_time_trng = time(NULL);
             MinimalTriangulationsEnumerator mte(gs.get_graph(), NONE, UNIFORM, SEPARATORS);
             for (total_trng[i]=0; mte.hasNext(); ++total_trng[i]) {
+                UTILS__PRINT_IF(verbose, "Graph #" << i+1 << " now has " << total_trng[i] << " trngs");
                 mte.next();
                 if (sr.test_count_limit_trng() && total_trng[i] >= sr.get_count_limit_trng()) {
                     expected_cnt_error_trng[i] = trng_cnt_limit_reached = true;
-                    break;
                 }
                 if (sr.test_time_limit_trng() && difftime(time(NULL), start_time_trng)) {
                     expected_time_error_trng[i] = trng_time_limit_reached = true;
+                }
+                if (expected_cnt_error_trng[i] || expected_time_error_trng[i]) {
                     break;
                 }
             }
+            UTILS__PRINT_IF(verbose, "Graph #" << i+1 << " got trng_cnt_err="
+                            << (expected_cnt_error_trng[i] ? "true" : "false")
+                            << " and trng_time_err="
+                            << (expected_time_error_trng[i] ? "true" : "false")
+                            << " with a total of " << total_trng[i] << " trngs");
         }
         UTILS__PRINT_IF(verbose, "Done with graph #" << (i+1) << ", "
                     << endl << "cnt_ms=" << (sr.test_count_ms() ? "true" : "false") << ", "
@@ -1037,11 +1078,13 @@ bool DatasetTester::generate_count_and_time_errors_test_text_and_gs_fields_aux(b
                     << endl << "trng_cnt=" << total_trng[i]
             );
     }
-    // Otherwise, this test isn't doing its job
-    ASSERT(ms_cnt_limit_reached);
-    ASSERT(trng_cnt_limit_reached);
-    ASSERT(ms_time_limit_reached);
-    ASSERT(trng_time_limit_reached);
+    // If we're not debugging a specific graph, make sure we reach limits
+    if (specific_graph_index == invalid_graph_index) {
+        ASSERT(ms_cnt_limit_reached);
+        ASSERT(trng_cnt_limit_reached);
+        ASSERT(ms_time_limit_reached);
+        ASSERT(trng_time_limit_reached);
+    }
 
     // Construct a dataset with the graph, set requests.
     // Allow five seconds per graph - should be enough for the small graphs
@@ -1066,9 +1109,14 @@ bool DatasetTester::generate_count_and_time_errors_test_text_and_gs_fields_aux(b
         ASSERT_EQ(row.size(), DATASET_COL_TOTAL);
     }
 
+    UTILS__PRINT_IF(verbose, "Done calculating using the Dataset class");
+
     // Validate column contents
     ASSERT_EQ(csv_contents.size(), 1+graph_paths.size());   // 1 metadata line, and one line for each graph
-    for (unsigned i=0; i<graph_paths.size(); ++i) {
+    for (int i=0; i<(int)graph_paths.size(); ++i) {
+        if (specific_graph_index != invalid_graph_index && i != specific_graph_index) {
+            continue;
+        }
         UTILS__PRINT_IF(verbose, "Verifying graph #" << i+1);
         int row_index = i+1;
         string ms_column_contents = utils__strip_char(csv_contents[row_index][DATASET_COL_NUM_MSS], ' ');
