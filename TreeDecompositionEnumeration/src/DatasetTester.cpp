@@ -37,9 +37,8 @@ DatasetTester& DatasetTester::clear_all() {
     return *this;
 }
 DatasetTester& DatasetTester::go() {
-    set_only_generate_count_and_time_errors_test_text_and_gs_fields_no_shuffle();
-    //set_only_find_by_text();
-    #define X(test) if (flag_##test) {DO_TEST(test);}
+    //set_only_generate_count_and_time_errors_test_text_and_gs_fields_no_shuffle();
+    #define X(test) if (flag_##test) { unset_verbose(); DO_TEST(test); }
     DATASETTESTER_TEST_TABLE
     #undef X
     return *this;
@@ -748,7 +747,7 @@ bool DatasetTester::column_indexes_correct() {
 bool DatasetTester::several_pmc_algorithms_check_times_and_errors_per_alg() {
 
     INIT();
-    int time_limit = 3;
+    int time_limit = 5;
 
     // Load large graphs, each with its own time limit and PMC algorithms.
     // Add some small graphs, so we can see some completion.
@@ -798,7 +797,7 @@ bool DatasetTester::several_pmc_algorithms_check_times_and_errors_per_alg() {
     for (unsigned i=0; i<graph_paths.size(); ++i) {
         GraphStats gs = GraphStats::read(graph_paths[i]);
         for (PMCAlg alg: alg_sets[i]) {
-            cout << endl << "Running PMCE on graph #" << (i+1) << ", algorithm " << alg.str() << "... ";
+            UTILS__PRINT_IF(verbose, "Running PMCE on graph #" << (i+1) << ", algorithm " << alg.str() << "... ");
             PMCEnumerator tmp_pmce = PMCEnumerator(gs.get_graph(), time_limit);
             tmp_pmce.set_algorithm(alg);
             time_t start_time = time(NULL);
@@ -806,8 +805,9 @@ bool DatasetTester::several_pmc_algorithms_check_times_and_errors_per_alg() {
             time_t time_taken = difftime(time(NULL), start_time);
             expected_error[pair<unsigned,PMCAlg>(i,alg)] = tmp_pmce.is_out_of_time();
             expected_time[pair<unsigned,PMCAlg>(i,alg)] = time_taken;
-            cout << (tmp_pmce.is_out_of_time() ? string("TIME ERROR") :
-                     string("no time error, took ")+utils__timestamp_to_hhmmss(time_taken));
+            UTILS__PRINT_IF(verbose, (tmp_pmce.is_out_of_time() ?
+                    string("TIME ERROR") :
+                    string("no time error, took ")+utils__timestamp_to_hhmmss(time_taken)));
         }
     }
 
@@ -874,7 +874,7 @@ bool DatasetTester::several_pmc_algorithms_check_times_and_errors_per_alg() {
 bool DatasetTester::generate_count_and_time_errors_test_text_and_gs_fields_aux(bool shuffle) {
 
     INIT();
-    set_verbose();
+//    set_verbose();
 
     // Choose these limits carefully:
     // If time_limit_X is around the time required to calculate cnt_limit_X objects
@@ -885,9 +885,10 @@ bool DatasetTester::generate_count_and_time_errors_test_text_and_gs_fields_aux(b
     time_t time_limit_ms = 20;
     time_t time_limit_trng = 20;
 
-    // Set these to check specific graphs.
-    // A value of -1 will ensure all graphs are checked.
+    // Set specific_graph_index something other than invalid_graph_index to check specific
+    // graphs.
     int invalid_graph_index = -1;
+//    int specific_graph_index = 12;
     int specific_graph_index = invalid_graph_index;
 
     // Clean slate.
@@ -986,9 +987,18 @@ bool DatasetTester::generate_count_and_time_errors_test_text_and_gs_fields_aux(b
     ASSERT_EQ(graph_paths.size(), requests.size());
 
     // Indicate this should take some time
-    cout << "\b\b\b\b (running " << graph_paths.size() << " MS and TRNG calculations. Count limits are "
-         << count_limit_ms << "/" << count_limit_trng << ", time limits are "
-         << time_limit_ms << "/" << time_limit_trng << ", at least one limit will be active per calculation)... ";
+    if (verbose) {
+        cout << "\b\b\b\b (running " << graph_paths.size() << " MS and TRNG calculations. Count limits are "
+             << count_limit_ms << "/" << count_limit_trng << ", time limits are "
+             << time_limit_ms << "/" << time_limit_trng << ", at least one limit will be active per calculation, "
+             << "so this test will require at most "
+             << utils__timestamp_to_hhmmss(std::max(time_limit_ms, time_limit_trng)*graph_paths.size()*2) << ")... ";
+    }
+    else {
+        cout << "\b\b\b\b (if this takes longer than "
+             << utils__timestamp_to_hhmmss(std::max(time_limit_ms, time_limit_trng)*graph_paths.size()*2)
+             << ", something probably crashed... call set_verbose() first)...";
+    }
 
     // If only one graph is being tested, report it's name
     if (specific_graph_index != invalid_graph_index) {
@@ -1026,14 +1036,16 @@ bool DatasetTester::generate_count_and_time_errors_test_text_and_gs_fields_aux(b
                 if (sr.test_count_limit_ms() && total_ms[i] >= sr.get_count_limit_ms()) {
                     expected_cnt_error_ms[i] = ms_cnt_limit_reached = true;
                 }
-                if (sr.test_time_limit_ms() && difftime(time(NULL), start_time_ms)) {
+                if (sr.test_time_limit_ms() && difftime(time(NULL), start_time_ms) > sr.get_time_limit_ms()) {
                     expected_time_error_ms[i] = ms_time_limit_reached = true;
                 }
                 if (expected_cnt_error_ms[i] || expected_time_error_ms[i]) {
                     break;
                 }
             }
-            UTILS__PRINT_IF(verbose, "Graph #" << i+1 << " got ms_cnt_err="
+            UTILS__PRINT_IF(verbose, "Graph #" << i+1 << " done in "
+                            << utils__timestamp_to_hhmmss(difftime(time(NULL), start_time_ms))
+                            << ", got ms_cnt_err="
                             << (expected_cnt_error_ms[i] ? "true" : "false")
                             << " and ms_time_err="
                             << (expected_time_error_ms[i] ? "true" : "false")
@@ -1050,14 +1062,16 @@ bool DatasetTester::generate_count_and_time_errors_test_text_and_gs_fields_aux(b
                 if (sr.test_count_limit_trng() && total_trng[i] >= sr.get_count_limit_trng()) {
                     expected_cnt_error_trng[i] = trng_cnt_limit_reached = true;
                 }
-                if (sr.test_time_limit_trng() && difftime(time(NULL), start_time_trng)) {
+                if (sr.test_time_limit_trng() && difftime(time(NULL), start_time_trng) > sr.get_time_limit_trng()) {
                     expected_time_error_trng[i] = trng_time_limit_reached = true;
                 }
                 if (expected_cnt_error_trng[i] || expected_time_error_trng[i]) {
                     break;
                 }
             }
-            UTILS__PRINT_IF(verbose, "Graph #" << i+1 << " got trng_cnt_err="
+            UTILS__PRINT_IF(verbose, "Graph #" << i+1 << " done in "
+                            << utils__timestamp_to_hhmmss(difftime(time(NULL), start_time_trng))
+                            << ", got trng_cnt_err="
                             << (expected_cnt_error_trng[i] ? "true" : "false")
                             << " and trng_time_err="
                             << (expected_time_error_trng[i] ? "true" : "false")

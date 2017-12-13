@@ -344,8 +344,7 @@ typedef enum TRACE_LVL__CODES {
     TRACE_LVL__NOISE,   // General info in live code
     TRACE_LVL__OFF      // Never print (turn this trace off)
 } TRACE_LVL__CODES;
-//#define TRACE_LVL__DEFAULT TRACE_LVL__WARNING /* Change this to display more/less errors */
-#define TRACE_LVL__DEFAULT TRACE_LVL__DEBUG
+#define TRACE_LVL__DEFAULT TRACE_LVL__ERROR
 
 // Trace level handlers
 extern TRACE_LVL__CODES TRACE_LVL;  // Init: TRACE_LVL__DEFAULT
