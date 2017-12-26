@@ -17,7 +17,7 @@ int PMCE_RUNMODE = PMCE_RUNMODE_FAST;
 #define CHECK_TIME_OR_OP(_op) do { \
         if (limit != 0 && difftime(time(NULL),start_time) >= limit) { \
             out_of_time = true; \
-            TRACE(TRACE_LVL__WARNING, "Out of time!"); \
+            TRACE(TRACE_LVL__DEBUG, "Out of time!"); \
             _op; \
         } \
     } while(0)

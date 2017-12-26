@@ -2,6 +2,7 @@
 #include "DatasetTester.h"
 #include "MinimalSeparatorsEnumerator.h"
 #include "MinimalTriangulationsEnumerator.h"
+#include "GraphStatsTester.h" // For ASSERT_GS_EQ
 #include "StatisticRequestTester.h"
 #include <unistd.h>
 #include <iostream>
@@ -37,7 +38,7 @@ DatasetTester& DatasetTester::clear_all() {
     return *this;
 }
 DatasetTester& DatasetTester::go() {
-    //set_only_generate_count_and_time_errors_test_text_and_gs_fields_no_shuffle();
+    //set_only_load_stat_files_same_statreq();
     #define X(test) if (flag_##test) { unset_verbose(); DO_TEST(test); }
     DATASETTESTER_TEST_TABLE
     #undef X
@@ -96,7 +97,7 @@ DatasetTester& DatasetTester::go() {
     g.push_back(Graph(7).randomize(p5)); \
     g.push_back(Graph(6).addEdge(0,2).addEdge(2,4)); \
     g.push_back(Graph(10).randomize(p7)); \
-    g.push_back(Graph()); \
+    g.push_back(Graph(1)); \
     unsigned total_graphs = g.size(); \
     vector<NodeSetSet> ms(total_graphs); \
     vector<vector<NodeSetSet> > ms_sub(total_graphs); \
@@ -1193,7 +1194,114 @@ bool DatasetTester::generate_count_and_time_errors_test_text_and_gs_fields() {
     return generate_count_and_time_errors_test_text_and_gs_fields_aux(true);
 }
 bool DatasetTester::load_stat_files_same_statreq() {
+    /**
+     * Dump a statistic file F with partial data filled, and create a Dataset
+     * instance D from F. Set all of D's StatisticRequests and call load_stats.
+     * Make sure the StatisticRequests are updated!
+     */
 
+    INIT_DATASET();
+
+    // Start by calculating some stats anyway
+    // Just take 4 statreqs, duplicate them and go with it.
+    vector<StatisticRequest> vsr({
+        sr_count_ms,
+        sr_count_pmc,
+        sr_count_trng,
+        StatisticRequest(sr_count_pmc).set_count_ms()
+    });
+    auto old_count = vsr.size();
+    vsr.reserve(2 * old_count);
+    std::copy_n(vsr.begin(), old_count, std::back_inserter(vsr));
+    ASSERT_EQ(vsr.size(), total_graphs);
+    for (unsigned i=0; i<total_graphs; ++i) {
+        ds.set_request(i, vsr[i]);
+    }
+    ASSERT_EQ(ds.dataset.size(), total_graphs);
+    ds.unset_verbose().calc().set_verbose();
+    ASSERT(utils__delete_file(dataset_filename));
+    ds.dump();
+    ASSERT(utils__file_exists(dataset_filename));
+
+    // Create a new dataset, using the new file.
+    // Add trng calculation to all existing statistic requests, call load_stats and
+    // then make sure each statistic request has only trng calculation flags set (except
+    // vsr[2], which should be an 'empty' request).
+    // Also make sure the resulting graphstats in the new dataset are the same as those
+    // in the original dataset.
+    Dataset ds2(dataset_filename);
+    ASSERT_EQ(ds2.get_vector_gs().size(), total_graphs);
+    for (unsigned i=0; i<total_graphs; ++i) {
+        ds2.set_request(i, StatisticRequest(vsr[i]).set_count_trng());
+    }
+
+    // Make sure everything is unavailable before, and available after
+    for (unsigned i=0; i<total_graphs; ++i) {
+        ASSERT_EQ(0, ds2.dataset[i].first.get_ms_count());
+        ASSERT_EQ(0, ds2.dataset[i].first.get_pmc_count());
+        ASSERT_EQ(0, ds2.dataset[i].first.get_trng_count());
+    }
+    ds2.load_stats();
+    for (unsigned int i=0; i<total_graphs; ++i) {
+        if (vsr[i].test_count_ms()) {
+            ASSERT_EQ(ms_count[i], ds2.dataset[i].first.get_ms_count());
+        }
+        else {
+            ASSERT_EQ(0, ds2.dataset[i].first.get_ms_count());
+        }
+        if (vsr[i].test_count_pmc()) {
+            ASSERT_EQ(pmc_count[i], ds2.dataset[i].first.get_pmc_count());
+        }
+        else {
+            ASSERT_EQ(0, ds2.dataset[i].first.get_pmc_count());
+        }
+        if (vsr[i].test_count_trng()) {
+            ASSERT_EQ(trng_count[i], ds2.dataset[i].first.get_trng_count());
+        }
+        else {
+            ASSERT_EQ(0, ds2.dataset[i].first.get_trng_count());
+        }
+    }
+
+    // Validate GraphStats
+    for (unsigned i=0; i<total_graphs; ++i) {
+        GraphStats& _gs1 = ds.get_vector_gs()[i];
+        GraphStats& _gs2 = ds2.get_vector_gs()[i];
+        ASSERT_EQ(_gs1.g, _gs2.g);
+        ASSERT_EQ(_gs1.count_ms, _gs2.count_ms);
+        ASSERT_EQ(_gs1.count_pmc, _gs2.count_pmc);
+        ASSERT_EQ(_gs1.count_trng, _gs2.count_trng);
+        ASSERT_EQ(_gs1.reached_count_limit_flag_ms, _gs2.reached_count_limit_flag_ms);
+        ASSERT_EQ(_gs1.reached_count_limit_flag_trng, _gs2.reached_count_limit_flag_trng);
+        ASSERT_EQ(_gs1.reached_time_limit_flag_ms, _gs2.reached_time_limit_flag_ms);
+        ASSERT_EQ(_gs1.reached_time_limit_flag_trng, _gs2.reached_time_limit_flag_trng);
+        ASSERT_EQ(_gs1.mem_error_flag_ms, _gs2.mem_error_flag_ms);
+        ASSERT_EQ(_gs1.mem_error_flag_trng, _gs2.mem_error_flag_trng);
+        ASSERT_EQ(_gs1.calc_time_ms, _gs2.calc_time_ms);
+        ASSERT_EQ(_gs1.calc_time_trng, _gs2.calc_time_trng);
+        ASSERT_EQ(_gs1.ms, _gs2.ms);
+        ASSERT_EQ(_gs1.pmc, _gs2.pmc);
+        ASSERT_EQ(_gs1.trng, _gs2.trng);
+        ASSERT_EQ(_gs1.reached_time_limit_flag_pmc, _gs2.reached_time_limit_flag_pmc);
+        ASSERT_EQ(_gs1.mem_error_flag_pmc, _gs2.mem_error_flag_pmc);
+        ASSERT_EQ(_gs1.calc_time_by_alg_pmc, _gs2.calc_time_by_alg_pmc);
+    }
+    vector<StatisticRequest> sr_results = ds2.get_vector_sr();
+    for (unsigned i=0; i<total_graphs; ++i) {
+        // If triangulations were counted previously, they shouldn't be counted again.
+        // Otherwise, they should be counted for sure (we added count_trng to all requests).
+        ASSERT_NEQ(vsr[i].test_count_trng(), sr_results[i].test_count_trng());
+        // Everything else should be off
+        ASSERT(!sr_results[i].test_ms());
+        ASSERT(!sr_results[i].test_ms_subgraphs());
+        ASSERT(!sr_results[i].test_ms_subgraph_count());
+        ASSERT(!sr_results[i].test_count_ms());
+        ASSERT(!sr_results[i].test_pmc());
+        ASSERT(!sr_results[i].test_count_pmc());
+        ASSERT(!sr_results[i].test_trng());
+    }
+
+    CLEANUP_DATASET();
     return true;
 }
 bool DatasetTester::load_stat_files_diverse_statreq() {

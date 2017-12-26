@@ -101,6 +101,7 @@ private:
 
     friend class GraphStatsTester;
     friend class GraphProducerTester;
+    friend class DatasetTester;
 
     // Basic graph data.
     // Minimal separators may be stored for all subgraphs; ms_count.back()

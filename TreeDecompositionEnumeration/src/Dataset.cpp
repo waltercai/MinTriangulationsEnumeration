@@ -211,7 +211,7 @@ Dataset& Dataset::calc_pmc(GraphStats& gs, const StatisticRequest& sr) {
     PMCRacer pmcr("tmp", false);
     pmcr.add(gs);
     TRACE(TRACE_LVL__TEST, "In");
-    pmcr.go(sr, TRACE_LVL >= TRACE_LVL__WARNING);
+    pmcr.go(sr, verbose);
     TRACE(TRACE_LVL__TEST, "Done with race!");
 
     GraphStats tmp_gs = pmcr.get_stats()[0];
@@ -490,7 +490,7 @@ Dataset& Dataset::load_stats() {
         }
 
         // Find the graph
-        string txt_col = row[DATASET_COL_NUM_TXT];
+        string txt_col = utils__strip_char(row[DATASET_COL_NUM_TXT], '"');
         int index = graph_index_by_text(txt_col);
         if (index == -1) {  // Only read valid graphs! load() should already have loaded this
             TRACE(TRACE_LVL__ERROR, "Graph '" << txt_col << "' can't be found! No stats loaded");

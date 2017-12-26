@@ -156,7 +156,7 @@ public:
     #define X(calculation) \
         StatisticRequest& set_time_limit_##calculation(time_t); \
         StatisticRequest& unset_time_limit_##calculation(); \
-        time_t get_time_limit_##calculation() const; \
+        time_t get_time_limit_##calculation(bool suppress_error = false) const; \
         bool test_time_limit_##calculation() const;
     STATISTICREQUEST_TIME_LIMITS
     #undef X

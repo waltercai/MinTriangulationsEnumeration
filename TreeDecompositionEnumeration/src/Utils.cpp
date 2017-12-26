@@ -24,15 +24,15 @@ unsigned UTILS__MAX_RECURSION_DEPTH = 20;
 unsigned UTILS__IO_RETRY_COUNT = 3;
 unsigned UTILS__IO_RETRY_TIMEOUT_MS = 10;
 
-TRACE_LVL__CODES TRACE_LVL = TRACE_LVL__DEFAULT;
-//TRACE_LVL__CODES TRACE_LVL = TRACE_LVL__WARNING;
+//TRACE_LVL__CODES TRACE_LVL = TRACE_LVL__DEFAULT;
+TRACE_LVL__CODES TRACE_LVL = TRACE_LVL__WARNING;
 TRACE_LVL__CODES _prev_trace_lvl = TRACE_LVL;
 
 const string Logger::dirname = "logs";
 void Logger::stop() { state = false; }
 void Logger::start(const string& f, bool appnd) {
     if (!utils__mkdir(Logger::dirname)) {
-        cout << "FATAL ERROR: Couldn't create log file!";
+        cout << "FATAL ERROR: Couldn't create log directory!";
         exit(1);
     }
     filename = Logger::dirname + "/" + f;

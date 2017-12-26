@@ -69,13 +69,13 @@ int main(int argc, char** argv) {
     Logger::start(string("test_log_")+str+".txt");
     // Go
     Tester().clear_all()
-//            .set_UtilsTester()
-//            .set_GraphTester()
-//            .set_GraphStatsTester()
-//            .set_GraphProducerTester()
-//            .set_PMCEnumeratorTester()
-//            .set_StatisticRequestTester()
-//            .set_PMCRacerTester()
+            .set_UtilsTester()
+            .set_GraphTester()
+            .set_GraphStatsTester()
+            .set_GraphProducerTester()
+            .set_PMCEnumeratorTester()
+            .set_StatisticRequestTester()
+            .set_PMCRacerTester()
             .set_DatasetTester()
             .start();
     return 0;

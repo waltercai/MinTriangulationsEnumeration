@@ -120,9 +120,9 @@ bool StatisticRequest::test_has_trng_calculation() const { return test_trng() ||
     StatisticRequest& StatisticRequest::set_time_limit_##calculation(time_t t) { time_limit_##calculation = t; return *this; } \
     StatisticRequest& StatisticRequest::unset_time_limit_##calculation(){ time_limit_##calculation = invalid_time_limit; return *this; } \
     bool StatisticRequest::test_time_limit_##calculation() const { return valid_time_##calculation(); } \
-    time_t StatisticRequest::get_time_limit_##calculation() const { \
-        if (!valid_time_##calculation()) { \
-            TRACE(TRACE_LVL__WARNING, "Time limit value read, but no time limit set!"); \
+    time_t StatisticRequest::get_time_limit_##calculation(bool suppress_err) const { \
+        if (!suppress_err && !valid_time_##calculation()) { \
+            TRACE(TRACE_LVL__WARNING, "Time limit for " #calculation " accessed, but no time limit set!"); \
         } \
         return time_limit_##calculation; \
     }

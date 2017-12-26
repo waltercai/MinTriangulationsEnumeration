@@ -46,8 +46,8 @@ bool PMCRacer::go(const StatisticRequest& sr, bool verbose) {
     // For each graph:
     for (unsigned i=0; i<gs.size(); ++i) {
         UTILS__PRINT_IF(verbose, "=== Racing graph " << i+1 << "/" << gs.size()
-                       << ": '" << gs[i].get_text() << "'" << endl);
-        UTILS__PRINT_IF(verbose, "Start time: " << utils__timestamp_to_fulldate(time(NULL)) << endl);
+                       << ": '" << gs[i].get_text() << "'");
+        UTILS__PRINT_IF(verbose, "Start time: " << utils__timestamp_to_fulldate(time(NULL)));
 
         // Use all algorithms on the graph.
         // To save time, since all algorithms require the calculation of all minimal
@@ -58,12 +58,12 @@ bool PMCRacer::go(const StatisticRequest& sr, bool verbose) {
         bool time_limit_exceeded = false;
         MinimalSeparatorsEnumerator mse(gs[i].get_graph(), UNIFORM);
         NodeSetSet min_seps;
-        time_t ms_calc_time;
+        time_t ms_calc_time=0;
         try {
             while(mse.hasNext()) {
                 min_seps.insert(mse.next());
                 ms_calc_time = difftime(time(NULL),start_time);
-                if (sr.test_time_limit_pmc() && difftime(time(NULL),start_time) > sr.get_time_limit_pmc()) {
+                if (sr.test_time_limit_pmc() && ms_calc_time > sr.get_time_limit_pmc()) {
                     time_limit_exceeded = true;
                     break;
                 }
@@ -72,20 +72,24 @@ bool PMCRacer::go(const StatisticRequest& sr, bool verbose) {
         catch(std::bad_alloc) {
             TRACE(TRACE_LVL__ERROR, "Out of memory calculating minimal separators...");
             gs[i].set_mem_error_ms();
+            gs[i].set_pmc_calc_time(algs, ms_calc_time);
             continue;
         }
 
         // Keep calculating. Now, the remaining time can be used by each algorithm
         // separately.
-        UTILS__PRINT_IF(verbose, "MS calc time: " << utils__timestamp_to_hhmmss(ms_calc_time) << endl);
+        UTILS__PRINT_IF(verbose, "MS calc time: " << utils__timestamp_to_hhmmss(ms_calc_time));
         // time_remaining may be garbage if sr.test_time_limit_pmc() == false
-        time_t time_remaining_for_pmcs = difftime(sr.get_time_limit_pmc(),ms_calc_time);
+        time_t time_remaining_for_pmcs = difftime(sr.get_time_limit_pmc(true),ms_calc_time);
+        if (time_remaining_for_pmcs <= 0) {
+            time_remaining_for_pmcs = 1;
+        }
 
         // If the initial MS calculation took too long, all algorithms would be
         // too long.
         // Update the graph stats objects and continue on to the new graph.
         if (time_limit_exceeded) {
-            UTILS__PRINT_IF(verbose, "Out of time in initial MS calculation, moving on to the next graph." << endl);
+            UTILS__PRINT_IF(verbose, "Out of time in initial MS calculation, moving on to the next graph.");
             gs[i].set_reached_time_limit_pmc(utils__vector_to_set(algs));
             gs[i].set_pmc_calc_time(algs,sr.get_time_limit_pmc()+1);
             continue;
@@ -102,18 +106,17 @@ bool PMCRacer::go(const StatisticRequest& sr, bool verbose) {
             gs[i].set_ms_count(min_seps.size());
         }
 
-        // Use a random order of the algorithms, in case
-        // cache hits affect results.
-        vector<int> algorithm_shuffle(algs.size());
-        for (unsigned j=0; j<algorithm_shuffle.size(); ++j) {
-            algorithm_shuffle[j] = j;
+        // Use a random order of the algorithms, in case cache hits affect runtimes.
+        vector<int> permutation(algs.size());
+        for (unsigned j=0; j<permutation.size(); ++j) {
+            permutation[j] = j;
         }
-        std::random_shuffle(algorithm_shuffle.begin(), algorithm_shuffle.end());
-        UTILS__PRINT_IF(verbose, "Iterating over algorithm_shuffle in the following order: " << algorithm_shuffle << endl);
+        std::random_shuffle(permutation.begin(), permutation.end());
+        UTILS__PRINT_IF(verbose, "Iterating over algorithm_shuffle in the following order: " << permutation);
 
-        for (unsigned alg_index=0; alg_index<algorithm_shuffle.size(); ++alg_index) {
-            PMCAlg alg = algs[algorithm_shuffle[alg_index]];
-            UTILS__PRINT_IF(verbose,"New iteration, alg = " << alg.str() << endl);
+        for (unsigned alg_index=0; alg_index<permutation.size(); ++alg_index) {
+            PMCAlg alg = algs[permutation[alg_index]];
+            UTILS__PRINT_IF(verbose,"New iteration, alg = " << alg.str());
 
             // Calculate PMCs
             PMCEnumerator pmce(gs[i].get_graph());
@@ -125,18 +128,10 @@ bool PMCRacer::go(const StatisticRequest& sr, bool verbose) {
                 if (gs[i].get_graph().getNumberOfNodes() > 0) {
                     pmce.set_minimal_separators(min_seps);
                 }
-                if (sr.test_time_limit_pmc() && time_remaining_for_pmcs < sr.get_time_limit_pmc()) {
-                    // Set error state
-                    TRACE(TRACE_LVL__WARNING, "Out of time at an unusual place... used "
-                                            << ms_calc_time << "/" << sr.get_time_limit_pmc() << " seconds");
-                    gs[i].set_reached_time_limit_pmc(alg);
+                if (sr.test_time_limit_pmc()) {
+                    pmce.set_time_limit(time_remaining_for_pmcs);
                 }
-                else {
-                    if (sr.test_time_limit_pmc()) {
-                        pmce.set_time_limit(time_remaining_for_pmcs);
-                    }
-                    pmcs = pmce.get(/*sr*/);
-                }
+                pmcs = pmce.get(/*sr*/);
             }
             catch (std::bad_alloc) {
                 TRACE(TRACE_LVL__ERROR, "Out of memory during PMC calculation");
@@ -153,7 +148,7 @@ bool PMCRacer::go(const StatisticRequest& sr, bool verbose) {
                         pmce.is_out_of_time() ||
                         (sr.test_time_limit_pmc() && gs[i].get_pmc_calc_time(alg) > sr.get_time_limit_pmc())) {
                 gs[i].set_reached_time_limit_pmc(alg);  // This may be the first time we set this
-                UTILS__PRINT_IF(verbose, "Time limit reached in algorithm " << alg.str());
+                TRACE(TRACE_LVL__WARNING, "Time limit reached in algorithm " << alg.str());
                 continue;
             }
             TRACE(TRACE_LVL__TEST, "Not out of time");
