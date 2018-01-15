@@ -22,17 +22,17 @@ namespace tdenum {
  * Start by defining macros for target directories and files.
  */
 
+#define DORI_PROJECT_DATASET_DIR string(DATASET_DIR_BASE+"DoriProject"+string(1,SLASH))
 #define DORI_PROJECT_DATASET_DIR_SMALLHARD (DORI_PROJECT_DATASET_DIR + string("SmallHard") + string(1,SLASH))
 #define DORI_PROJECT_DATASET_DIR_SPARSE (DORI_PROJECT_DATASET_DIR + string("Sparse") + string(1,SLASH))
 #define DORI_PROJECT_DATASET_DIR_DENSE (DORI_PROJECT_DATASET_DIR + string("Dense") + string(1,SLASH))
 #define DORI_PROJECT_DATASET_DIR_BAYESIAN DATASET_NEW_DIR_BASE
 #define DORI_PROJECT_RESULTS_DIR string(RESULT_DIR_BASE+"DoriProject"+string(1,SLASH))
-#define DORI_PROJECT_DATASET_DIR string(DATASET_DIR_BASE+"DoriProject"+string(1,SLASH))
 
 class DatasetHandler {
 public:
 
-    void dori_project_races();
+    int dori_project_races();
 
 };
 
