@@ -12,7 +12,12 @@ void run_dataset(const vector<GraphStats>& vgs,
                  const string& dataset_filename_prefix) {
     vector<string> paths;
     for (GraphStats gs: vgs) {
-        paths.push_back(graph_dir+"/"+gs.get_text());
+        if (!gs.text_valid()) {
+            ASSERT(gs.is_random());
+            gs.set_text(GraphStats::get_default_filename_from_graph(gs.get_graph()));
+        }
+        ASSERT(gs.text_valid());
+        paths.push_back(utils__merge_dir_basename(graph_dir, gs.get_text()));
         gs.dump(paths.back());
     }
     TRACE(TRACE_LVL__ALWAYS, "Post-production. Now, " << graph_dir << " contains "
