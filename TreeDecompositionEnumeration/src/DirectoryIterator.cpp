@@ -93,7 +93,9 @@ bool DirectoryIterator::next_file(string& filename_ref) {
     TRACE(TRACE_LVL__DEBUG, "Pointer stack not empty. Reading new dirent");
     struct dirent *drnt;
     DIR* d = dir_ptr_stack.top();
+    TRACE(TRACE_LVL__DEBUG, "Dir pointer is " << d);
     drnt = readdir(d);  // This advances the underlying iterator
+    TRACE(TRACE_LVL__DEBUG, "Resulting dirent is " << drnt);
 
     // If d is NULL, we're done with this subdirectory. Go up a level.
     if (drnt == NULL) {
