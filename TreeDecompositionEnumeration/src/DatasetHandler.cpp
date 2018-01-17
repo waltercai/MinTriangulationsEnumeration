@@ -11,17 +11,24 @@ void run_dataset(const vector<GraphStats>& vgs,
                  const string& dataset_name,
                  const string& dataset_filename_prefix) {
     vector<string> paths;
+    TRACE(TRACE_LVL__ALWAYS, "In. Dumping graph files...");
     for (GraphStats gs: vgs) {
         string graph_name = gs.get_text();
+        TRACE(TRACE_LVL__ALWAYS, "Got text '" << graph_name << "'. Is it valid?");
         if (!gs.text_valid()) {
             if (!gs.is_random()) {
                 TRACE(TRACE_LVL__ERROR, "ERROR: Input graph doesn't have a valid name, but isn't random!\nSkipping dataset...");
                 return;
             }
             graph_name = GraphStats::get_default_filename_from_graph(gs.get_graph());
+            TRACE(TRACE_LVL__ALWAYS, "NO. Got new text: '" << graph_name << "'");
         }
         paths.push_back(utils__merge_dir_basename(graph_dir, graph_name));
-        gs.dump(paths.back());
+        TRACE(TRACE_LVL__ALWAYS, "Dumping graph '" << paths.back() << "'");
+        if (!gs.dump(paths.back())) {
+            TRACE(TRACE_LVL__ERROR, "Failed to dump graph '" << paths.back() << "'! Aborting dataset...");
+            return;
+        }
     }
     TRACE(TRACE_LVL__ALWAYS, "Post-production. Now, " << graph_dir << " contains "
                             << DirectoryIterator(graph_dir).file_count()
