@@ -54,7 +54,8 @@ DatasetTester.o: DatasetTester.cpp Dataset.h DirectoryIterator.h Graph.h \
  SuccinctGraphRepresentation.h IndSetExtByTriangulation.h \
  MinimalTriangulator.h IndSetExtBySeparators.h \
  MaximalIndependentSetsEnumerator.h IndependentSetScorer.h \
- IndSetScorerByTriangulation.h StatisticRequestTester.h
+ IndSetScorerByTriangulation.h GraphStatsTester.h \
+ StatisticRequestTester.h
 DataStructures.o: DataStructures.cpp DataStructures.h
 DirectoryIterator.o: DirectoryIterator.cpp DirectoryIterator.h \
  TestInterface.h Utils.h
@@ -77,7 +78,7 @@ GraphStats.o: GraphStats.cpp Graph.h DataStructures.h GraphReader.h \
  GraphStats.h ChordalGraph.h PMCAlg.h StatisticRequest.h Utils.h
 GraphStatsTester.o: GraphStatsTester.cpp GraphReader.h Graph.h \
  DataStructures.h GraphStats.h ChordalGraph.h PMCAlg.h StatisticRequest.h \
- GraphStatsTester.h TestInterface.h Utils.h
+ Utils.h GraphStatsTester.h TestInterface.h
 GraphTester.o: GraphTester.cpp GraphTester.h Graph.h DataStructures.h \
  TestInterface.h Utils.h
 IndSetExtBySeparators.o: IndSetExtBySeparators.cpp \
@@ -123,11 +124,12 @@ MinTriangulationsEnumeration.o: MinTriangulationsEnumeration.cpp \
 OptimalMinimalTriangulator.o: OptimalMinimalTriangulator.cpp \
  OptimalMinimalTriangulator.h Graph.h DataStructures.h ChordalGraph.h \
  BlockInfo.h SubGraph.h IndependentSetExtender.h TriangulationEvaluator.h \
- PMCEnumerator.h PMCAlg.h StatisticRequest.h
+ PMCEnumerator.h PMCAlg.h StatisticRequest.h Utils.h
 PMCAlg.o: PMCAlg.cpp PMCAlg.h Utils.h
 PMCEnumerator.o: PMCEnumerator.cpp PMCEnumerator.h DataStructures.h \
- Graph.h PMCAlg.h StatisticRequest.h SubGraph.h IndependentSetExtender.h \
- MinimalSeparatorsEnumerator.h SeparatorsScorer.h Utils.h
+ Graph.h PMCAlg.h StatisticRequest.h Utils.h SubGraph.h \
+ IndependentSetExtender.h MinimalSeparatorsEnumerator.h \
+ SeparatorsScorer.h
 PMCEnumeratorTester.o: PMCEnumeratorTester.cpp ChordalGraph.h Graph.h \
  DataStructures.h GraphProducer.h DirectoryIterator.h GraphReader.h \
  GraphStats.h PMCAlg.h StatisticRequest.h Utils.h \
@@ -140,12 +142,12 @@ PMCEnumeratorTester.o: PMCEnumeratorTester.cpp ChordalGraph.h Graph.h \
  TestInterface.h
 PMCRacer.o: PMCRacer.cpp MinimalSeparatorsEnumerator.h Graph.h \
  DataStructures.h SeparatorsScorer.h PMCEnumerator.h PMCAlg.h \
- StatisticRequest.h SubGraph.h IndependentSetExtender.h PMCRacer.h \
- GraphStats.h ChordalGraph.h Utils.h
+ StatisticRequest.h Utils.h SubGraph.h IndependentSetExtender.h \
+ PMCRacer.h GraphStats.h ChordalGraph.h
 PMCRacerTester.o: PMCRacerTester.cpp DirectoryIterator.h PMCEnumerator.h \
- DataStructures.h Graph.h PMCAlg.h StatisticRequest.h SubGraph.h \
+ DataStructures.h Graph.h PMCAlg.h StatisticRequest.h Utils.h SubGraph.h \
  IndependentSetExtender.h PMCRacer.h GraphStats.h ChordalGraph.h \
- PMCRacerTester.h TestInterface.h Utils.h
+ PMCRacerTester.h TestInterface.h
 RankedTriangulationEnumerator.o: RankedTriangulationEnumerator.cpp \
  RankedTriangulationEnumerator.h Graph.h DataStructures.h \
  TriangulationEvaluator.h SubGraph.h IndependentSetExtender.h \
@@ -158,15 +160,15 @@ SeparatorsScorer.o: SeparatorsScorer.cpp SeparatorsScorer.h Graph.h \
 StatisticRequest.o: StatisticRequest.cpp StatisticRequest.h PMCAlg.h \
  Utils.h
 StatisticRequestTester.o: StatisticRequestTester.cpp StatisticRequest.h \
- PMCAlg.h StatisticRequestTester.h TestInterface.h Utils.h
+ PMCAlg.h Utils.h StatisticRequestTester.h TestInterface.h
 SubGraph.o: SubGraph.cpp SubGraph.h IndependentSetExtender.h Graph.h \
  DataStructures.h
 Tester.o: Tester.cpp PMCEnumerator.h DataStructures.h Graph.h PMCAlg.h \
- StatisticRequest.h SubGraph.h IndependentSetExtender.h Tester.h \
- DatasetTester.h TestInterface.h Utils.h GraphProducerTester.h \
- GraphProducer.h DirectoryIterator.h GraphReader.h GraphStats.h \
- ChordalGraph.h GraphStatsTester.h GraphTester.h PMCEnumeratorTester.h \
- PMCRacerTester.h StatisticRequestTester.h UtilsTester.h
+ StatisticRequest.h Utils.h SubGraph.h IndependentSetExtender.h Tester.h \
+ DatasetTester.h TestInterface.h GraphProducerTester.h GraphProducer.h \
+ DirectoryIterator.h GraphReader.h GraphStats.h ChordalGraph.h \
+ GraphStatsTester.h GraphTester.h PMCEnumeratorTester.h PMCRacerTester.h \
+ StatisticRequestTester.h UtilsTester.h
 TestInterface.o: TestInterface.cpp TestInterface.h Utils.h
 TriangulationEvaluator.o: TriangulationEvaluator.cpp \
  TriangulationEvaluator.h Graph.h DataStructures.h SubGraph.h \
