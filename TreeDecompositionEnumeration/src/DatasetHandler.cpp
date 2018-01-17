@@ -30,9 +30,9 @@ void run_dataset(const vector<GraphStats>& vgs,
             return;
         }
     }
-    TRACE(TRACE_LVL__ALWAYS, "Post-production. Now, " << graph_dir << " contains "
-                            << DirectoryIterator(graph_dir).file_count()
-                            << " files.");
+    TRACE(TRACE_LVL__ALWAYS, "Running DI from '" << graph_dir << "'");
+    int total_files = DirectoryIterator(graph_dir).file_count();
+    TRACE(TRACE_LVL__ALWAYS, "Post-production. Now, " << graph_dir << " contains " << total_files << " files.");
 
     Dataset ds(DORI_PROJECT_RESULTS_DIR+"/"+dataset_filename_prefix+UTILS__TO_STRING(RESULTS_SUFFIX), paths);
     ds.set_all_requests(sr);

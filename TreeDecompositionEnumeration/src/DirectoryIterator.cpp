@@ -148,10 +148,12 @@ int DirectoryIterator::file_count(bool from_this_point) {
         reset();
     }
     string dud;
-    int count;
-    for (count=0; next_file(dud); ++count);
+    int cnt;
+    for (cnt=0; next_file(dud); ++cnt) {
+        TRACE(TRACE_LVL__DEBUG, "File " << cnt+1 << " is '" << dud << "'");
+    }
     reset();
-    return count;
+    return cnt;
 }
 
 
