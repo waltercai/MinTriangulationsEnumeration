@@ -90,12 +90,14 @@ bool DirectoryIterator::next_file(string& filename_ref) {
     }
 
     // Read next:
+    TRACE(TRACE_LVL__DEBUG, "Pointer stack not empty. Reading new dirent");
     struct dirent *drnt;
     DIR* d = dir_ptr_stack.top();
     drnt = readdir(d);  // This advances the underlying iterator
 
     // If d is NULL, we're done with this subdirectory. Go up a level.
     if (drnt == NULL) {
+        TRACE(TRACE_LVL__DEBUG, "Got empty dirent. Popping pointer stack, iterating with filename_ref = '" << filename_ref << "'");
         dir_ptr_stack.pop();
         name_stack.pop();
         closedir(d);    // We're done with this directory, close it.
@@ -104,6 +106,7 @@ bool DirectoryIterator::next_file(string& filename_ref) {
 
     string filename = drnt->d_name;
     string fullname = utils__merge_dir_basename(name_stack.top(), filename);
+    TRACE(TRACE_LVL__DEBUG, "Dirent has filename '" << filename << "' and dirname '" << fullname << "'");
 
     // If the directory given is "." or "..", ignore it.
     if (filename == "." || filename == "..") {
@@ -113,15 +116,19 @@ bool DirectoryIterator::next_file(string& filename_ref) {
     // If the user requested to skip this, skip
     for (unsigned int i=0; i<skip_list.size(); ++i) {
         if (fullname.find(skip_list[i]) !=  string::npos) {
+            TRACE(TRACE_LVL__DEBUG, "Skip! Iterating with filename_ref='" << filename_ref << "'");
             return next_file(filename_ref);
         }
     }
 
     // If this is a directory, push it onto the stack and recurse:
+    TRACE(TRACE_LVL__DEBUG, "Is directory?");
     struct stat s;
     stat(fullname.c_str(), &s);
     if ((s.st_mode & S_IFDIR) && dir_ptr_stack.size() < max_depth) {
         // Add trailing slash
+        TRACE(TRACE_LVL__DEBUG, "After stat(), is a directory. Go deeper (stack size is "
+                        << dir_ptr_stack.size() << ", max depth is " << max_depth << ")...");
         fullname += string(1,SLASH);
         // Open the directory
         DIR* subdir = opendir(fullname.c_str());
@@ -135,11 +142,13 @@ bool DirectoryIterator::next_file(string& filename_ref) {
         // Otherwise, push it onto the stack and recurse.
         dir_ptr_stack.push(subdir);
         name_stack.push(fullname);
+        TRACE(TRACE_LVL__DEBUG, "Recursion with top of stack = '" << fullname << "'");
         return next_file(filename_ref);
     }
 
     // If this is a file, hurrah! Return it
     else if (s.st_mode & S_IFREG) {
+        TRACE(TRACE_LVL__DEBUG, "Nope. Updating filename_ref to '" << fullname << "', returning true");
         filename_ref = fullname;   // Give the full name, relative to the working path
         return true;
     }
