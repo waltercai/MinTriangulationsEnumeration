@@ -16,7 +16,12 @@ namespace tdenum {
  * will always return false.
  */
 DirectoryIterator::DirectoryIterator(const string& bd, bool v, unsigned int md) :
-        base_dir(bd), verbose(v), max_depth(md) { init(); }
+            base_dir(bd),
+            verbose(v),
+            max_depth(md) {
+    TRACE(TRACE_LVL__DEBUG, "In DI ctor, base dir is '" << bd << "'");
+    init();
+}
 DirectoryIterator::~DirectoryIterator() {
     // Close all open directories
     while (!dir_ptr_stack.empty()) {
@@ -27,8 +32,10 @@ DirectoryIterator::~DirectoryIterator() {
 }
 
 void DirectoryIterator::init() {
+    TRACE(TRACE_LVL__DEBUG, "Opening directory '" << base_dir << "'...");
     DIR* d = opendir(base_dir.c_str());
     if (d != NULL) {
+        TRACE(TRACE_LVL__DEBUG, "Success!");
         dir_ptr_stack.push(d);
         name_stack.push(base_dir);
     }
@@ -76,6 +83,7 @@ DirectoryIterator& DirectoryIterator::skip(const vector<string>& vs) {
  */
 bool DirectoryIterator::next_file(string& filename_ref) {
     // Basics:
+    TRACE(TRACE_LVL__DEBUG, "In with filename_ref = '" << filename_ref << "'");
     if (dir_ptr_stack.empty()) {
         filename_ref = "";
         return false;
@@ -144,9 +152,11 @@ bool DirectoryIterator::next_file(string& filename_ref) {
 }
 
 int DirectoryIterator::file_count(bool from_this_point) {
+    TRACE(TRACE_LVL__DEBUG, "In");
     if (!from_this_point) {
         reset();
     }
+    TRACE(TRACE_LVL__DEBUG, "Starting loop...");
     string dud;
     int cnt;
     for (cnt=0; next_file(dud); ++cnt) {
