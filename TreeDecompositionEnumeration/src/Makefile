@@ -14,16 +14,21 @@ OBJS_TESTER=$(OBJS) DatasetTester.o GraphProducerTester.o GraphStatsTester.o \
  GraphTester.o PMCEnumeratorTester.o PMCRacerTester.o StatisticRequestTester.o \
  Tester.o TestInterface.o UtilsTester.o
 OBJS_MAIN=$(OBJS) $(EXEC).o
+OBJS_TMP=$(OBJS) tmp.o
 EXEC=dori_main
 EXEC_TEST=tester
+EXEC_TMP=tmp_main
 
 $(EXEC): $(OBJS_MAIN)
 
 $(EXEC_TEST): $(OBJS_TESTER)
 	$(CC) $(CPPFLAGS) $(LDFLAGS) -o $(EXEC_TEST) $(OBJS_TESTER)
 
+$(EXEC_TMP): $(OBJS_TMP)
+	$(CC) $(CPPFLAGS) $(LDFLAGS) -o $(EXEC_TMP) $(OBJS_TMP) 
+
 clean:
-	rm -f $(OBJS) $(OBJS_MAIN) $(OBJS_TESTER) $(OBJS_TRNG_ENUM) $(EXEC) $(EXEC_TEST)
+	rm -f $(OBJS) $(OBJS_MAIN) $(OBJS_TESTER) $(OBJS_TRNG_ENUM) $(OBJS_TMP) $(EXEC) $(EXEC_TMP) $(EXEC_TEST)
 
 BlockInfo.o: BlockInfo.cpp BlockInfo.h Graph.h DataStructures.h \
  SubGraph.h IndependentSetExtender.h
@@ -170,6 +175,7 @@ Tester.o: Tester.cpp PMCEnumerator.h DataStructures.h Graph.h PMCAlg.h \
  GraphStatsTester.h GraphTester.h PMCEnumeratorTester.h PMCRacerTester.h \
  StatisticRequestTester.h UtilsTester.h
 TestInterface.o: TestInterface.cpp TestInterface.h Utils.h
+tmp.o: tmp.cpp DirectoryIterator.h Utils.h
 TriangulationEvaluator.o: TriangulationEvaluator.cpp \
  TriangulationEvaluator.h Graph.h DataStructures.h SubGraph.h \
  IndependentSetExtender.h
