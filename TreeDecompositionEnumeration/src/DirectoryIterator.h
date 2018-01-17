@@ -43,6 +43,9 @@ private:
 
     void init();                  // Sets the first base directory on the ptr_stack + name_stack
 
+    // Closes all opened directories, empties the dir stack
+    DirectoryIterator& close_and_empty_dir_stack();
+
 public:
 
     // Init with the base directory, verbosity (print errors) and maximum depth of
@@ -51,6 +54,7 @@ public:
                       bool verbose = true,
                       unsigned int md = 100);
     ~DirectoryIterator();
+
 
     // Resets the Directory iterator with the same original base dir.
     DirectoryIterator& reset(bool keep_skiplist = true);
