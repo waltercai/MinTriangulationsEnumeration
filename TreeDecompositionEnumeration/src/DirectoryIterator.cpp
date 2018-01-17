@@ -55,15 +55,10 @@ DirectoryIterator& DirectoryIterator::close_and_empty_dir_stack() {
 DirectoryIterator& DirectoryIterator::reset(bool keep_skiplist) { return reset(base_dir, keep_skiplist); }
 DirectoryIterator& DirectoryIterator::reset(const string& bd, bool keep_skiplist) {
     close_and_empty_dir_stack();
-    if (keep_skiplist) {
-        vector<string> tmplist = skip_list;
-        // Let the destructor do it's job
-        *this = DirectoryIterator(bd);
-        skip(tmplist);
+    if (!keep_skiplist) {
+        skip_list.clear();
     }
-    else {
-        *this = DirectoryIterator(bd);
-    }
+    init();
     return *this;
 }
 
