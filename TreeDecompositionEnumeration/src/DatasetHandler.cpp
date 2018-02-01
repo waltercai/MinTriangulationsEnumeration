@@ -5,7 +5,7 @@
 
 namespace tdenum {
 
-void run_dataset(const vector<GraphStats>& vgs,
+void DatasetHandler::run_dataset_globalstats_allalgs(const vector<GraphStats>& vgs,
                  const StatisticRequest& sr,
                  const string& graph_dir,
                  const string& dataset_name,
@@ -69,27 +69,27 @@ int DatasetHandler::dori_project_races() {
     vector<GraphStats> vgs_smallhard = GraphProducer(DORI_PROJECT_DATASET_DIR_SMALLHARD,true)
             .add_random_pstep_range(utils__vector_range(25,35),0.2,0.45,0.1,10)
             .get();
-    run_dataset(vgs_smallhard, sr, DORI_PROJECT_DATASET_DIR_SMALLHARD, "small hard", "SmallHard_");
+    run_dataset_globalstats_allalgs(vgs_smallhard, sr, DORI_PROJECT_DATASET_DIR_SMALLHARD, "small hard", "SmallHard_");
 
     // Sparse graphs
     vector<GraphStats> vgs_sparse = GraphProducer(DORI_PROJECT_DATASET_DIR_SPARSE,true)
             .add_dir(DORI_PROJECT_DATASET_DIR_SPARSE)
             .add_random(utils__vector_range(50,60),{0.05},true,10)
             .get();
-    run_dataset(vgs_sparse, sr, DORI_PROJECT_DATASET_DIR_SPARSE, "sparse", "Sparse_");
+    run_dataset_globalstats_allalgs(vgs_sparse, sr, DORI_PROJECT_DATASET_DIR_SPARSE, "sparse", "Sparse_");
 
     // Dense graphs
     vector<GraphStats> vgs_dense = GraphProducer(DORI_PROJECT_DATASET_DIR_DENSE,true)
             .add_dir(DORI_PROJECT_DATASET_DIR_DENSE)
             .add_random_pstep_range(utils__vector_range(50,60),0.7,0.95,0.1,10)
             .get();
-    run_dataset(vgs_dense, sr, DORI_PROJECT_DATASET_DIR_DENSE, "dense", "Dense_");
+    run_dataset_globalstats_allalgs(vgs_dense, sr, DORI_PROJECT_DATASET_DIR_DENSE, "dense", "Dense_");
 
     // Bayesian graphs
     vector<GraphStats> vgs_bayesian = GraphProducer(DORI_PROJECT_DATASET_DIR_BAYESIAN,true)
             .add(DirectoryIterator(DORI_PROJECT_DATASET_DIR_BAYESIAN).skip("evid"))
             .get();
-    run_dataset(vgs_bayesian, sr, DORI_PROJECT_DATASET_DIR_BAYESIAN, "bayesian", "Bayesian_");
+    run_dataset_globalstats_allalgs(vgs_bayesian, sr, DORI_PROJECT_DATASET_DIR_BAYESIAN, "bayesian", "Bayesian_");
 
     // Done.
     TRACE(TRACE_LVL__ALWAYS, "=====END=====");

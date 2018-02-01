@@ -30,6 +30,23 @@ namespace tdenum {
 #define DORI_PROJECT_RESULTS_DIR string(RESULT_DIR_BASE+"DoriProject"+string(1,SLASH))
 
 class DatasetHandler {
+private:
+    /**
+     * Runs a dataset defined by the vector of graphs given.
+     *
+     * The statistics requested are global (the same stats calculated for each graph) and
+     * all algorithms are run.
+     *
+     * The output file will be composed of the dataset filename prefix and the dataset name.
+     *
+     * Verbose output is provided while calculating.
+     */
+    void run_dataset_globalstats_allalgs(const vector<GraphStats>& vgs,
+                                         const StatisticRequest& sr,
+                                         const string& graph_dir,
+                                         const string& dataset_name,
+                                         const string& dataset_filename_prefix);
+
 public:
 
     int dori_project_races();

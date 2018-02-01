@@ -7,5 +7,8 @@ main
 dori_main
 tester
 log.txt
+Datasets/
+TreeDecompositionEnumeration/src/Datasets/*
+*Datasets/*
 NewDatasets/
 PMC_Project/

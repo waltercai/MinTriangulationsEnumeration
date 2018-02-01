@@ -57,6 +57,9 @@ string Dataset::str() const {
     return out;
 }
 
+bool Dataset::dump_header() const { return utils__dump_string_to_file(header(), file_path); }
+bool Dataset::append_graph_to_dump_file(const GraphStats& gs, const StatisticRequest& sr) const { return utils__dump_string_to_file(str(gs, sr), file_path, true); }
+
 const Dataset& Dataset::update_progress(const StatisticRequest& sr, GraphStats& gs) const {
     if (!verbose) {
         return *this;
@@ -98,6 +101,8 @@ bool Dataset::unique_graph_text(const vector<GraphStats>& vgs) {
     return true;
 }
 bool Dataset::unique_graph_text() const { return unique_graph_text(get_vector_gs()); }
+
+const string Dataset::COLLISION_SUFFIX = ".ALTERNATE";
 
 Dataset& Dataset::clear() {
     dataset.clear();
@@ -335,6 +340,13 @@ Dataset& Dataset::calc_trng(GraphStats& gs, const StatisticRequest& sr) {
 	return *this;
 }
 Dataset& Dataset::calc() {
+    // At this point we can ignore the contents of the target file (all relevant
+    // data should already be loaded) so if we're in iterative dump mode, dump a
+    // new file with a header a this point.
+    if (dump_each_graph) {
+        dump_header();
+    }
+
     // Calculate!
     // Use the .second field of the request to send the StatReq object.
     // Remember to use references, or it won't write the data!
@@ -342,6 +354,9 @@ Dataset& Dataset::calc() {
         calc_ms(request.first, request.second);
         calc_pmc(request.first, request.second);
         calc_trng(request.first, request.second);
+        if (dump_each_graph) {
+            append_graph_to_dump_file(request.first, request.second);
+        }
     }
     return *this;
 }
@@ -397,18 +412,18 @@ bool Dataset::dump_barren_stat_file(const string& target_path,
     }
 }
 
-Dataset::Dataset(const string& path) :
+Dataset::Dataset(const string& path, bool dump_each_graph_separately) :
                 file_path(path),
-                verbose(true)
+                verbose(true),
+                dump_each_graph(dump_each_graph_separately)
 {
     load();
     if (!unique_graph_text()) {
         TRACE(TRACE_LVL__ERROR, "Graph file paths aren't unique in '" << file_path << "'");
     }
 }
-Dataset::Dataset(const string& path, const vector<string>& graph_paths) :
-                file_path(path),
-                verbose(true)
+Dataset::Dataset(const string& path, const vector<string>& graph_paths, bool dump_each_graph_separately) :
+                Dataset(path, dump_each_graph_separately)
 {
     for (unsigned i=0; i<graph_paths.size(); ++i) {
         // Make sure the text is unique
@@ -436,8 +451,8 @@ Dataset::Dataset(const string& path, const vector<string>& graph_paths) :
 
 }
 
-Dataset& Dataset::reset(const string& path) { return (*this = Dataset(path)); }
-Dataset& Dataset::reset(const string& path, const vector<string>& graph_paths) { return (*this = Dataset(path, graph_paths)); }
+Dataset& Dataset::reset(const string& path, bool dump_each) { return (*this = Dataset(path, dump_each)); }
+Dataset& Dataset::reset(const string& path, const vector<string>& graph_paths, bool dump_each) { return (*this = Dataset(path, graph_paths, dump_each)); }
 
 Dataset& Dataset::set_request(unsigned index, const StatisticRequest& sr) {
     if (index < 0 || index >= dataset.size()) {
@@ -547,7 +562,21 @@ Dataset& Dataset::load_stats() {
     // Return
     return *this;
 }
-bool Dataset::dump() const {
+bool Dataset::dump(bool even_if_iterative_dump_is_on) {
+    // Collision checks
+    if (dump_each_graph && even_if_iterative_dump_is_on && utils__file_exists(file_path)) {
+        TRACE(TRACE_LVL__WARNING, "Trying to dump(), by a file '" << file_path << "' already exists " \
+                                  "and the Dataset should have already dumped graphs during calc()... " << endl << \
+                                  "Changing the file_path to '"<< file_path+Dataset::COLLISION_SUFFIX << "', " \
+                                  "and then dumping again...");
+        file_path += Dataset::COLLISION_SUFFIX;
+    }
+    else if (dump_each_graph && !even_if_iterative_dump_is_on) {
+        TRACE(TRACE_LVL__WARNING, "dump() called on a Dataset instance which should have already dumped " \
+                                      "the graphs in the call to calc()... changing path to ");
+        return true;
+    }
+    // Dump
     if (!utils__dump_string_to_file(str(), file_path)) {
         TRACE(TRACE_LVL__ERROR, "Couldn't dump data to '" << file_path << "'");
         return false;

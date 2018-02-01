@@ -142,8 +142,9 @@ private:
 
     // Internals
     vector<GraphReq> dataset; // The dataset itself
-    string file_path;                                   // Path to file containing statistics / dump target
-    bool verbose;                                       // If true, progress reports will be displayed
+    string file_path;       // Path to file containing statistics / dump target
+    bool verbose;           // If true, progress reports will be displayed
+    bool dump_each_graph;   // If true, each calculated graph will dump a row to the dump target
 
     // These print out CSV strings for output.
     // An entry will use the StatisticRequest object to determine which
@@ -151,6 +152,10 @@ private:
     string header() const;
     string str(const GraphStats& gs, const StatisticRequest& sr) const;
     string str() const;
+
+    // Dump the header to a NEW file, or APPEND a graph row to an existing file
+    bool dump_header() const;
+    bool append_graph_to_dump_file(const GraphStats& gs, const StatisticRequest& sr) const;
 
     // Used for mid-calculation progress reports.
     const Dataset& update_progress(const StatisticRequest& sr, GraphStats& gs) const;
@@ -210,6 +215,12 @@ public:
     static int graph_index_by_text(const vector<GraphStats>& vgs, const string& txt);
     static bool unique_graph_text(const vector<GraphStats>&);
 
+    // Sometimes it is unclear if the data in the dumped file is more recent than
+    // the data in memory (in the class instance) - in this case the Dataset may
+    // decide redirect the output of dump() to the given file path with the following
+    // additional extension.
+    static const string COLLISION_SUFFIX;
+
     // Given a GraphStats vector, stupidly dump a basic statistics file.
     // Using the basic file, load() should be able to re-read all GraphStats
     // and read the graphs from the paths in the text column.
@@ -235,18 +246,22 @@ public:
     //    already calculated.
     // 4. Call calc() to calculate all remaining requested data.
     // Every constructor initializes the StatisticRequest objects to their default value.
-    Dataset(const string& path);
+    //
+    // The boolean flag sent is to allow a less painful premature termination of execution:
+    // if it's true, each calculated graph will initiate a dump of one row to the statistics
+    // file.
+    Dataset(const string& path, bool dump_each_graph_separately = true);
 
     // If constructed with paths to GraphStats files as input, NO STATISTICS FILE IS READ.
     // Instead, the 'path' string will be used for output only!
     // Every GS object that isn't found on disk or fails to load is discarded, so remember to
     // dump the GS instances first using the GraphProducer or GraphStats classes!
     // If the vector of graph paths isn't unique, duplicates will be discarded.
-    Dataset(const string& path, const vector<string>& graph_paths);
+    Dataset(const string& path, const vector<string>& graph_paths, bool dump_each_graph_separately = true);
 
     // Reset the Dataset (constructs a new one with the given input)
-    Dataset& reset(const string& path);
-    Dataset& reset(const string& path, const vector<string>& graphs);
+    Dataset& reset(const string& path, bool dump_each_graph_separately = true);
+    Dataset& reset(const string& path, const vector<string>& graphs, bool dump_each_graph_separately = true);
 
     // Described above.
     // Sets the StatisticRequests for the dataset.
@@ -280,7 +295,9 @@ public:
     // be the same (if the same version of the Dataset class was used for
     // output).
     // Returns true on successful dump.
-    bool dump() const;
+    // If the given flag is true, dumps the data even if the data was iteratively
+    // dumped during the calculation (during the call to calc()).
+    bool dump(bool even_if_iterative_dump_is_on = false);
 
     // Ignores the verbosity and file path, takes GraphStats and StatisticRequests into account
     bool operator==(const Dataset&) const;
