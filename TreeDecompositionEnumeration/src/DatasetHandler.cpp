@@ -34,7 +34,7 @@ void DatasetHandler::run_dataset_globalstats_allalgs(const vector<GraphStats>& v
     int total_files = DirectoryIterator(graph_dir).file_count();
     TRACE(TRACE_LVL__ALWAYS, "Post-production. Now, " << graph_dir << " contains " << total_files << " files.");
 
-    Dataset ds(DORI_PROJECT_RESULTS_DIR+"/"+dataset_filename_prefix+UTILS__TO_STRING(RESULTS_SUFFIX), paths);
+    Dataset ds(DORI_PROJECT_RESULTS_DIR+"/"+dataset_filename_prefix+UTILS__TO_STRING(RESULTS_SUFFIX)+".csv", paths);
     ds.set_all_requests(sr);
     TRACE(TRACE_LVL__ALWAYS, "Starting with " << dataset_name << " graphs.");
     TRACE(TRACE_LVL__ALWAYS, "Reading from " << graph_dir << ", "
