@@ -152,6 +152,7 @@ string utils__replace_string();
 // Convert time stamp (in seconds) to / from readable time
 string utils__timestamp_to_hhmmss(time_t t);
 string utils__timestamp_to_fulldate(time_t t);
+string utils__now_to_fulldate_filename();
 time_t utils__hhmmss_to_timestamp(const string& hhmmss);
 
 // Max time_t value

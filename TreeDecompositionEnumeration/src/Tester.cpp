@@ -59,14 +59,7 @@ int main(int argc, char** argv) {
     // Make sure the PMC mode verifies sorting!
     PMCE_RUNMODE = PMCE_RUNMODE_VERIFY_SORT;
     // Create a unique log file
-    time_t rawtime;
-    struct tm * timeinfo;
-    char buffer[80];
-    time(&rawtime);
-    timeinfo = localtime(&rawtime);
-    strftime(buffer,sizeof(buffer),"%d_%m_%Y__%H_%M_%S",timeinfo);
-    string str(buffer);
-    Logger::start(string("test_log_")+str+".txt");
+    Logger::start(string("test_log_")+utils__now_to_fulldate_filename()+".txt");
     // Go
     Tester().clear_all()
             .set_UtilsTester()

@@ -219,6 +219,15 @@ string utils__timestamp_to_fulldate(time_t t) {
     strftime(buff, 100, "%c", localtime(&t));
     return buff;
 }
+string utils__now_to_fulldate_filename() {
+    time_t rawtime;
+    struct tm * timeinfo;
+    char buffer[80];
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+    strftime(buffer,sizeof(buffer),"%d_%m_%Y__%H_%M_%S",timeinfo);
+    return str(buffer);
+}
 time_t utils__hhmmss_to_timestamp(const string& hhmmss) {
     string regex_str = "^[0-9][0-9]:[0-5][0-9]:[0-5][0-9]$";
     if (!regex_match(hhmmss,regex(regex_str))) {
