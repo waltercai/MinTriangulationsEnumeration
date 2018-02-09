@@ -67,7 +67,7 @@ int DatasetHandler::dori_project_races() {
 
     // Small & hard (see the produce() command for details)
     vector<GraphStats> vgs_smallhard = GraphProducer(DORI_PROJECT_DATASET_DIR_SMALLHARD,true)
-            .add_random_pstep_range(utils__vector_range(25,35),0.2,0.45,0.1,10)
+            .add_random_pstep_range(utils__vector_range(25,30),0.2,0.45,0.1,10)
             .get();
     run_dataset_globalstats_allalgs(vgs_smallhard, sr, DORI_PROJECT_DATASET_DIR_SMALLHARD, "small hard", "SmallHard_");
 
