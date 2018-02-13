@@ -12,7 +12,6 @@
 using namespace tdenum;
 
 int main(int argc, char *argv[]) {
-    utils__timestamp_to_fulldate()
     Logger::start(string("log_") + utils__now_to_fulldate_filename() + ".txt", false);
 //    PMCEnumeratorTester pmcet(false);
 //    pmcet.go();
