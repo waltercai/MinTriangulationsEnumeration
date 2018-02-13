@@ -226,7 +226,7 @@ string utils__now_to_fulldate_filename() {
     time(&rawtime);
     timeinfo = localtime(&rawtime);
     strftime(buffer,sizeof(buffer),"%d_%m_%Y__%H_%M_%S",timeinfo);
-    return str(buffer);
+    return string(buffer);
 }
 time_t utils__hhmmss_to_timestamp(const string& hhmmss) {
     string regex_str = "^[0-9][0-9]:[0-5][0-9]:[0-5][0-9]$";
