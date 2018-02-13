@@ -74,7 +74,7 @@ int DatasetHandler::dori_project_races() {
     // Sparse graphs
     vector<GraphStats> vgs_sparse = GraphProducer(DORI_PROJECT_DATASET_DIR_SPARSE,true)
             .add_dir(DORI_PROJECT_DATASET_DIR_SPARSE)
-            .add_random(utils__vector_range(50,60),{0.05},true,10)
+            .add_random(utils__vector_range(50,54),{0.05},true,10)
             .get();
     run_dataset_globalstats_allalgs(vgs_sparse, sr, DORI_PROJECT_DATASET_DIR_SPARSE, "sparse", "Sparse_");
 
