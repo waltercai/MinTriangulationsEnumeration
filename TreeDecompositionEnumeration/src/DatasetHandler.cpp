@@ -1,7 +1,7 @@
 #include "DatasetHandler.h"
 #include "TestInterface.h"
 
-#define RESULTS_SUFFIX 0 // Change this to change the suffix of the target filename
+#define RESULTS_SUFFIX utils__now_to_fulldate_filename() // Change this to change the suffix of the target filename
 
 namespace tdenum {
 
@@ -36,6 +36,7 @@ void DatasetHandler::run_dataset_globalstats_allalgs(const vector<GraphStats>& v
 
     Dataset ds(DORI_PROJECT_RESULTS_DIR+"/"+dataset_filename_prefix+UTILS__TO_STRING(RESULTS_SUFFIX)+".csv", paths);
     ds.set_all_requests(sr);
+    ds.load_stats();
     TRACE(TRACE_LVL__ALWAYS, "Starting with " << dataset_name << " graphs.");
     TRACE(TRACE_LVL__ALWAYS, "Reading from " << graph_dir << ", "
                             << paths.size() << " files found.");

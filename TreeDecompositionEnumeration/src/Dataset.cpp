@@ -343,7 +343,7 @@ Dataset& Dataset::calc() {
     // At this point we can ignore the contents of the target file (all relevant
     // data should already be loaded) so if we're in iterative dump mode, dump a
     // new file with a header a this point.
-    if (dump_each_graph) {
+    if (dump_each_graph && !file_exists()) {
         dump_header();
     }
 
