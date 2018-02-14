@@ -366,7 +366,7 @@ extern TRACE_LVL__CODES _prev_trace_lvl;
 #define TRACE_NL(_lvl, _stream) do { \
         TRACE_NO_NL(_lvl, _stream); \
         if (_lvl <= TRACE_LVL) { \
-            cout << endl; \
+            TRACE_NO_NL(_lvl, endl); \
         } \
     } while(0)
 
