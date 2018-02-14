@@ -30,13 +30,15 @@ TRACE_LVL__CODES _prev_trace_lvl = TRACE_LVL;
 
 const string Logger::dirname = "logs";
 void Logger::stop() { state = false; }
-void Logger::start(const string& f, bool appnd) {
+void Logger::start(const string& f, bool append) {
     if (!utils__mkdir(Logger::dirname)) {
         cout << "FATAL ERROR: Couldn't create log directory!";
         exit(1);
     }
     filename = Logger::dirname + "/" + f;
-    append = appnd;
+    if (!append) {
+        utils__delete_file(f);
+    }
     state = true;
 }
 bool Logger::out(const ostringstream& os) { return out(os.str()); }
@@ -49,7 +51,7 @@ bool Logger::out(const string& str) {
     if (state) {
         ofstream outfile;
         try {
-            outfile.open(filename, ios::out | (append ? ios::app : ios::trunc));
+            outfile.open(filename, ios::out | ios::app);
             if (!outfile.good()) {
                 cout << UTILS__ASSERT_PRINT_STREAM("FATAL: Couldn't open file '" << filename << "' to dump '" << str << "'") << endl;
                 return false;
