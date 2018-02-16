@@ -149,35 +149,5 @@ const set<PMCAlg> PMCAlg::get_all_set(bool csv_format) {
 }
 
 string PMCAlg::str() const { return PMCALG_NUM_TO_STR_MAP.at(alg); }
-/*    switch(int(*this)) {
-    #define Y(_name,_num) case _num: return #_name;
-    PMCALG_ALGORITHM_TABLE
-    #undef Y
-    default: return "Unknown PMC algorithm";
-    }
-
-    if (is_normal()) {
-        return PMC_ALG_BASENAME + "_NORMAL";
-    }
-    std::ostringstream oss;
-    oss << PMC_ALG_BASENAME;
-    if (is_reverse()) {
-        oss << "_REVERSEMS";
-    }
-    if (is_parallel()) {
-        oss << "_PARALLEL";
-    }
-    if (is_ascending()) {
-        oss << "_ASCENDINGDEG";
-    }
-    if (is_descending()) {
-        oss << "_DESCENDINGDEG";
-    }
-    if (is_random_node_rename()) {
-        oss << "_RANDOMRENAME";
-    }
-    return oss.str();
-
-}*/
 
 }
