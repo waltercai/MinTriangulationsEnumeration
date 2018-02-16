@@ -118,7 +118,7 @@ const map<PMCAlg,int> DATASET_COL_ALG_TO_ERR_INT {
 #define Y(ID) (DATASET_COL_STR_##ID + "," + \
                     DATASET_COL_STR_ERR_##ID + ",") +
 // Erase the extra comma at the end
-const string DATASET_CSV_HEADER = string(DATASET_COL_TABLE/*+*/"").erase(utils__strlen(DATASET_COL_TABLE "")-1);
+const string DATASET_CSV_HEADER = string(DATASET_COL_TABLE/*+*/"").erase(utils__strlen(DATASET_COL_TABLE "")-1) + "\n";
 #undef X
 #undef Y
 

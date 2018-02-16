@@ -45,14 +45,14 @@ string Dataset::str(const GraphStats& gs, const StatisticRequest& sr) const {
             (gs.mem_error_pmc(alg) ? DATASET_COL_CONTENT_MEM_ERR : string(""));
     }
 
-    // CSVify
-    return utils__join(cells, ',');
+    // CSVify, add newline
+    return utils__join(cells, ',') + "\n";
 }
 string Dataset::str() const {
     string out;
     out = header();
     for (auto request: dataset) {
-        out += "\n"+str(request.first, request.second);
+        out += str(request.first, request.second);
     }
     return out;
 }
