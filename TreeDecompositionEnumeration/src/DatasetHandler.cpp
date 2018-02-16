@@ -75,14 +75,16 @@ int DatasetHandler::dori_project_races() {
     // Sparse graphs
     vector<GraphStats> vgs_sparse = GraphProducer(DORI_PROJECT_DATASET_DIR_SPARSE,true)
             .add_dir(DORI_PROJECT_DATASET_DIR_SPARSE)
-            .add_random(utils__vector_range(50,54),{0.05},true,10)
+//            .add_random(utils__vector_range(50,54),{0.05},true,10)
+            .add_random({50,54},{0.05},true,10)
             .get();
     run_dataset_globalstats_allalgs(vgs_sparse, sr, DORI_PROJECT_DATASET_DIR_SPARSE, "sparse", "Sparse_");
 
     // Dense graphs
     vector<GraphStats> vgs_dense = GraphProducer(DORI_PROJECT_DATASET_DIR_DENSE,true)
             .add_dir(DORI_PROJECT_DATASET_DIR_DENSE)
-            .add_random_pstep_range(utils__vector_range(50,60),0.7,0.95,0.1,10)
+//            .add_random_pstep_range(utils__vector_range(50,60),0.7,0.95,0.1,10)
+            .add_random_pstep_range({50,60},0.7,0.95,0.1,10)
             .get();
     run_dataset_globalstats_allalgs(vgs_dense, sr, DORI_PROJECT_DATASET_DIR_DENSE, "dense", "Dense_");
 
