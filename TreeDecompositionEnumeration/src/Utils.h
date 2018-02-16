@@ -364,9 +364,8 @@ extern TRACE_LVL__CODES _prev_trace_lvl;
         } \
     } while(0)
 #define TRACE_NL(_lvl, _stream) do { \
-        TRACE_NO_NL(_lvl, _stream); \
         if (_lvl <= TRACE_LVL) { \
-            TRACE_NO_NL(_lvl, endl); \
+            UTILS__ASSERT_PRINT(_stream << endl); \
         } \
     } while(0)
 
