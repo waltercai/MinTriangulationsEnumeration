@@ -362,6 +362,10 @@ vector<string> utils__getlines(const string& filename) { return utils__tokenize(
 bool utils__dump_string_to_file(const string& str, const string& filename, bool append) {
     ofstream outfile;
     try {
+        string dirname = utils__get_dirname(filename);
+        if (!utils__mkdir(dirname)) {
+            TRACE(TRACE_LVL__ERROR, "Couldn't create directory '" << dirname << "', cannot dump string to '" << filename << "'");
+        }
         outfile.open(filename, ios::out | (append ? ios::app : ios::trunc));
         for (unsigned i=0; i<UTILS__IO_RETRY_COUNT && !outfile.good(); ++i) {
             utils__sleep_msecs(UTILS__IO_RETRY_TIMEOUT_MS);
