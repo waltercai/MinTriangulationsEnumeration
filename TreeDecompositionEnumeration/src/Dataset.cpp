@@ -573,7 +573,7 @@ bool Dataset::dump(bool even_if_iterative_dump_is_on) {
     }
     else if (dump_each_graph && !even_if_iterative_dump_is_on) {
         TRACE(TRACE_LVL__WARNING, "dump() called on a Dataset instance which should have already dumped " \
-                                      "the graphs in the call to calc()... changing path to ");
+                                      "the graphs in the call to calc()... doing nothing");
         return true;
     }
     // Dump
