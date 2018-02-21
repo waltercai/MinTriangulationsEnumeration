@@ -384,7 +384,7 @@ bool utils__dump_string_to_file(const string& str, const string& filename, bool 
         }
     }
     catch(...) {
-        TRACE(TRACE_LVL__ERROR, "Caught unknown exception");
+        TRACE(TRACE_LVL__ERROR, "Caught exception");
         if (outfile.is_open()) {
             outfile.flush();
             outfile.close();
