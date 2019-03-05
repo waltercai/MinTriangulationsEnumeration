@@ -5,6 +5,7 @@
 #include "DataStructures.h"
 #include <set>
 
+#define HUGE_VALF 1e300
 #define CONSTRAINT_VIOLATION HUGE_VALF
 
 namespace tdenum {
